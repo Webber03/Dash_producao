@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard - LF</title>
+<title>Painel de Contratos — Progestor</title>
 <!-- Ícone: substitua o href pelo caminho do seu ícone no servidor -->
-<link rel="icon" type="image/png" href="https://lfpromotora.com.br/wp-content/uploads/2022/10/LF-IMG-12.png">
+<link rel="icon" type="image/png" href="/icon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -60,7 +60,7 @@
   .kpi:nth-child(3)::before{background:var(--accent4)}
   .kpi:nth-child(4)::before{background:var(--accent3)}
   .kpi-label{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
-  .kpi-val{font-size:22px;font-weight:600;color:var(--text);line-height:1;margin-bottom:6px}
+  .kpi-val{font-size:17px;font-weight:600;color:var(--text);line-height:1;margin-bottom:6px;word-break:break-all}
   .kpi-sub{font-size:11px;color:var(--muted)}
 
   .tab-bar{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;width:fit-content}
@@ -268,7 +268,7 @@ const $=id=>document.getElementById(id);
 const val=r=>parseFloat(r['Valor Liberado']||0);
 const com=r=>parseFloat(r['Comissao Loja']||0);
 const fmt=n=>'R$ '+parseFloat(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fmtK=n=>n>=1e6?'R$ '+(n/1e6).toFixed(2)+'M':n>=1000?'R$ '+(n/1000).toFixed(1)+'k':'R$ '+Math.round(n);
+const fmtK=n=>'R$ '+parseFloat(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const getMes=d=>{if(!d)return null;const p=d.split('-');return p[0]+'-'+p[1]};
 const fmtData=d=>d?d.split('-').reverse().join('/'):'—';
 
