@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard - LF</title>
 <!-- Ícone: substitua o href pelo caminho do seu ícone no servidor -->
-<link rel="icon" type="image/png" href="https://lfpromotora.com.br/wp-content/uploads/2022/10/LF-IMG-12.png">
+<link rel="icon" type="image/png" href="/icon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -42,13 +42,6 @@
 
   #app{display:none}
   .container{max-width:1400px;margin:0 auto;padding:1.5rem 2rem}
-
-  .info-bar{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;padding:.7rem 1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:10px}
-  .info-bar-label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
-  .url-source{font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:20px;white-space:nowrap}
-  .src-proxy{background:rgba(0,212,168,.1);color:var(--accent2);border:1px solid rgba(0,212,168,.2)}
-  .src-upload{background:rgba(245,166,35,.1);color:var(--accent4);border:1px solid rgba(245,166,35,.2)}
-  #ts{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap;margin-left:auto}
 
   .filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem;padding:.85rem 1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:10px}
   .filter-row label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
@@ -129,6 +122,7 @@
       <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">próx.</span>
       <span id="countdown" style="font-family:var(--mono);font-size:11px;font-weight:500;min-width:28px">60s</span>
     </div>
+    <span id="ts" style="font-size:11px;color:var(--muted);font-family:var(--mono)">—</span>
     <button class="btn" onclick="reloadData()">↻ Atualizar</button>
   </div>
 </div>
@@ -149,7 +143,7 @@
 <!-- APP -->
 <div id="app">
 <div class="container">
-  
+
   <!-- FILTROS -->
   <div class="filter-row">
     <label>Mês</label><select id="fMes"><option value="">Todos</option></select>
@@ -244,6 +238,24 @@ const TIPO_BADGE = {
   'ABERTURA DE CONTA CORRENTE'    : 'b-ac',
 };
 
+// ── FILIAIS ───────────────────────────────────────────────────
+const FILIAIS = {
+  '279': 'FEIRA DE SANTANA',
+  '281': 'LF & CREDSAMPAIO',
+  '303': 'INSS',
+  '315': 'MATRIZ',
+  '348': 'GOVERNOS E PREFEITURAS',
+  '358': 'JF SERVICOS / LF PROMOTORA',
+  '362': 'MEI / PREST. SERVI',
+  '365': 'FGTS [Externo]',
+  '366': 'ERBANK',
+  '372': 'MF SERVICOS',
+  '373': 'SIAPE',
+  '377': 'CONSORCIO',
+  '379': 'EXTERNO [ALIPIO LIMA]',
+};
+const filialNome = codigo => FILIAIS[String(codigo)] || String(codigo);
+
 // ── ESTADO ────────────────────────────────────────────────────
 let ALL=[], FILTERED=[], PAGE=0;
 const PER=20;
@@ -318,7 +330,11 @@ function buildFilters(){
   fillSelect('fTipo', tiposPresentes);
   fillSelect('fBco',[...new Set(ALL.map(r=>r.BCO))].sort());
   fillSelect('fParc',[...new Set(ALL.map(r=>r.Parceiro))].sort());
-  fillSelect('fFil',[...new Set(ALL.map(r=>r.Filial))].sort(),'Todas');
+  // Filial — valor é o código, label é o nome
+  const filCodes=[...new Set(ALL.map(r=>String(r.Filial||'')).filter(Boolean))].sort();
+  const elFil=$('fFil'),curFil=elFil.value;
+  elFil.innerHTML='<option value="">Todas</option>';
+  filCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=filialNome(cod);if(cod===curFil)o.selected=true;elFil.appendChild(o)});
 }
 
 function applyFilter(){
@@ -397,7 +413,7 @@ function renderTabela(){
     <td style="font-family:var(--mono)">${fmtData(r['Data da Liberação'])}</td>
     <td style="font-size:11px">${r.Parceiro||'—'}</td>
     <td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis">${(r.Corretor||'—').trim()}</td>
-    <td style="font-family:var(--mono)">${r.Filial||'—'}</td>
+    <td style="font-family:var(--mono)">${filialNome(r.Filial)||'—'}</td>
   </tr>`).join('');
   $('pInfo').textContent=`Pág. ${PAGE+1} de ${pages}`;
   $('bPrev').disabled=PAGE===0;$('bNext').disabled=PAGE>=pages-1;
