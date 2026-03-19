@@ -36,11 +36,6 @@
   .loader-ring{width:40px;height:40px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   #loader-msg{font-size:12px;color:var(--muted);font-family:var(--mono)}
-  .loader-steps{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-  .loader-step{font-size:11px;font-family:var(--mono);color:var(--muted);display:flex;align-items:center;gap:8px;opacity:.4;transition:opacity .3s}
-  .loader-step.done{color:var(--green);opacity:1}
-  .loader-step.active{color:var(--accent);opacity:1}
-  .loader-step.fail{color:var(--accent3);opacity:1}
 
   /* MODAL UPLOAD */
   #modal-upload{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
@@ -151,6 +146,7 @@
   <div class="topbar-brand"><div class="dot"></div>PROGESTOR · CONTRATOS</div>
   <div class="topbar-right">
     <div class="status-pill"><div class="live"></div><span id="status-txt">iniciando</span></div>
+    <div class="status-pill" style="gap:5px"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="flex-shrink:0"><circle cx="5" cy="5" r="4" stroke="var(--muted)" stroke-width="1.2"/><path d="M5 2.5V5L6.5 6.5" stroke="var(--muted)" stroke-width="1.2" stroke-linecap="round"/></svg><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">próx.</span><span id="countdown" style="font-family:var(--mono);font-size:11px;font-weight:500;min-width:28px">60s</span></div>
     <button class="btn-ghost" onclick="showUploadModal()">↑ Carregar JSON</button>
     <button class="btn" onclick="reloadData()">↻ Atualizar</button>
   </div>
@@ -159,12 +155,7 @@
 <!-- LOADER -->
 <div id="loader">
   <div class="loader-ring"></div>
-  <div id="loader-msg">buscando dados...</div>
-  <div class="loader-steps">
-    <div class="loader-step" id="step1">① direto via URL</div>
-    <div class="loader-step" id="step2">② via proxy.php local</div>
-    <div class="loader-step" id="step3">③ fallback manual</div>
-  </div>
+  <div id="loader-msg">buscando dados via proxy...</div>
 </div>
 
 <!-- MODAL UPLOAD -->
@@ -303,7 +294,6 @@
 // ── CONFIG ────────────────────────────────────────────────────
 const JSON_URL = 'https://novo.progestor21.com.br/sistema/_lib/tmp/sc_json_20260319113030_485_consultajsonlf.json';
 // proxy.php deve estar na mesma pasta deste HTML no servidor
-const PROXY_URL = 'proxy.php?url=' + encodeURIComponent(JSON_URL);
 
 // ── ESTADO ────────────────────────────────────────────────────
 let ALL=[], FILTERED=[], PAGE=0;
@@ -321,48 +311,24 @@ const fmt=n=>'R$ '+parseFloat(n||0).toLocaleString('pt-BR',{minimumFractionDigit
 const fmtK=n=>n>=1e6?'R$ '+(n/1e6).toFixed(2)+'M':n>=1000?'R$ '+(n/1000).toFixed(1)+'k':'R$ '+Math.round(n);
 const getMes=d=>{if(!d)return null;const p=d.split('-');return p[0]+'-'+p[1]};
 const fmtData=d=>d?d.split('-').reverse().join('/'):'—';
-function step(id,state){const el=$(id);el.className='loader-step '+state;if(state==='done')el.innerHTML='✓ '+el.textContent.replace(/^[①②③✓✗] /,'');if(state==='fail')el.innerHTML='✗ '+el.textContent.replace(/^[①②③✓✗] /,'')}
 
-// ── CARGA COM FALLBACK ────────────────────────────────────────
+// ── CARGA VIA PROXY ───────────────────────────────────────────
 async function loadData() {
   const url = $('jsonUrl').value.trim() || JSON_URL;
   $('jsonUrl').value = url;
   show('loader'); hide('app'); hide('error-box');
-  $('status-txt').textContent='carregando';
-  $('loader-msg').textContent='tentando conectar...';
-  ['step1','step2','step3'].forEach(s=>{ const el=$(s); el.className='loader-step'; });
+  $('status-txt').textContent = 'carregando';
+  $('loader-msg').textContent = 'buscando via proxy.php...';
 
-  // Tentativa 1 — direto
   try {
-    $('step1').className='loader-step active';
-    $('loader-msg').textContent='① conexão direta...';
-    const data = await fetchJSON(url);
-    step('step1','done'); step('step2','done'); step('step3','done');
-    DATA_SOURCE='direct';
-    initData(data, url, 'direct');
-    return;
-  } catch(e1) {
-    step('step1','fail');
-  }
-
-  // Tentativa 2 — proxy.php
-  try {
-    $('step2').className='loader-step active';
-    $('loader-msg').textContent='② proxy.php local...';
-    const proxyUrl = PROXY_URL.replace(encodeURIComponent(JSON_URL), encodeURIComponent(url));
+    const proxyUrl = 'proxy.php?url=' + encodeURIComponent(url);
     const data = await fetchJSON(proxyUrl);
-    step('step2','done'); step('step3','done');
-    DATA_SOURCE='proxy';
+    DATA_SOURCE = 'proxy';
     initData(data, url, 'proxy');
-    return;
-  } catch(e2) {
-    step('step2','fail');
+  } catch(e) {
+    $('loader-msg').textContent = 'erro — verifique se proxy.php está no servidor';
+    setTimeout(() => { hide('loader'); show('error-box'); $('status-txt').textContent = 'erro'; }, 800);
   }
-
-  // Falhou tudo → mostrar erro
-  step('step3','fail');
-  $('loader-msg').textContent='sem sucesso — veja as opções abaixo';
-  setTimeout(()=>{ hide('loader'); show('error-box'); $('status-txt').textContent='erro'; }, 800);
 }
 
 async function fetchJSON(url) {
@@ -376,7 +342,7 @@ async function fetchJSON(url) {
   return data;
 }
 
-function reloadData() { loadData(); }
+function reloadData() { stopAutoRefresh(); loadData(); }
 
 // ── UPLOAD MANUAL ─────────────────────────────────────────────
 function showUploadModal(){$('modal-upload').classList.add('show')}
@@ -411,6 +377,7 @@ function initData(data, label, source) {
   else{badge.className='url-source src-upload';badge.textContent='✓ arquivo local';$('jsonUrl').value=label}
   buildFilters();
   applyFilter();
+  startAutoRefresh();
 }
 
 function show(id){$(id).style.display='block'}
@@ -500,6 +467,55 @@ function renderTabela(){
 
 function changePage(d){PAGE+=d;renderTabela()}
 function switchTab(id,btn){document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));btn.classList.add('on');$('p-'+id).classList.add('on');if(id==='visao')setTimeout(renderCharts,50)}
+
+// ── AUTO-REFRESH ──────────────────────────────────────────────
+const REFRESH_INTERVAL = 60; // segundos
+let countdown = REFRESH_INTERVAL;
+let autoTimer = null;
+let countTimer = null;
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  countdown = REFRESH_INTERVAL;
+  updateCountdown();
+  countTimer = setInterval(() => {
+    countdown--;
+    updateCountdown();
+    if (countdown <= 0) {
+      countdown = REFRESH_INTERVAL;
+      silentReload();
+    }
+  }, 1000);
+}
+
+function stopAutoRefresh() {
+  clearInterval(countTimer);
+  clearInterval(autoTimer);
+}
+
+function updateCountdown() {
+  const el = $('countdown');
+  if (!el) return;
+  el.textContent = countdown + 's';
+  el.style.color = countdown <= 10 ? 'var(--accent4)' : 'var(--muted)';
+}
+
+async function silentReload() {
+  // Atualiza os dados sem mostrar o loader completo
+  const url = $('jsonUrl').value.trim() || JSON_URL;
+  $('status-txt').textContent = 'atualizando...';
+  try {
+    const proxyUrl = 'proxy.php?url=' + encodeURIComponent(url);
+    const data = await fetchJSON(proxyUrl);
+    ALL = data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0)}));
+    $('ts').textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-BR');
+    $('status-txt').textContent = ALL.length + ' registros';
+    buildFilters();
+    applyFilter();
+  } catch(e) {
+    $('status-txt').textContent = 'falha ao atualizar';
+  }
+}
 
 // ── START ─────────────────────────────────────────────────────
 $('jsonUrl').value = JSON_URL;
