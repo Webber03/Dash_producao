@@ -1,21 +1,15 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.2-apache
 
-# Instala Nginx
-RUN apk add --no-cache nginx
+# Habilita mod_rewrite
+RUN a2enmod rewrite
 
-# Copia arquivos da aplicação
-COPY . /var/www/html/
+# Copia todos os arquivos para o DocumentRoot do Apache
+COPY index.html /var/www/html/index.html
+COPY proxy.php  /var/www/html/proxy.php
 
 # Permissões
 RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html
 
-# Configuração do Nginx
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Script de inicialização
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
 EXPOSE 80
 
-CMD ["/start.sh"]
+CMD ["apache2-foreground"]
