@@ -123,6 +123,7 @@
       <span id="countdown" style="font-family:var(--mono);font-size:11px;font-weight:500;min-width:28px">60s</span>
     </div>
     <span id="ts" style="font-size:11px;color:var(--muted);font-family:var(--mono)">—</span>
+    <button class="btn-ghost" onclick="openUrlModal()" title="Configurar URL do JSON">⚙ URL</button>
     <button class="btn" onclick="reloadData()">↻ Atualizar</button>
   </div>
 </div>
@@ -138,6 +139,19 @@
   <h2>Erro ao carregar dados</h2>
   <p>Não foi possível buscar o JSON via <code>proxy.php</code>.<br>Verifique se o arquivo está na mesma pasta do servidor e tente novamente.</p>
   <button class="btn" onclick="reloadData()">↻ Tentar novamente</button>
+</div>
+
+<!-- MODAL URL -->
+<div id="modal-url" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:2rem;max-width:560px;width:90%">
+    <p style="font-size:15px;font-weight:500;margin-bottom:6px;color:var(--text)">URL do JSON</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">Cole aqui o link do arquivo JSON gerado pelo progestor. O valor é salvo no navegador automaticamente.</p>
+    <input type="text" id="urlInput" placeholder="https://novo.progestor21.com.br/sistema/_lib/tmp/..." style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:8px 12px;border-radius:6px;height:36px;outline:none;margin-bottom:1rem">
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="saveUrl()" style="flex:1">✓ Salvar e carregar</button>
+      <button class="btn-ghost" onclick="closeUrlModal()" style="padding:6px 18px">Cancelar</button>
+    </div>
+  </div>
 </div>
 
 <!-- APP -->
@@ -218,8 +232,36 @@
 </div>
 
 <script>
-// ── CONFIG (back-end only — não exposto no front) ─────────────
-const JSON_URL = 'https://novo.progestor21.com.br/sistema/_lib/tmp/sc_json_20260319113030_485_consultajsonlf.json';
+// ── CONFIG ────────────────────────────────────────────────────
+// URL padrão — usada apenas se não houver nada salvo no navegador
+const JSON_URL_DEFAULT = 'https://novo.progestor21.com.br/sistema/_lib/tmp/sc_json_20260319113030_485_consultajsonlf.json';
+const getJsonUrl = () => localStorage.getItem('progestor_json_url') || JSON_URL_DEFAULT;
+
+// finder.php busca automaticamente o arquivo mais recente
+// proxy.php é usado quando o usuário informa a URL manualmente
+const USE_FINDER = !localStorage.getItem('progestor_json_url');
+
+// ── MODAL URL ─────────────────────────────────────────────────
+function openUrlModal() {
+  document.getElementById('urlInput').value = getJsonUrl();
+  document.getElementById('modal-url').style.display = 'flex';
+}
+function closeUrlModal() {
+  document.getElementById('modal-url').style.display = 'none';
+}
+function saveUrl() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+  localStorage.setItem('progestor_json_url', url);
+  closeUrlModal();
+  stopAutoRefresh();
+  loadData();
+}
+function clearSavedUrl() {
+  localStorage.removeItem('progestor_json_url');
+  stopAutoRefresh();
+  loadData();
+}
 
 // ── TIPOS PERMITIDOS ──────────────────────────────────────────
 // Mapeamento: tipo → classe de badge
@@ -245,7 +287,7 @@ const FILIAIS = {
   '303': 'INSS',
   '315': 'MATRIZ',
   '348': 'GOVERNOS E PREFEITURAS',
-  '358': 'JF SERVICOS',
+  '358': 'JF SERVICOS / LF PROMOTORA',
   '362': 'MEI / PREST. SERVI',
   '365': 'FGTS [Externo]',
   '366': 'ERBANK',
@@ -272,28 +314,40 @@ const fmtK=n=>'R$ '+parseFloat(n||0).toLocaleString('pt-BR',{minimumFractionDigi
 const getMes=d=>{if(!d)return null;const p=d.split('-');return p[0]+'-'+p[1]};
 const fmtData=d=>d?d.split('-').reverse().join('/'):'—';
 
-// ── CARGA VIA PROXY ───────────────────────────────────────────
+// ── CARGA AUTOMÁTICA ──────────────────────────────────────────
 async function loadData() {
   show('loader'); hide('app'); hide('error-box');
-  $('status-txt').textContent='carregando';
-  $('loader-msg').textContent='buscando via proxy.php...';
-  try {
-    const data = await fetchJSON('proxy.php?url=' + encodeURIComponent(JSON_URL));
-    initData(data);
-  } catch(e) {
-    $('loader-msg').textContent='erro ao conectar ao proxy.php';
-    setTimeout(()=>{ hide('loader'); show('error-box'); $('status-txt').textContent='erro'; }, 600);
+  $('status-txt').textContent = 'carregando';
+
+  const manualUrl = localStorage.getItem('progestor_json_url');
+
+  if (manualUrl) {
+    $('loader-msg').textContent = 'carregando via URL manual...';
+    try {
+      const data = await fetchJSON('proxy.php?url=' + encodeURIComponent(manualUrl));
+      initData(data); return;
+    } catch(e) {}
   }
+
+  // Modo automático — trigger.php acessa o progestor e retorna JSON fresco
+  $('loader-msg').textContent = 'buscando dados atualizados do progestor...';
+  try {
+    const data = await fetchJSON('trigger.php?_t=' + Date.now(), 50000);
+    initData(data); return;
+  } catch(e) {}
+
+  $('loader-msg').textContent = 'não foi possível carregar os dados';
+  setTimeout(() => { hide('loader'); show('error-box'); $('status-txt').textContent = 'erro'; }, 600);
 }
 
-async function fetchJSON(url) {
-  const ctrl=new AbortController();
-  const timer=setTimeout(()=>ctrl.abort(),10000);
-  const res=await fetch(url,{cache:'no-cache',signal:ctrl.signal});
+async function fetchJSON(url, timeout=10000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeout);
+  const res = await fetch(url, {cache:'no-cache', signal:ctrl.signal});
   clearTimeout(timer);
-  if(!res.ok) throw new Error('HTTP '+res.status);
-  const data=await res.json();
-  if(!Array.isArray(data)||!data.length) throw new Error('vazio');
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (!Array.isArray(data) || !data.length) throw new Error('vazio');
   return data;
 }
 
@@ -447,7 +501,11 @@ function updateCountdown(){
 async function silentReload(){
   $('status-txt').textContent='atualizando...';
   try {
-    const data=await fetchJSON('proxy.php?url='+encodeURIComponent(JSON_URL));
+    const manualUrl = localStorage.getItem('progestor_json_url');
+    const endpoint = manualUrl
+      ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
+      : 'trigger.php?_t=' + Date.now();
+    const data = await fetchJSON(endpoint, manualUrl ? 10000 : 50000);
     ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0)}));
     $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
     $('status-txt').textContent=ALL.length+' registros';
