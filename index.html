@@ -151,6 +151,41 @@
   .pag-btn:hover:not(:disabled){border-color:var(--amarelo);color:var(--amarelo)}
   .pag-btn:disabled{opacity:.3;cursor:default}
 
+
+  /* ── IA ANALISTA ── */
+  .ai-panel{display:flex;flex-direction:column;gap:16px}
+  .ai-toprow{display:grid;grid-template-columns:1fr 340px;gap:14px}
+  .ai-chat-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;height:520px}
+  .ai-chat-header{padding:.9rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:12px 12px 0 0}
+  .ai-chat-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--amarelo);display:flex;align-items:center;gap:8px}
+  .ai-chat-title::before{content:'';width:3px;height:12px;background:var(--amarelo);border-radius:2px}
+  .ai-badge{font-size:9px;font-family:var(--mono);background:rgba(247,203,69,.12);color:var(--amarelo);border:1px solid rgba(247,203,69,.25);padding:2px 8px;border-radius:10px}
+  .ai-msgs{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+  .ai-msgs::-webkit-scrollbar{width:4px}.ai-msgs::-webkit-scrollbar-track{background:transparent}.ai-msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+  .ai-msg{max-width:88%;padding:.75rem 1rem;border-radius:10px;font-size:13px;line-height:1.55;animation:fadeUp .2s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .ai-msg.user{align-self:flex-end;background:var(--amarelo);color:var(--preto);font-weight:500;border-radius:10px 10px 2px 10px}
+  .ai-msg.bot{align-self:flex-start;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px 10px 10px 2px}
+  .ai-msg.bot.thinking{opacity:.6;font-style:italic;font-size:12px}
+  .ai-input-row{display:flex;gap:8px;padding:.85rem 1rem;border-top:1px solid var(--border);background:var(--surface2);border-radius:0 0 12px 12px}
+  .ai-input{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--font);font-size:13px;padding:8px 14px;border-radius:8px;outline:none;transition:all .15s}
+  .ai-input:focus{border-color:var(--amarelo);box-shadow:0 0 0 2px rgba(247,203,69,.12)}
+  .ai-send{background:var(--amarelo);border:none;color:var(--preto);font-size:18px;width:38px;height:38px;border-radius:8px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700}
+  .ai-send:hover{background:#ffd85a;transform:scale(1.05)}
+  .ai-send:disabled{opacity:.4;cursor:default;transform:none}
+  .ai-quick-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem;display:flex;flex-direction:column;gap:8px}
+  .ai-quick-title{font-size:10px;font-family:var(--mono);color:var(--amarelo);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .ai-quick-title::before{content:'';width:3px;height:12px;background:var(--amarelo);border-radius:2px}
+  .ai-quick-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:9px 14px;border-radius:8px;cursor:pointer;text-align:left;transition:all .15s;line-height:1.4}
+  .ai-quick-btn:hover{border-color:var(--amarelo);color:var(--amarelo);background:rgba(247,203,69,.05)}
+  .ai-summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .ai-summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem}
+  .ai-summary-card-title{font-size:10px;font-family:var(--mono);color:var(--amarelo);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+  .ai-summary-card-title::before{content:'';width:3px;height:12px;background:var(--amarelo);border-radius:2px}
+  .ai-summary-card-body{font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap}
+  .ai-key-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 12px;border-radius:6px;outline:none;transition:all .15s;margin-bottom:8px}
+  .ai-key-input:focus{border-color:var(--amarelo)}
+
   @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.chart-grid{grid-template-columns:1fr}}
   @media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.chart-grid{grid-template-columns:1fr}}
   @media(max-width:600px){.kpi-grid{grid-template-columns:1fr}.container{padding:1rem}}
@@ -270,6 +305,7 @@
     <button class="tab on" onclick="switchTab('visao',this)">Visão Geral</button>
     <button class="tab" onclick="switchTab('corretores',this)">Corretores</button>
     <button class="tab" onclick="switchTab('tabela',this)">Contratos</button>
+    <button class="tab" onclick="switchTab('ia',this)">🤖 IA Analista</button>
   </div>
 
   <!-- VISÃO GERAL -->
@@ -326,6 +362,68 @@
           <button class="pag-btn" id="bNext" onclick="changePage(1)">Próxima →</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- IA ANALISTA -->
+  <div id="p-ia" class="panel">
+    <div class="ai-panel">
+
+      <!-- Configuração da API Key -->
+      <div id="ai-key-bar" style="background:var(--surface);border:1px solid rgba(247,203,69,.3);border-radius:10px;padding:1rem 1.4rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--muted);font-family:var(--mono)">🔑 API Key Anthropic:</span>
+        <input type="password" id="aiKeyInput" class="ai-key-input" placeholder="sk-ant-..." style="flex:1;min-width:280px;margin:0">
+        <button class="btn" onclick="saveAiKey()" style="font-size:12px;padding:6px 16px">Salvar</button>
+        <button class="btn-ghost" onclick="clearAiKey()" style="font-size:12px">Limpar</button>
+        <span id="ai-key-status" style="font-size:11px;font-family:var(--mono);color:var(--muted)"></span>
+      </div>
+
+      <div class="ai-toprow">
+        <!-- Chat -->
+        <div class="ai-chat-box">
+          <div class="ai-chat-header">
+            <div class="ai-chat-title">Assistente de Análise</div>
+            <span class="ai-badge">Claude Sonnet</span>
+          </div>
+          <div class="ai-msgs" id="aiMsgs">
+            <div class="ai-msg bot">👋 Olá! Sou seu analista de contratos com IA. Posso analisar os dados filtrados, identificar padrões, comparar períodos e gerar insights. Como posso ajudar?</div>
+          </div>
+          <div class="ai-input-row">
+            <input type="text" class="ai-input" id="aiInput" placeholder="Pergunte sobre os contratos..." onkeydown="if(event.key==='Enter')sendAiMsg()">
+            <button class="ai-send" id="aiSendBtn" onclick="sendAiMsg()">➤</button>
+          </div>
+        </div>
+
+        <!-- Perguntas rápidas -->
+        <div class="ai-quick-box">
+          <div class="ai-quick-title">Análises Rápidas</div>
+          <button class="ai-quick-btn" onclick="quickAsk('Faça um resumo executivo dos contratos filtrados: total, produção, comissão e principais destaques.')">📊 Resumo executivo</button>
+          <button class="ai-quick-btn" onclick="quickAsk('Quais os 3 melhores corretores em comissão gerada? Liste com valores.')">🏆 Top 3 corretores</button>
+          <button class="ai-quick-btn" onclick="quickAsk('Qual banco gerou mais valor liberado? Analise a distribuição por banco.')">🏦 Análise por banco</button>
+          <button class="ai-quick-btn" onclick="quickAsk('Analise a distribuição por tipo de operação (NOVO, REFINANCIAMENTO, PORTABILIDADE etc) e diga qual tem melhor comissão percentual média.')">📈 Melhor tipo de op.</button>
+          <button class="ai-quick-btn" onclick="quickAsk('Qual filial tem melhor desempenho em valor liberado e comissão? Compare as filiais.')">🏢 Ranking de filiais</button>
+          <button class="ai-quick-btn" onclick="quickAsk('Qual canal de venda traz mais contratos e maior valor? Analise a eficiência de cada canal.')">📡 Eficiência por canal</button>
+          <button class="ai-quick-btn" onclick="quickAsk('Existem contratos com comissão em mês diferente da liberação? Qual o impacto no fluxo de caixa?')">⚠️ Comissões defasadas</button>
+          <button class="ai-quick-btn" onclick="quickAsk('Dê 3 recomendações estratégicas baseadas nos dados atuais para aumentar a produção e comissão.')">💡 Recomendações IA</button>
+        </div>
+      </div>
+
+      <!-- Cards de sumário automático -->
+      <div class="ai-summary-row">
+        <div class="ai-summary-card">
+          <div class="ai-summary-card-title">📌 Contexto atual</div>
+          <div class="ai-summary-card-body" id="aiCtxCard">Carregando...</div>
+        </div>
+        <div class="ai-summary-card">
+          <div class="ai-summary-card-title">📉 Alertas</div>
+          <div class="ai-summary-card-body" id="aiAlertCard">—</div>
+        </div>
+        <div class="ai-summary-card">
+          <div class="ai-summary-card-title">🎯 Oportunidades</div>
+          <div class="ai-summary-card-body" id="aiOppCard">—</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -699,7 +797,161 @@ function renderTabela(){
 }
 
 function changePage(d){PAGE+=d;renderTabela()}
-function switchTab(id,btn){document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));btn.classList.add('on');$('p-'+id).classList.add('on');if(id==='visao')setTimeout(renderCharts,50)}
+function switchTab(id,btn){document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));btn.classList.add('on');$('p-'+id).classList.add('on');if(id==='visao')setTimeout(renderCharts,50);if(id==='ia'){setTimeout(updateAiContext,100);setTimeout(autoAnalyze,200);}}
+
+// ── IA ANALISTA ──────────────────────────────────────────────────
+const AI_KEY_STORAGE = 'lf_ai_key';
+
+function saveAiKey(){
+  const k=$('aiKeyInput').value.trim();
+  if(!k){return;}
+  localStorage.setItem(AI_KEY_STORAGE,k);
+  $('aiKeyInput').value='';
+  $('ai-key-status').textContent='✓ salva';
+  $('ai-key-status').style.color='var(--green)';
+  setTimeout(()=>{$('ai-key-status').textContent='';},2000);
+}
+function clearAiKey(){
+  localStorage.removeItem(AI_KEY_STORAGE);
+  $('ai-key-status').textContent='removida';
+  $('ai-key-status').style.color='var(--muted)';
+  setTimeout(()=>{$('ai-key-status').textContent='';},2000);
+}
+function getAiKey(){ return localStorage.getItem(AI_KEY_STORAGE)||''; }
+
+function buildContext(){
+  const mes=$('fMes').value;
+  const label=mes?(()=>{const[y,m]=mes.split('-');return MES[parseInt(m)-1]+'/'+y.slice(2)})():'todos os meses';
+  const tot=FILTERED.length;
+  const sumV=FILTERED.reduce((a,r)=>a+val(r),0);
+  // comissão
+  const comRows=FILTERED.filter(r=>!mes||getMes(r['Data Comissao Loja'])===mes);
+  const sumC=comRows.reduce((a,r)=>a+(r['Base Comissao']||0)*com(r)/100,0);
+  const sumD=comRows.reduce((a,r)=>a+(r['Desconto Loja']||0),0);
+  // por tipo
+  const tipos={};FILTERED.forEach(r=>{const t=r.Tipo||'—';tipos[t]=(tipos[t]||0)+val(r);});
+  const topTipos=Object.entries(tipos).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([t,v])=>`${t}: ${fmt(v)}`).join(', ');
+  // por banco
+  const bancos={};FILTERED.forEach(r=>{const b=r.BCO||'—';bancos[b]=(bancos[b]||0)+val(r);});
+  const topBancos=Object.entries(bancos).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([b,v])=>`${b}: ${fmt(v)}`).join(', ');
+  // por corretor
+  const corr={};FILTERED.forEach(r=>{const c=(r.Corretor||'—').trim();corr[c]=(corr[c]||0)+val(r);});
+  const topCorr=Object.entries(corr).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c,v])=>`${c}: ${fmt(v)}`).join(', ');
+  // por filial
+  const fils={};FILTERED.forEach(r=>{const f=filialNome(r.Filial);fils[f]=(fils[f]||0)+val(r);});
+  const topFils=Object.entries(fils).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([f,v])=>`${f}: ${fmt(v)}`).join(', ');
+  // canais
+  const cans={};FILTERED.forEach(r=>{const c=canalNome(r.Canaldevenda);cans[c]=(cans[c]||0)+val(r);});
+  const topCans=Object.entries(cans).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c,v])=>`${c}: ${fmt(v)}`).join(', ');
+  // comissões defasadas
+  const defasados=mes?FILTERED.filter(r=>getMes(r['Data da Liberação'])!==mes&&getMes(r['Data Comissao Loja'])===mes).length:0;
+
+  return `DADOS DO PAINEL LF PROMOTORA — Período: ${label}
+Total de contratos: ${tot}
+Valor liberado total: ${fmt(sumV)}
+Comissão loja: ${fmt(sumC)}
+Desconto loja: ${fmt(sumD)}
+Líquido loja: ${fmt(sumC-sumD)}
+Ticket médio comissão: ${tot>0?fmt(sumC/tot):'—'}
+
+Por tipo de operação (top 5): ${topTipos}
+Por banco (top 4): ${topBancos}
+Por corretor (top 5): ${topCorr}
+Por filial (top 5): ${topFils}
+Por canal (top 5): ${topCans}
+Contratos com comissão defasada (liberação em outro mês): ${defasados}
+
+Filtrando por: Mês=${$('fMes').value||'todos'}, Tipo=${$('fTipo').value||'todos'}, Banco=${$('fBco').value||'todos'}, Parceiro=${$('fParc').value||'todos'}, Filial=${$('fFil').value||'todas'}, Canal=${$('fCanal').value||'todos'}`;
+}
+
+function updateAiContext(){
+  try{
+    const ctx=buildContext();
+    const lines=ctx.split('\n').slice(0,8).join('\n');
+    $('aiCtxCard').textContent=lines;
+  }catch(e){$('aiCtxCard').textContent='Carregue os dados primeiro.';}
+}
+
+function addMsg(role,text){
+  const box=$('aiMsgs');
+  const d=document.createElement('div');
+  d.className='ai-msg '+(role==='user'?'user':'bot');
+  d.textContent=text;
+  box.appendChild(d);
+  box.scrollTop=box.scrollHeight;
+  return d;
+}
+
+async function sendAiMsg(){
+  const key=getAiKey();
+  if(!key){addMsg('bot','⚠️ Configure sua API Key Anthropic no topo desta aba.');return;}
+  const input=$('aiInput');
+  const q=input.value.trim();
+  if(!q)return;
+  input.value='';
+  addMsg('user',q);
+  const btn=$('aiSendBtn');
+  btn.disabled=true;
+  const thinking=addMsg('bot','⏳ Analisando...');
+  thinking.classList.add('thinking');
+
+  try{
+    const ctx=buildContext();
+    const sys=`Você é um analista financeiro especialista em crédito consignado e produção de contratos. Analise os dados fornecidos e responda de forma clara, objetiva e em português. Use números e percentuais quando relevante. Seja direto e profissional.
+
+CONTEXTO DOS DADOS ATUAL:
+${ctx}`;
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:q}]})
+    });
+    const data=await resp.json();
+    if(data.error){thinking.textContent='❌ '+data.error.message;thinking.classList.remove('thinking');btn.disabled=false;return;}
+    const ans=data.content.map(b=>b.text||'').join('');
+    thinking.textContent=ans;
+    thinking.classList.remove('thinking');
+  }catch(e){
+    thinking.textContent='❌ Erro: '+e.message;
+    thinking.classList.remove('thinking');
+  }
+  btn.disabled=false;
+}
+
+function quickAsk(q){
+  $('aiInput').value=q;
+  sendAiMsg();
+  // Scroll para o chat
+  document.querySelector('.ai-chat-box .ai-msgs').scrollTop=99999;
+}
+
+// Analisa alertas e oportunidades automaticamente ao entrar na aba
+async function autoAnalyze(){
+  const key=getAiKey();
+  if(!key||!FILTERED.length)return;
+  $('aiAlertCard').textContent='🔍 Analisando...';
+  $('aiOppCard').textContent='🔍 Analisando...';
+  try{
+    const ctx=buildContext();
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:'Você é analista de crédito consignado. Responda SOMENTE em JSON com duas chaves: "alertas" (string com 2-3 alertas curtos separados por newline) e "oportunidades" (string com 2-3 oportunidades curtas separadas por newline). Sem markdown, sem explicações extras.',messages:[{role:'user',content:'Com base nesses dados, gere alertas e oportunidades:\n'+ctx}]})
+    });
+    const data=await resp.json();
+    const txt=data.content.map(b=>b.text||'').join('');
+    const clean=txt.replace(/```json|```/g,'').trim();
+    try{
+      const obj=JSON.parse(clean);
+      $('aiAlertCard').textContent=obj.alertas||'—';
+      $('aiOppCard').textContent=obj.oportunidades||'—';
+    }catch{
+      $('aiAlertCard').textContent=txt;
+      $('aiOppCard').textContent='—';
+    }
+  }catch(e){$('aiAlertCard').textContent='—';$('aiOppCard').textContent='—';}
+}
 
 // ── AUTO-REFRESH (60s) ────────────────────────────────────────
 const REFRESH_INTERVAL=60;
