@@ -405,20 +405,27 @@ function buildFilters(){
 
 function applyFilter(){
   const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,fil=$('fFil').value,srch=$('srch').value.toLowerCase().trim();
-  FILTERED=ALL.filter(r=>{
-    if(mes){
-      // inclui o contrato se aparece no mês pela Data da Liberação OU pela Data Comissao Loja
-      const mesLib=getMes(r['Data da Liberação']);
-      const mesCom=getMes(r['Data Comissao Loja']);
-      if(mesLib!==mes && mesCom!==mes) return false;
-    }
+
+  // filtros base (sem mês)
+  const baseFilter=r=>{
     if(tipo&&r.Tipo!==tipo)return false;
     if(bco&&r.BCO!==bco)return false;
     if(parc&&r.Parceiro!==parc)return false;
-    if(fil&&r.Filial!==fil)return false;
+    if(fil&&String(r.Filial||'')!==fil)return false;
     if(srch&&!(r.Nome||'').toLowerCase().includes(srch)&&!(r.Contrato||'').toLowerCase().includes(srch))return false;
     return true;
-  });
+  };
+
+  if(!mes){
+    FILTERED=ALL.filter(baseFilter);
+  } else {
+    // contratos com liberação no mês
+    const porLib=ALL.filter(r=>getMes(r['Data da Liberação'])===mes && baseFilter(r));
+    // contratos com comissão no mês MAS liberação em mês diferente (evita duplicatas)
+    const porCom=ALL.filter(r=>getMes(r['Data Comissao Loja'])===mes && getMes(r['Data da Liberação'])!==mes && baseFilter(r));
+    FILTERED=[...porLib, ...porCom];
+  }
+
   PAGE=0; render();
 }
 
