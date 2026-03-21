@@ -174,6 +174,7 @@
     <div class="kpi"><div class="kpi-label">Total de contratos</div><div class="kpi-val" id="kTot">—</div><div class="kpi-sub" id="kTotS">—</div></div>
     <div class="kpi"><div class="kpi-label">Valor liberado</div><div class="kpi-val" id="kVal">—</div><div class="kpi-sub" id="kValS">—</div></div>
     <div class="kpi"><div class="kpi-label">Comissão loja</div><div class="kpi-val" id="kCom">—</div><div class="kpi-sub" id="kComS">—</div></div>
+    <div class="kpi"><div class="kpi-label">Líquido loja</div><div class="kpi-val" id="kLiq" style="color:var(--accent2)">—</div><div class="kpi-sub" id="kLiqS">—</div></div>
     <div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-val" id="kTick">—</div><div class="kpi-sub" id="kTickS">—</div></div>
   </div>
 
@@ -364,7 +365,7 @@ function reloadData(){ stopAutoRefresh(); loadData(); }
 
 // ── INIT ──────────────────────────────────────────────────────
 function initData(data) {
-  ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0)}));
+  ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0)}));
   hide('loader'); hide('error-box'); show('app');
   $('status-txt').textContent=ALL.length+' registros';
   $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
@@ -458,8 +459,18 @@ function renderKpis(){
   $('kTotS').textContent = 'de ' + ALL.length + ' totais';
   $('kVal').textContent  = fmtK(sumV);
   $('kValS').textContent = 'valor total liberado';
+  // Desconto Loja: mesmo filtro da comissão
+  const sumD = FILTERED.filter(r => {
+    if (mes && getMes(r['Data Comissao Loja']) !== mes) return false;
+    return true;
+  }).reduce((a,r) => a + (r['Desconto Loja']||0), 0);
+
+  const sumL = sumC - sumD;
+
   $('kCom').textContent  = fmtK(sumC);
   $('kComS').textContent = 'por Data Comissão Loja';
+  $('kLiq').textContent  = fmtK(sumL);
+  $('kLiqS').textContent = sumD>0 ? '− '+fmtK(sumD)+' descontos' : 'sem descontos';
   $('kTick').textContent  = fmtK(tick);
   $('kTickS').textContent = 'por contrato';
 }
@@ -578,7 +589,7 @@ async function silentReload(){
       ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
       : 'trigger.php?_t=' + Date.now();
     const data = await fetchJSON(endpoint, manualUrl ? 10000 : 50000);
-    ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0)}));
+    ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0)}));
     $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
     $('status-txt').textContent=ALL.length+' registros';
     buildFilters(); applyFilter();
