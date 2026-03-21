@@ -406,7 +406,12 @@ function buildFilters(){
 function applyFilter(){
   const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,fil=$('fFil').value,srch=$('srch').value.toLowerCase().trim();
   FILTERED=ALL.filter(r=>{
-    if(mes&&getMes(r['Data da Liberação'])!==mes)return false;
+    if(mes){
+      // inclui o contrato se aparece no mês pela Data da Liberação OU pela Data Comissao Loja
+      const mesLib=getMes(r['Data da Liberação']);
+      const mesCom=getMes(r['Data Comissao Loja']);
+      if(mesLib!==mes && mesCom!==mes) return false;
+    }
     if(tipo&&r.Tipo!==tipo)return false;
     if(bco&&r.BCO!==bco)return false;
     if(parc&&r.Parceiro!==parc)return false;
@@ -426,21 +431,19 @@ function render(){renderKpis();renderCharts();renderCorretores();renderTabela()}
 
 function renderKpis(){
   const mes = $('fMes').value;
+  const tipo=$('fTipo').value, bco=$('fBco').value, parc=$('fParc').value, fil=$('fFil').value;
 
-  // Produção: filtra por Data da Liberação (já aplicado em FILTERED)
-  const tot  = FILTERED.length;
-  const sumV = FILTERED.reduce((a,r)=>a+val(r), 0);
+  // Produção: apenas contratos cuja Data da Liberação está no mês filtrado
+  const prodRows = mes
+    ? FILTERED.filter(r => getMes(r['Data da Liberação']) === mes)
+    : FILTERED;
+  const tot  = prodRows.length;
+  const sumV = prodRows.reduce((a,r)=>a+val(r), 0);
   const tick = tot ? sumV/tot : 0;
 
-  // Comissão Loja: filtra por Data Comissao Loja (independente do filtro de produção)
-  const sumC = ALL.filter(r => {
+  // Comissão Loja: contratos cuja Data Comissao Loja está no mês filtrado
+  const sumC = FILTERED.filter(r => {
     if (mes && getMes(r['Data Comissao Loja']) !== mes) return false;
-    // aplica os demais filtros ativos
-    const tipo=$('fTipo').value, bco=$('fBco').value, parc=$('fParc').value, fil=$('fFil').value;
-    if (tipo && r.Tipo !== tipo) return false;
-    if (bco  && r.BCO  !== bco)  return false;
-    if (parc && r.Parceiro !== parc) return false;
-    if (fil  && String(r.Filial||'') !== fil) return false;
     return true;
   }).reduce((a,r) => a + (r['Base Comissao']||0)*com(r)/100, 0);
 
