@@ -10,100 +10,145 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
   :root {
-    --bg:#0d0f12; --surface:#141720; --surface2:#1c2030;
-    --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
-    --text:#e8eaf0; --muted:#6b7080;
-    --accent:#4f7cff; --accent2:#00d4a8; --accent3:#ff6b6b; --accent4:#f5a623;
-    --green:#22c55e; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    /* Paleta LF Promotora */
+    --preto:#000000;
+    --amarelo:#f7cb45;
+    --cinza:#3e4344;
+    --areia:#d1c9ca;
+
+    /* Mapeamento funcional */
+    --bg:#0e0f0f;
+    --surface:#1a1b1b;
+    --surface2:#242626;
+    --border:rgba(247,203,69,0.10);
+    --border2:rgba(247,203,69,0.22);
+    --text:#f0ece8;
+    --muted:#8a8580;
+    --accent:var(--amarelo);
+    --accent2:#f7cb45;
+    --accent3:#e05c4b;
+    --accent4:#f7cb45;
+    --green:#4cba7a;
+    --font:'DM Sans',sans-serif;
+    --mono:'DM Mono',monospace;
   }
+
   *{box-sizing:border-box;margin:0;padding:0}
   html{font-size:14px}
   body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
 
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:56px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100}
-  .topbar-brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px;letter-spacing:.03em}
-  .topbar-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2)}
-  .topbar-right{display:flex;align-items:center;gap:12px}
-  .status-pill{display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px}
+  /* ── TOPBAR ── */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:58px;border-bottom:2px solid var(--amarelo);background:var(--preto);position:sticky;top:0;z-index:100}
+  .topbar-brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:15px;letter-spacing:.04em;color:#fff}
+  .topbar-brand .dot{width:10px;height:10px;border-radius:50%;background:var(--amarelo);box-shadow:0 0 10px var(--amarelo)}
+  .topbar-brand .brand-tag{font-size:10px;font-family:var(--mono);font-weight:400;color:var(--amarelo);letter-spacing:.1em;background:rgba(247,203,69,.12);padding:2px 8px;border-radius:4px;border:1px solid rgba(247,203,69,.3)}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+  .status-pill{display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;padding:4px 12px}
   .status-pill .live{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .btn{background:var(--accent);border:none;color:#fff;font-family:var(--font);font-size:12px;font-weight:500;padding:6px 14px;border-radius:6px;cursor:pointer;transition:opacity .15s}
-  .btn:hover{opacity:.85}
+  .btn{background:var(--amarelo);border:none;color:var(--preto);font-family:var(--font);font-size:12px;font-weight:700;padding:7px 16px;border-radius:6px;cursor:pointer;transition:all .15s;letter-spacing:.02em}
+  .btn:hover{background:#ffd85a;transform:translateY(-1px)}
+  .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-size:12px;padding:6px 14px;border-radius:6px;cursor:pointer;transition:all .15s}
+  .btn-ghost:hover{border-color:var(--amarelo);color:var(--amarelo)}
 
-  #loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999}
-  .loader-ring{width:40px;height:40px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  /* ── LOADER ── */
+  #loader{position:fixed;inset:0;background:var(--preto);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999}
+  .loader-ring{width:44px;height:44px;border:2px solid rgba(247,203,69,.2);border-top-color:var(--amarelo);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   #loader-msg{font-size:12px;color:var(--muted);font-family:var(--mono)}
 
-  #error-box{display:none;max-width:480px;margin:80px auto;background:var(--surface);border:1px solid rgba(255,107,107,.3);border-radius:12px;padding:2rem;text-align:center}
+  /* ── ERROR ── */
+  #error-box{display:none;max-width:480px;margin:80px auto;background:var(--surface);border:1px solid rgba(224,92,75,.3);border-radius:12px;padding:2rem;text-align:center}
   #error-box h2{color:var(--accent3);margin-bottom:8px;font-size:16px}
   #error-box p{font-size:12px;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
   code{font-family:var(--mono);font-size:10px;background:var(--bg);border:1px solid var(--border2);padding:2px 6px;border-radius:4px;word-break:break-all}
 
   #app{display:none}
-  .container{max-width:1400px;margin:0 auto;padding:1.5rem 2rem}
+  .container{max-width:1440px;margin:0 auto;padding:1.5rem 2rem}
 
-  .filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem;padding:.85rem 1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:10px}
-  .filter-row label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
-  .filter-row select,.filter-row input[type=text]{background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--font);font-size:12px;padding:6px 10px;border-radius:6px;height:32px;outline:none;transition:border-color .15s}
-  .filter-row select:focus,.filter-row input:focus{border-color:var(--accent)}
-  .filter-row input[type=text]{width:190px}
-  .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-size:12px;padding:5px 14px;border-radius:6px;cursor:pointer;transition:all .15s}
-  .btn-ghost:hover{border-color:var(--accent3);color:var(--accent3)}
+  /* ── FILTROS ── */
+  .filter-section{margin-bottom:1.25rem}
+  .filter-title{font-size:10px;font-family:var(--mono);color:var(--amarelo);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .filter-title::after{content:'';flex:1;height:1px;background:var(--border)}
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;padding:1rem 1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+  .filter-group{display:flex;flex-direction:column;gap:4px}
+  .filter-group label{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
+  .filter-row select,.filter-row input[type=text],.filter-row input[type=date]{
+    background:var(--bg);border:1px solid var(--border2);color:var(--text);
+    font-family:var(--font);font-size:12px;padding:6px 10px;border-radius:6px;
+    height:34px;outline:none;transition:all .15s;
+  }
+  .filter-row select:focus,.filter-row input:focus{border-color:var(--amarelo);box-shadow:0 0 0 2px rgba(247,203,69,.15)}
+  .filter-row input[type=text]{width:180px}
+  .filter-row input[type=date]{width:140px;color-scheme:dark}
+  .filter-divider{width:1px;height:34px;background:var(--border);align-self:flex-end;margin:0 4px}
+  .filter-actions{display:flex;gap:6px;align-self:flex-end}
 
+  /* ── KPIs ── */
   .kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:1.25rem}
-  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;position:relative;overflow:hidden;transition:border-color .2s}
-  .kpi:hover{border-color:var(--border2)}
-  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-  .kpi:nth-child(1)::before{background:var(--accent)}
-  .kpi:nth-child(2)::before{background:var(--accent2)}
-  .kpi:nth-child(3)::before{background:var(--accent4)}
-  .kpi:nth-child(4)::before{background:var(--accent3)}
-  .kpi-label{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
-  .kpi-val{font-size:17px;font-weight:600;color:var(--text);line-height:1;margin-bottom:6px;word-break:break-all}
-  .kpi-sub{font-size:11px;color:var(--muted)}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;position:relative;overflow:hidden;transition:all .2s;cursor:default}
+  .kpi:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .kpi:nth-child(1)::before{background:var(--cinza)}
+  .kpi:nth-child(2)::before{background:var(--amarelo)}
+  .kpi:nth-child(3)::before{background:var(--green)}
+  .kpi:nth-child(4)::before{background:#e05c4b}
+  .kpi:nth-child(5)::before{background:var(--areia)}
+  .kpi::after{content:'';position:absolute;bottom:0;right:0;width:60px;height:60px;border-radius:50%;opacity:.04;background:var(--amarelo);transform:translate(20px,20px)}
+  .kpi-icon{font-size:18px;margin-bottom:8px;line-height:1}
+  .kpi-label{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+  .kpi-val{font-size:18px;font-weight:700;color:var(--text);line-height:1;margin-bottom:6px;word-break:break-all}
+  .kpi-sub{font-size:10px;color:var(--muted);font-family:var(--mono)}
 
-  .tab-bar{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;width:fit-content}
-  .tab{font-size:12px;font-weight:500;padding:6px 18px;border-radius:5px;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font)}
-  .tab.on{background:var(--accent);color:#fff}
+  /* ── TABS ── */
+  .tab-bar{display:flex;gap:0;margin-bottom:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;width:fit-content}
+  .tab{font-size:12px;font-weight:500;padding:7px 22px;border-radius:5px;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;font-family:var(--font);letter-spacing:.01em}
+  .tab.on{background:var(--amarelo);color:var(--preto);font-weight:700}
+  .tab:hover:not(.on){color:var(--text)}
   .panel{display:none}.panel.on{display:block}
 
+  /* ── CHARTS ── */
   .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-  .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem}
-  .chart-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:1rem}
+  .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;transition:border-color .2s}
+  .chart-box:hover{border-color:var(--border2)}
+  .chart-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--amarelo);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+  .chart-title::before{content:'';width:3px;height:12px;background:var(--amarelo);border-radius:2px}
   .chart-wrap{position:relative;height:210px}
   .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   .legend span{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:var(--mono)}
   .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 
-  .table-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-  .table-header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.25rem;border-bottom:1px solid var(--border)}
-  .table-header-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  /* ── TABLE ── */
+  .table-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .table-header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.4rem;border-bottom:1px solid var(--border);background:var(--surface2)}
+  .table-header-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--amarelo)}
   .table-scroll{overflow-x:auto}
   table{width:100%;border-collapse:collapse;font-size:12px}
-  th{text-align:left;padding:8px 12px;font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}
+  th{text-align:left;padding:9px 12px;font-size:9px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}
   td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap}
   tr:last-child td{border-bottom:none}
-  tr:hover td{background:rgba(79,124,255,.04)}
+  tr:hover td{background:rgba(247,203,69,.04)}
 
-  .badge{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;font-weight:500;white-space:nowrap}
-  .b-novo      {background:rgba(34,197,94,.12);   color:#22c55e; border:1px solid rgba(34,197,94,.2)}
-  .b-refin     {background:rgba(79,124,255,.12);  color:#4f7cff; border:1px solid rgba(79,124,255,.2)}
-  .b-port      {background:rgba(245,166,35,.12);  color:#f5a623; border:1px solid rgba(245,166,35,.2)}
-  .b-cart      {background:rgba(255,107,107,.12); color:#ff6b6b; border:1px solid rgba(255,107,107,.2)}
-  .b-ci        {background:rgba(0,212,168,.12);   color:#00d4a8; border:1px solid rgba(0,212,168,.2)}
-  .b-rp        {background:rgba(168,85,247,.12);  color:#a855f7; border:1px solid rgba(168,85,247,.2)}
-  .b-cd        {background:rgba(251,146,60,.12);  color:#fb923c; border:1px solid rgba(251,146,60,.2)}
-  .b-ep        {background:rgba(56,189,248,.12);  color:#38bdf8; border:1px solid rgba(56,189,248,.2)}
-  .b-cb        {background:rgba(244,114,182,.12); color:#f472b6; border:1px solid rgba(244,114,182,.2)}
-  .b-cbs       {background:rgba(163,230,53,.12);  color:#a3e635; border:1px solid rgba(163,230,53,.2)}
-  .b-cia       {background:rgba(250,204,21,.12);  color:#facc15; border:1px solid rgba(250,204,21,.2)}
-  .b-ac        {background:rgba(107,112,128,.12); color:#9ca3af; border:1px solid rgba(107,112,128,.2)}
+  /* ── BADGES ── */
+  .badge{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;font-weight:600;white-space:nowrap}
+  .b-novo {background:rgba(76,186,122,.15);color:#4cba7a;border:1px solid rgba(76,186,122,.25)}
+  .b-refin{background:rgba(247,203,69,.15);color:#f7cb45;border:1px solid rgba(247,203,69,.25)}
+  .b-port {background:rgba(209,201,202,.15);color:#d1c9ca;border:1px solid rgba(209,201,202,.25)}
+  .b-cart {background:rgba(224,92,75,.15);color:#e05c4b;border:1px solid rgba(224,92,75,.25)}
+  .b-ci   {background:rgba(62,67,68,.4);color:#a0a8aa;border:1px solid rgba(62,67,68,.6)}
+  .b-rp   {background:rgba(247,203,69,.1);color:#fbd96a;border:1px solid rgba(247,203,69,.2)}
+  .b-cd   {background:rgba(224,92,75,.1);color:#f08070;border:1px solid rgba(224,92,75,.2)}
+  .b-ep   {background:rgba(209,201,202,.1);color:#b8b2b3;border:1px solid rgba(209,201,202,.2)}
+  .b-cb   {background:rgba(76,186,122,.1);color:#7dd4a0;border:1px solid rgba(76,186,122,.2)}
+  .b-cbs  {background:rgba(247,203,69,.08);color:#f7cb45;border:1px solid rgba(247,203,69,.15)}
+  .b-cia  {background:rgba(62,67,68,.3);color:#8a9092;border:1px solid rgba(62,67,68,.5)}
+  .b-ac   {background:rgba(138,133,128,.12);color:#8a8580;border:1px solid rgba(138,133,128,.2)}
 
-  .pag-bar{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+  /* ── PAGINAÇÃO ── */
+  .pag-bar{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.4rem;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
   .pag-btns{display:flex;gap:6px}
-  .pag-btn{background:var(--bg);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-size:11px;padding:4px 12px;border-radius:5px;cursor:pointer;transition:all .15s}
-  .pag-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .pag-btn{background:var(--bg);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-size:11px;padding:5px 14px;border-radius:5px;cursor:pointer;transition:all .15s}
+  .pag-btn:hover:not(:disabled){border-color:var(--amarelo);color:var(--amarelo)}
   .pag-btn:disabled{opacity:.3;cursor:default}
 
   @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.chart-grid{grid-template-columns:1fr}}
@@ -115,13 +160,17 @@
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="topbar-brand"><div class="dot"></div>PROGESTOR · CONTRATOS</div>
+  <div class="topbar-brand">
+    <div class="dot"></div>
+    LF PROMOTORA
+    <span class="brand-tag">PAINEL DE CONTRATOS</span>
+  </div>
   <div class="topbar-right">
     <div class="status-pill"><div class="live"></div><span id="status-txt">iniciando</span></div>
     <div class="status-pill" style="gap:5px">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="flex-shrink:0"><circle cx="5" cy="5" r="4" stroke="var(--muted)" stroke-width="1.2"/><path d="M5 2.5V5L6.5 6.5" stroke="var(--muted)" stroke-width="1.2" stroke-linecap="round"/></svg>
       <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">próx.</span>
-      <span id="countdown" style="font-family:var(--mono);font-size:11px;font-weight:500;min-width:28px">60s</span>
+      <span id="countdown" style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--amarelo);min-width:28px">60s</span>
     </div>
     <span id="ts" style="font-size:11px;color:var(--muted);font-family:var(--mono)">—</span>
     <button class="btn-ghost" onclick="openUrlModal()" title="Configurar URL do JSON">⚙ URL</button>
@@ -160,24 +209,60 @@
 <div class="container">
 
   <!-- FILTROS -->
-  <div class="filter-row">
-    <label>Mês</label><select id="fMes"><option value="">Todos</option></select>
-    <label>Tipo</label><select id="fTipo"><option value="">Todos</option></select>
-    <label>Banco</label><select id="fBco"><option value="">Todos</option></select>
-    <label>Parceiro</label><select id="fParc"><option value="">Todos</option></select>
-    <label>Filial</label><select id="fFil"><option value="">Todas</option></select>
-    <label>Canal</label><select id="fCanal"><option value="">Todos</option></select>
-    <label>Busca</label><input type="text" id="srch" placeholder="Nome ou contrato...">
-    <button class="btn-ghost" onclick="clearFilters()">✕ Limpar</button>
+  <div class="filter-section">
+    <div class="filter-title">Filtros</div>
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Mês</label>
+        <select id="fMes"><option value="">Todos</option></select>
+      </div>
+      <div class="filter-group">
+        <label>De</label>
+        <input type="date" id="fDe" onchange="applyFilter()">
+      </div>
+      <div class="filter-group">
+        <label>Até</label>
+        <input type="date" id="fAte" onchange="applyFilter()">
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <label>Tipo</label>
+        <select id="fTipo"><option value="">Todos</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Banco</label>
+        <select id="fBco"><option value="">Todos</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Parceiro</label>
+        <select id="fParc"><option value="">Todos</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Filial</label>
+        <select id="fFil"><option value="">Todas</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Canal</label>
+        <select id="fCanal"><option value="">Todos</option></select>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <label>Busca</label>
+        <input type="text" id="srch" placeholder="Nome ou contrato...">
+      </div>
+      <div class="filter-actions">
+        <button class="btn-ghost" onclick="clearFilters()">✕ Limpar</button>
+      </div>
+    </div>
   </div>
 
   <!-- KPIs -->
   <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Total de contratos</div><div class="kpi-val" id="kTot">—</div><div class="kpi-sub" id="kTotS">—</div></div>
-    <div class="kpi"><div class="kpi-label">Valor liberado</div><div class="kpi-val" id="kVal">—</div><div class="kpi-sub" id="kValS">—</div></div>
-    <div class="kpi"><div class="kpi-label">Comissão loja</div><div class="kpi-val" id="kCom">—</div><div class="kpi-sub" id="kComS">—</div></div>
-    <div class="kpi"><div class="kpi-label">Líquido loja</div><div class="kpi-val" id="kLiq" style="color:var(--accent2)">—</div><div class="kpi-sub" id="kLiqS">—</div></div>
-    <div class="kpi"><div class="kpi-label">Ticket comissão</div><div class="kpi-val" id="kTick">—</div><div class="kpi-sub" id="kTickS">—</div></div>
+    <div class="kpi"><div class="kpi-icon">📋</div><div class="kpi-label">Total contratos</div><div class="kpi-val" id="kTot" style="color:var(--areia)">—</div><div class="kpi-sub" id="kTotS">—</div></div>
+    <div class="kpi"><div class="kpi-icon">💰</div><div class="kpi-label">Valor liberado</div><div class="kpi-val" id="kVal" style="color:var(--amarelo)">—</div><div class="kpi-sub" id="kValS">—</div></div>
+    <div class="kpi"><div class="kpi-icon">🏦</div><div class="kpi-label">Comissão loja</div><div class="kpi-val" id="kCom" style="color:var(--green)">—</div><div class="kpi-sub" id="kComS">—</div></div>
+    <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-label">Líquido loja</div><div class="kpi-val" id="kLiq" style="color:#4cba7a">—</div><div class="kpi-sub" id="kLiqS">—</div></div>
+    <div class="kpi"><div class="kpi-icon">🎯</div><div class="kpi-label">Ticket comissão</div><div class="kpi-val" id="kTick" style="color:var(--amarelo)">—</div><div class="kpi-sub" id="kTickS">—</div></div>
   </div>
 
   <!-- TABS -->
@@ -196,6 +281,10 @@
     <div class="chart-grid">
       <div class="chart-box"><div class="chart-title">Contratos por mês</div><div class="chart-wrap"><canvas id="cMes"></canvas></div></div>
       <div class="chart-box"><div class="chart-title">Valor por parceiro</div><div class="chart-wrap"><canvas id="cParc"></canvas></div><div class="legend" id="lgParc"></div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-box"><div class="chart-title">Valor por filial</div><div class="chart-wrap"><canvas id="cFil"></canvas></div><div class="legend" id="lgFil"></div></div>
+      <div class="chart-box"><div class="chart-title">Valor por canal de venda</div><div class="chart-wrap"><canvas id="cCanal"></canvas></div><div class="legend" id="lgCanal"></div></div>
     </div>
   </div>
 
@@ -336,7 +425,7 @@ const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
 let ALL=[], FILTERED=[], PAGE=0;
 const PER=20;
 let CHARTS={};
-const COLORS=['#4f7cff','#00d4a8','#f5a623','#ff6b6b','#a855f7','#22c55e','#fb923c','#38bdf8','#f472b6','#a3e635','#facc15','#6b7080'];
+const COLORS=['#f7cb45','#4cba7a','#3e4344','#e05c4b','#d1c9ca','#fbd96a','#7dd4a0','#a0a8aa','#f08070','#b8b2b3','#ffd85a','#6b8f6e'];
 const MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 // ── UTILS ─────────────────────────────────────────────────────
@@ -435,7 +524,9 @@ function buildFilters(){
 
 function applyFilter(){
   const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,fil=$('fFil').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
+  const fDe=$('fDe').value, fAte=$('fAte').value;
 
+  // quando seleciona mês, limpa período e vice-versa
   const baseFilter=r=>{
     if(tipo&&r.Tipo!==tipo)return false;
     if(bco&&r.BCO!==bco)return false;
@@ -450,9 +541,15 @@ function applyFilter(){
     if(mes){
       const mesLib = getMes(r['Data da Liberação'])  || '';
       const mesCom = getMes(r['Data Comissao Loja']) || '';
-      const bateLib = (mesLib === mes);
-      const bateCom = (mesCom === mes);
-      if(!bateLib && !bateCom) return false;
+      if(mesLib!==mes && mesCom!==mes) return false;
+    }
+    if(fDe||fAte){
+      const lib=r['Data da Liberação']||'';
+      const com=r['Data Comissao Loja']||'';
+      const dataRef=lib||com;
+      if(!dataRef) return false;
+      if(fDe && dataRef < fDe) return false;
+      if(fAte && dataRef > fAte) return false;
     }
     return baseFilter(r);
   });
@@ -460,7 +557,7 @@ function applyFilter(){
   PAGE=0; render();
 }
 
-function clearFilters(){['fMes','fTipo','fBco','fParc','fFil','fCanal'].forEach(id=>$(id).value='');$('srch').value='';applyFilter()}
+function clearFilters(){['fMes','fTipo','fBco','fParc','fFil','fCanal'].forEach(id=>$(id).value='');$('fDe').value='';$('fAte').value='';$('srch').value='';applyFilter()}
 ['fMes','fTipo','fBco','fParc','fFil','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
 const srchEl=$('srch');if(srchEl)srchEl.oninput=applyFilter;
 
@@ -532,6 +629,18 @@ function renderCharts(){
   mkChart('cMes','bar',mesLabels,mesArr.map(x=>x[1]),'#4f7cff',{ds:{backgroundColor:'#4f7cff'},scales:barScales});
   mkChart('cParc','doughnut',byParc.map(x=>x[0]),byParc.map(x=>x[1]),COLORS.slice(4,4+byParc.length),{extra:{cutout:'62%'}});
   makeLegend($('lgParc'),byParc.map(x=>x[0]),COLORS.slice(4));
+
+  // Filiais
+  const byFilRaw=groupBy(FILTERED,'Filial',val).slice(0,10);
+  const byFil=byFilRaw.map(([cod,v])=>[filialNome(cod),v]);
+  mkChart('cFil','doughnut',byFil.map(x=>x[0]),byFil.map(x=>x[1]),COLORS.slice(6,6+byFil.length),{extra:{cutout:'62%'}});
+  makeLegend($('lgFil'),byFil.map(x=>x[0]),COLORS.slice(6));
+
+  // Canais de venda
+  const byCanalRaw=groupBy(FILTERED,'Canaldevenda',val).slice(0,10);
+  const byCanal=byCanalRaw.map(([cod,v])=>[canalNome(cod),v]);
+  mkChart('cCanal','doughnut',byCanal.map(x=>x[0]),byCanal.map(x=>x[1]),COLORS.slice(8,8+byCanal.length),{extra:{cutout:'62%'}});
+  makeLegend($('lgCanal'),byCanal.map(x=>x[0]),COLORS.slice(8));
 }
 
 function renderCorretores(){
