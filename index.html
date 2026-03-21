@@ -166,6 +166,7 @@
     <label>Banco</label><select id="fBco"><option value="">Todos</option></select>
     <label>Parceiro</label><select id="fParc"><option value="">Todos</option></select>
     <label>Filial</label><select id="fFil"><option value="">Todas</option></select>
+    <label>Canal</label><select id="fCanal"><option value="">Todos</option></select>
     <label>Busca</label><input type="text" id="srch" placeholder="Nome ou contrato...">
     <button class="btn-ghost" onclick="clearFilters()">✕ Limpar</button>
   </div>
@@ -225,7 +226,7 @@
           <th>Parcelas</th><th>Valor Liberado</th><th>Base Comissão</th>
           <th>Com.%</th><th>Com. R$</th>
           <th>Liberação</th><th>Dt.Comissão</th><th>St.Comissão</th>
-          <th>Parceiro</th><th>Corretor</th><th>Filial</th>
+          <th>Canal</th><th>Parceiro</th><th>Corretor</th><th>Filial</th>
         </tr></thead>
         <tbody id="tbContr"></tbody></table>
       </div>
@@ -308,6 +309,28 @@ const FILIAIS = {
   '379': 'EXTERNO [ALIPIO LIMA]',
 };
 const filialNome = codigo => FILIAIS[String(codigo)] || String(codigo);
+
+// ── CANAIS DE VENDA ───────────────────────────────────────────
+const CANAIS = {
+  '27': 'URA ATENDE',
+  '28': 'ATIVO',
+  '29': 'SMS',
+  '30': 'DISPARADOR WHATSAPP',
+  '31': 'CALL CENTER MANUAL',
+  '32': 'INDICAÇÃO CLIENTE',
+  '34': 'LEAD TRÁFEGO PAGO',
+  '65': 'FACEBOOK | INSTAGRAM',
+  '78': 'POS-VENDA',
+  '79': 'INDICACAO FABRICIO',
+  '81': 'URA WHATSAPP',
+  '82': 'DISP. WHATSAPP RECEPTIVO',
+  '83': 'INDICAÇÃO ESRON MENEZES',
+  '84': 'DISCADORA',
+  '86': 'URA VOIP',
+  '87': 'ESTAGIÁRIO(A)',
+  '107': 'DISP WHATSAPP INTELIGENTE',
+};
+const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
 
 // ── ESTADO ────────────────────────────────────────────────────
 let ALL=[], FILTERED=[], PAGE=0;
@@ -403,16 +426,22 @@ function buildFilters(){
   const elFil=$('fFil'),curFil=elFil.value;
   elFil.innerHTML='<option value="">Todas</option>';
   filCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=filialNome(cod);if(cod===curFil)o.selected=true;elFil.appendChild(o)});
+  // Canal de venda
+  const canalCodes=[...new Set(ALL.map(r=>String(r.Canaldevenda||'')).filter(Boolean))].sort((a,b)=>Number(a)-Number(b));
+  const elCanal=$('fCanal'),curCanal=elCanal.value;
+  elCanal.innerHTML='<option value="">Todos</option>';
+  canalCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=canalNome(cod);if(cod===curCanal)o.selected=true;elCanal.appendChild(o)});
 }
 
 function applyFilter(){
-  const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,fil=$('fFil').value,srch=$('srch').value.toLowerCase().trim();
+  const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,fil=$('fFil').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
 
   const baseFilter=r=>{
     if(tipo&&r.Tipo!==tipo)return false;
     if(bco&&r.BCO!==bco)return false;
     if(parc&&r.Parceiro!==parc)return false;
     if(fil&&String(r.Filial||'')!==fil)return false;
+    if(canal&&String(r.Canaldevenda||'')!==canal)return false;
     if(srch&&!(r.Nome||'').toLowerCase().includes(srch)&&!(r.Contrato||'').toLowerCase().includes(srch))return false;
     return true;
   };
@@ -431,8 +460,8 @@ function applyFilter(){
   PAGE=0; render();
 }
 
-function clearFilters(){['fMes','fTipo','fBco','fParc','fFil'].forEach(id=>$(id).value='');$('srch').value='';applyFilter()}
-['fMes','fTipo','fBco','fParc','fFil'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
+function clearFilters(){['fMes','fTipo','fBco','fParc','fFil','fCanal'].forEach(id=>$(id).value='');$('srch').value='';applyFilter()}
+['fMes','fTipo','fBco','fParc','fFil','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
 const srchEl=$('srch');if(srchEl)srchEl.oninput=applyFilter;
 
 // ── RENDER ────────────────────────────────────────────────────
@@ -549,6 +578,7 @@ function renderTabela(){
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data Comissao Loja'])}</td>
     <td style="text-align:center">${stCom(r['Status Comissao Loja'])}</td>
+    <td style="font-size:11px;white-space:nowrap">${canalNome(r.Canaldevenda)||'—'}</td>
     <td style="font-size:11px;white-space:nowrap">${r.Parceiro||'—'}</td>
     <td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(r.Corretor||'—').trim()}</td>
     <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">${filialNome(r.Filial)||'—'}</td>
