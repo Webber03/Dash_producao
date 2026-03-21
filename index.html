@@ -406,7 +406,6 @@ function buildFilters(){
 function applyFilter(){
   const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,fil=$('fFil').value,srch=$('srch').value.toLowerCase().trim();
 
-  // filtros base (sem mês)
   const baseFilter=r=>{
     if(tipo&&r.Tipo!==tipo)return false;
     if(bco&&r.BCO!==bco)return false;
@@ -416,22 +415,16 @@ function applyFilter(){
     return true;
   };
 
-  if(!mes){
-    FILTERED=ALL.filter(baseFilter);
-  } else {
-    // une contratos que aparecem no mês por qualquer das duas datas, sem duplicatas
-    const seen=new Set();
-    FILTERED=ALL.filter(r=>{
-      const mesLib=getMes(r['Data da Liberação']);
-      const mesCom=getMes(r['Data Comissao Loja']);
-      if(mesLib!==mes && mesCom!==mes) return false;
-      if(!baseFilter(r)) return false;
-      const key=r.Contrato||r.Nome||Math.random();
-      if(seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
+  FILTERED=ALL.filter(r=>{
+    if(mes){
+      const mesLib = getMes(r['Data da Liberação'])  || '';
+      const mesCom = getMes(r['Data Comissao Loja']) || '';
+      const bateLib = (mesLib === mes);
+      const bateCom = (mesCom === mes);
+      if(!bateLib && !bateCom) return false;
+    }
+    return baseFilter(r);
+  });
 
   PAGE=0; render();
 }
