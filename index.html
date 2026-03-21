@@ -355,7 +355,7 @@ function reloadData(){ stopAutoRefresh(); loadData(); }
 
 // ── INIT ──────────────────────────────────────────────────────
 function initData(data) {
-  ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0)}));
+  ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0)}));
   hide('loader'); hide('error-box'); show('app');
   $('status-txt').textContent=ALL.length+' registros';
   $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
@@ -433,7 +433,7 @@ function renderKpis(){
     if (parc && r.Parceiro !== parc) return false;
     if (fil  && String(r.Filial||'') !== fil) return false;
     return true;
-  }).reduce((a,r) => a + val(r)*com(r)/100, 0);
+  }).reduce((a,r) => a + (r['Base Comissao']||0)*com(r)/100, 0);
 
   $('kTot').textContent  = tot.toLocaleString('pt-BR');
   $('kTotS').textContent = 'de ' + ALL.length + ' totais';
@@ -531,7 +531,7 @@ async function silentReload(){
       ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
       : 'trigger.php?_t=' + Date.now();
     const data = await fetchJSON(endpoint, manualUrl ? 10000 : 50000);
-    ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0)}));
+    ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0)}));
     $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
     $('status-txt').textContent=ALL.length+' registros';
     buildFilters(); applyFilter();
