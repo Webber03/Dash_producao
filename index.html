@@ -176,7 +176,7 @@
     <div class="kpi"><div class="kpi-label">Valor liberado</div><div class="kpi-val" id="kVal">—</div><div class="kpi-sub" id="kValS">—</div></div>
     <div class="kpi"><div class="kpi-label">Comissão loja</div><div class="kpi-val" id="kCom">—</div><div class="kpi-sub" id="kComS">—</div></div>
     <div class="kpi"><div class="kpi-label">Líquido loja</div><div class="kpi-val" id="kLiq" style="color:var(--accent2)">—</div><div class="kpi-sub" id="kLiqS">—</div></div>
-    <div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-val" id="kTick">—</div><div class="kpi-sub" id="kTickS">—</div></div>
+    <div class="kpi"><div class="kpi-label">Ticket comissão</div><div class="kpi-val" id="kTick">—</div><div class="kpi-sub" id="kTickS">—</div></div>
   </div>
 
   <!-- TABS -->
@@ -472,8 +472,10 @@ function renderKpis(){
   $('kComS').textContent = 'por Data Comissão Loja';
   $('kLiq').textContent  = fmtK(sumL);
   $('kLiqS').textContent = sumD>0 ? '− '+fmtK(sumD)+' descontos' : 'sem descontos';
-  $('kTick').textContent  = fmtK(tick);
-  $('kTickS').textContent = 'por contrato';
+  const comRows = FILTERED.filter(r => !mes || getMes(r['Data Comissao Loja']) === mes);
+  const tickCom = comRows.length ? sumC / comRows.length : 0;
+  $('kTick').textContent  = fmtK(tickCom);
+  $('kTickS').textContent = 'ticket médio de comissão';
 }
 
 function groupBy(arr,key,valFn){const m={};arr.forEach(r=>{const k=r[key]||'—';m[k]=(m[k]||0)+valFn(r)});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
