@@ -51,7 +51,7 @@
   .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-size:12px;padding:5px 14px;border-radius:6px;cursor:pointer;transition:all .15s}
   .btn-ghost:hover{border-color:var(--accent3);color:var(--accent3)}
 
-  .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:1.25rem}
+  .kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:1.25rem}
   .kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;position:relative;overflow:hidden;transition:border-color .2s}
   .kpi:hover{border-color:var(--border2)}
   .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
@@ -106,6 +106,7 @@
   .pag-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
   .pag-btn:disabled{opacity:.3;cursor:default}
 
+  @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.chart-grid{grid-template-columns:1fr}}
   @media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.chart-grid{grid-template-columns:1fr}}
   @media(max-width:600px){.kpi-grid{grid-template-columns:1fr}.container{padding:1rem}}
 </style>
