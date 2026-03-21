@@ -212,13 +212,22 @@
     <div class="table-box">
       <div class="table-header">
         <span class="table-header-title">Lista de contratos</span>
-        <span style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="tblCount">—</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="tblCount">—</span>
+          <button class="pag-btn" id="bVerTudo" onclick="toggleVerTudo()" style="font-size:11px;padding:4px 12px">Ver tudo</button>
+        </div>
       </div>
       <div class="table-scroll">
-        <table><thead><tr><th>Nome</th><th>Contrato</th><th>Banco</th><th>Tipo</th><th>Produto</th><th>Valor Liberado</th><th>Comissão%</th><th>Liberação</th><th>Parceiro</th><th>Corretor</th><th>Filial</th></tr></thead>
+        <table><thead><tr>
+          <th>Nome</th><th>CPF</th><th>Contrato</th><th>Banco</th><th>Tipo</th><th>Produto</th>
+          <th>Parcelas</th><th>Valor Liberado</th><th>Base Comissão</th>
+          <th>Com.%</th><th>Com. R$</th>
+          <th>Liberação</th><th>Dt.Comissão</th><th>St.Comissão</th>
+          <th>Parceiro</th><th>Corretor</th><th>Filial</th>
+        </tr></thead>
         <tbody id="tbContr"></tbody></table>
       </div>
-      <div class="pag-bar">
+      <div class="pag-bar" id="pagBar">
         <span id="pInfo" style="font-family:var(--mono)">—</span>
         <div class="pag-btns">
           <button class="pag-btn" id="bPrev" onclick="changePage(-1)">← Anterior</button>
@@ -477,25 +486,53 @@ function renderCorretores(){
   $('tbCorr').innerHTML=Object.entries(m).sort((a,b)=>b[1].v-a[1].v).map(([nome,d],i)=>`<tr><td style="color:var(--muted);font-family:var(--mono)">${i+1}</td><td style="font-weight:500">${nome}</td><td style="font-family:var(--mono)">${d.n}</td><td style="font-family:var(--mono)">${fmt(d.v)}</td><td style="font-family:var(--mono)">${fmt(d.c)}</td><td style="font-family:var(--mono)">${fmt(d.v/d.n)}</td></tr>`).join('');
 }
 
+let VER_TUDO = false;
+function toggleVerTudo(){
+  VER_TUDO=!VER_TUDO;
+  $('bVerTudo').textContent=VER_TUDO?'Paginar':'Ver tudo';
+  $('bVerTudo').style.background=VER_TUDO?'var(--accent2)':'';
+  $('bVerTudo').style.color=VER_TUDO?'#000':'';
+  $('pagBar').style.display=VER_TUDO?'none':'flex';
+  PAGE=0; renderTabela();
+}
+
+function stCom(s){
+  if(!s) return '—';
+  if(s==='RECEBIDA') return '<span style="color:var(--green);font-size:10px;font-weight:600">✓ REC</span>';
+  if(s==='PENDENTE') return '<span style="color:var(--accent4);font-size:10px;font-weight:600">⏳ PEN</span>';
+  return `<span style="font-size:10px">${s}</span>`;
+}
+
 function renderTabela(){
   const pages=Math.max(1,Math.ceil(FILTERED.length/PER));if(PAGE>=pages)PAGE=0;
-  const slice=FILTERED.slice(PAGE*PER,(PAGE+1)*PER);
+  const slice=VER_TUDO ? FILTERED : FILTERED.slice(PAGE*PER,(PAGE+1)*PER);
   $('tblCount').textContent=FILTERED.length+' registros';
-  $('tbContr').innerHTML=slice.map(r=>`<tr>
-    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;font-weight:500">${r.Nome||'—'}</td>
+  const baseC=r=>parseFloat(r['Base Comissao']||0);
+  $('tbContr').innerHTML=slice.map(r=>{
+    const comR=(baseC(r)*com(r)/100);
+    return `<tr>
+    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;font-weight:500;white-space:nowrap">${r.Nome||'—'}</td>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.CPF||'—'}</td>
     <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.Contrato||'—'}</td>
-    <td>${r.BCO||'—'}</td>
-    <td><span class="badge ${TIPO_BADGE[r.Tipo]||'b-ac'}">${r.Tipo||'—'}</span></td>
-    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--muted)">${r.Produto||'—'}</td>
-    <td style="font-family:var(--mono);text-align:right">${fmt(val(r))}</td>
+    <td style="font-size:11px;white-space:nowrap">${r.BCO||'—'}</td>
+    <td><span class="badge ${TIPO_BADGE[(r.Tipo||'').trim()]||'b-ac'}">${(r.Tipo||'—').trim()}</span></td>
+    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--muted);white-space:nowrap">${r.Produto||'—'}</td>
+    <td style="font-family:var(--mono);text-align:center">${r['QuantidadedePrestação']||'—'}</td>
+    <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(val(r))}</td>
+    <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(baseC(r))}</td>
     <td style="font-family:var(--mono);text-align:right">${com(r).toFixed(2)}%</td>
-    <td style="font-family:var(--mono)">${fmtData(r['Data da Liberação'])}</td>
-    <td style="font-size:11px">${r.Parceiro||'—'}</td>
-    <td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis">${(r.Corretor||'—').trim()}</td>
-    <td style="font-family:var(--mono)">${filialNome(r.Filial)||'—'}</td>
-  </tr>`).join('');
-  $('pInfo').textContent=`Pág. ${PAGE+1} de ${pages}`;
-  $('bPrev').disabled=PAGE===0;$('bNext').disabled=PAGE>=pages-1;
+    <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:var(--accent2)">${comR>0?fmt(comR):'—'}</td>
+    <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
+    <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data Comissao Loja'])}</td>
+    <td style="text-align:center">${stCom(r['Status Comissao Loja'])}</td>
+    <td style="font-size:11px;white-space:nowrap">${r.Parceiro||'—'}</td>
+    <td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(r.Corretor||'—').trim()}</td>
+    <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">${filialNome(r.Filial)||'—'}</td>
+  </tr>`;}).join('');
+  if(!VER_TUDO){
+    $('pInfo').textContent=`Pág. ${PAGE+1} de ${pages} — ${FILTERED.length} registros`;
+    $('bPrev').disabled=PAGE===0;$('bNext').disabled=PAGE>=pages-1;
+  }
 }
 
 function changePage(d){PAGE+=d;renderTabela()}
