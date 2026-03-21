@@ -557,18 +557,22 @@ async function loadData() {
     try {
       const data = await fetchJSON('proxy.php?url=' + encodeURIComponent(manualUrl));
       initData(data); return;
-    } catch(e) {}
+    } catch(e) {
+      console.warn('proxy.php falhou:', e.message);
+    }
   }
 
-  // Modo automático — trigger.php acessa o progestor e retorna JSON fresco
-  $('loader-msg').textContent = 'buscando dados atualizados do progestor...';
+  // Modo automático — trigger.php
+  $('loader-msg').textContent = 'buscando dados via trigger.php...';
   try {
-    const data = await fetchJSON('trigger.php?_t=' + Date.now(), 50000);
+    const data = await fetchJSON('trigger.php?_t=' + Date.now(), 55000);
     initData(data); return;
-  } catch(e) {}
+  } catch(e) {
+    console.warn('trigger.php falhou:', e.message);
+    $('loader-msg').textContent = 'trigger.php falhou — tente configurar a URL manualmente';
+  }
 
-  $('loader-msg').textContent = 'não foi possível carregar os dados';
-  setTimeout(() => { hide('loader'); show('error-box'); $('status-txt').textContent = 'erro'; }, 600);
+  setTimeout(() => { hide('loader'); show('error-box'); $('status-txt').textContent = 'erro'; }, 800);
 }
 
 async function fetchJSON(url, timeout=10000) {
@@ -595,8 +599,12 @@ function initData(data) {
   startAutoRefresh();
 }
 
-function show(id){$(id).style.display='block'}
-function hide(id){$(id).style.display='none'}
+function show(id){
+  const el=$(id);if(!el)return;
+  if(id==='app') el.style.display='block'; // .page interno já é grid
+  else el.style.display='block';
+}
+function hide(id){const el=$(id);if(el)el.style.display='none';}
 
 // ── FILTROS ───────────────────────────────────────────────────
 function buildFilters(){
