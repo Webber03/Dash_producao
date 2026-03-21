@@ -173,7 +173,7 @@
   <div class="kpi-grid">
     <div class="kpi"><div class="kpi-label">Total de contratos</div><div class="kpi-val" id="kTot">—</div><div class="kpi-sub" id="kTotS">—</div></div>
     <div class="kpi"><div class="kpi-label">Valor liberado</div><div class="kpi-val" id="kVal">—</div><div class="kpi-sub" id="kValS">—</div></div>
-    <div class="kpi"><div class="kpi-label">Comissão loja estimada</div><div class="kpi-val" id="kCom">—</div><div class="kpi-sub" id="kComS">—</div></div>
+    <div class="kpi"><div class="kpi-label">Comissão loja</div><div class="kpi-val" id="kCom">—</div><div class="kpi-sub" id="kComS">—</div></div>
     <div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-val" id="kTick">—</div><div class="kpi-sub" id="kTickS">—</div></div>
   </div>
 
@@ -374,7 +374,10 @@ function buildFilters(){
     el.innerHTML=`<option value="">${allLabel}</option>`;
     arr.forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o)});
   };
-  const meses=[...new Set(ALL.map(r=>getMes(r['Data da Liberação'])).filter(Boolean))].sort();
+  // Meses — une Data da Liberação + Data Comissao Loja para cobrir ambos os KPIs
+  const mesesLib = ALL.map(r=>getMes(r['Data da Liberação'])).filter(Boolean);
+  const mesesCom = ALL.map(r=>getMes(r['Data Comissao Loja'])).filter(Boolean);
+  const meses = [...new Set([...mesesLib, ...mesesCom])].sort();
   const elMes=$('fMes'),curM=elMes.value;
   elMes.innerHTML='<option value="">Todos</option>';
   meses.forEach(m=>{const[y,mo]=m.split('-'),o=document.createElement('option');o.value=m;o.textContent=MES[parseInt(mo)-1]+'/'+y.slice(2);if(m===curM)o.selected=true;elMes.appendChild(o)});
@@ -413,11 +416,33 @@ const srchEl=$('srch');if(srchEl)srchEl.oninput=applyFilter;
 function render(){renderKpis();renderCharts();renderCorretores();renderTabela()}
 
 function renderKpis(){
-  const tot=FILTERED.length,sumV=FILTERED.reduce((a,r)=>a+val(r),0),sumC=FILTERED.reduce((a,r)=>a+val(r)*com(r)/100,0),tick=tot?sumV/tot:0;
-  $('kTot').textContent=tot.toLocaleString('pt-BR');$('kTotS').textContent='de '+ALL.length+' totais';
-  $('kVal').textContent=fmtK(sumV);$('kValS').textContent='base de comissão equivalente';
-  $('kCom').textContent=fmtK(sumC);$('kComS').textContent='calculado sobre valor liberado';
-  $('kTick').textContent=fmtK(tick);$('kTickS').textContent='por contrato';
+  const mes = $('fMes').value;
+
+  // Produção: filtra por Data da Liberação (já aplicado em FILTERED)
+  const tot  = FILTERED.length;
+  const sumV = FILTERED.reduce((a,r)=>a+val(r), 0);
+  const tick = tot ? sumV/tot : 0;
+
+  // Comissão Loja: filtra por Data Comissao Loja (independente do filtro de produção)
+  const sumC = ALL.filter(r => {
+    if (mes && getMes(r['Data Comissao Loja']) !== mes) return false;
+    // aplica os demais filtros ativos
+    const tipo=$('fTipo').value, bco=$('fBco').value, parc=$('fParc').value, fil=$('fFil').value;
+    if (tipo && r.Tipo !== tipo) return false;
+    if (bco  && r.BCO  !== bco)  return false;
+    if (parc && r.Parceiro !== parc) return false;
+    if (fil  && String(r.Filial||'') !== fil) return false;
+    return true;
+  }).reduce((a,r) => a + val(r)*com(r)/100, 0);
+
+  $('kTot').textContent  = tot.toLocaleString('pt-BR');
+  $('kTotS').textContent = 'de ' + ALL.length + ' totais';
+  $('kVal').textContent  = fmtK(sumV);
+  $('kValS').textContent = 'valor total liberado';
+  $('kCom').textContent  = fmtK(sumC);
+  $('kComS').textContent = 'por Data Comissão Loja';
+  $('kTick').textContent  = fmtK(tick);
+  $('kTickS').textContent = 'por contrato';
 }
 
 function groupBy(arr,key,valFn){const m={};arr.forEach(r=>{const k=r[key]||'—';m[k]=(m[k]||0)+valFn(r)});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
