@@ -419,11 +419,18 @@ function applyFilter(){
   if(!mes){
     FILTERED=ALL.filter(baseFilter);
   } else {
-    // contratos com liberação no mês
-    const porLib=ALL.filter(r=>getMes(r['Data da Liberação'])===mes && baseFilter(r));
-    // contratos com comissão no mês MAS liberação em mês diferente (evita duplicatas)
-    const porCom=ALL.filter(r=>getMes(r['Data Comissao Loja'])===mes && getMes(r['Data da Liberação'])!==mes && baseFilter(r));
-    FILTERED=[...porLib, ...porCom];
+    // une contratos que aparecem no mês por qualquer das duas datas, sem duplicatas
+    const seen=new Set();
+    FILTERED=ALL.filter(r=>{
+      const mesLib=getMes(r['Data da Liberação']);
+      const mesCom=getMes(r['Data Comissao Loja']);
+      if(mesLib!==mes && mesCom!==mes) return false;
+      if(!baseFilter(r)) return false;
+      const key=r.Contrato||r.Nome||Math.random();
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   PAGE=0; render();
