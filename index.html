@@ -6,217 +6,240 @@
 <title>Painel de Contratos — Progestor</title>
 <!-- Ícone: substitua o href pelo caminho do seu ícone no servidor -->
 <link rel="icon" type="image/png" href="/icon.png">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    /* Paleta LF Promotora */
-    --preto:#000000;
-    --amarelo:#f7cb45;
-    --cinza:#3e4344;
-    --areia:#d1c9ca;
-
-    /* Mapeamento funcional */
-    --bg:#0e0f0f;
-    --surface:#1a1b1b;
-    --surface2:#242626;
-    --border:rgba(247,203,69,0.10);
-    --border2:rgba(247,203,69,0.22);
-    --text:#f0ece8;
-    --muted:#8a8580;
-    --accent:var(--amarelo);
-    --accent2:#f7cb45;
-    --accent3:#e05c4b;
-    --accent4:#f7cb45;
-    --green:#4cba7a;
-    --font:'DM Sans',sans-serif;
-    --mono:'DM Mono',monospace;
+    --y:#f7cb45; --y-dim:rgba(247,203,69,.12); --y-glow:rgba(247,203,69,.08);
+    --bg:#09090b; --s1:#111113; --s2:#18181b; --s3:#232326;
+    --b1:rgba(255,255,255,.06); --b2:rgba(255,255,255,.10); --b3:rgba(255,255,255,.16);
+    --t1:#fafafa; --t2:#a1a1aa; --t3:#52525b;
+    --green:#22c55e; --red:#ef4444;
+    --r:8px; --r2:12px; --r3:16px;
+    --font:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 4px 12px rgba(0,0,0,.3);
+    --shadow-lg:0 4px 24px rgba(0,0,0,.5),0 1px 4px rgba(0,0,0,.4);
   }
-
   *{box-sizing:border-box;margin:0;padding:0}
-  html{font-size:14px}
-  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+  html{font-size:14px;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);color:var(--t1);font-family:var(--font);min-height:100vh;line-height:1.5}
 
-  /* ── TOPBAR ── */
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:58px;border-bottom:2px solid var(--amarelo);background:var(--preto);position:sticky;top:0;z-index:100}
-  .topbar-brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:15px;letter-spacing:.04em;color:#fff}
-  .topbar-brand .dot{width:10px;height:10px;border-radius:50%;background:var(--amarelo);box-shadow:0 0 10px var(--amarelo)}
-  .topbar-brand .brand-tag{font-size:10px;font-family:var(--mono);font-weight:400;color:var(--amarelo);letter-spacing:.1em;background:rgba(247,203,69,.12);padding:2px 8px;border-radius:4px;border:1px solid rgba(247,203,69,.3)}
-  .topbar-right{display:flex;align-items:center;gap:10px}
-  .status-pill{display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;padding:4px 12px}
-  .status-pill .live{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .btn{background:var(--amarelo);border:none;color:var(--preto);font-family:var(--font);font-size:12px;font-weight:700;padding:7px 16px;border-radius:6px;cursor:pointer;transition:all .15s;letter-spacing:.02em}
-  .btn:hover{background:#ffd85a;transform:translateY(-1px)}
-  .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-size:12px;padding:6px 14px;border-radius:6px;cursor:pointer;transition:all .15s}
-  .btn-ghost:hover{border-color:var(--amarelo);color:var(--amarelo)}
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--b3);border-radius:99px}
 
-  /* ── LOADER ── */
-  #loader{position:fixed;inset:0;background:var(--preto);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999}
-  .loader-ring{width:44px;height:44px;border:2px solid rgba(247,203,69,.2);border-top-color:var(--amarelo);border-radius:50%;animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  #loader-msg{font-size:12px;color:var(--muted);font-family:var(--mono)}
-
-  /* ── ERROR ── */
-  #error-box{display:none;max-width:480px;margin:80px auto;background:var(--surface);border:1px solid rgba(224,92,75,.3);border-radius:12px;padding:2rem;text-align:center}
-  #error-box h2{color:var(--accent3);margin-bottom:8px;font-size:16px}
-  #error-box p{font-size:12px;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
-  code{font-family:var(--mono);font-size:10px;background:var(--bg);border:1px solid var(--border2);padding:2px 6px;border-radius:4px;word-break:break-all}
-
-  #app{display:none}
-  .container{max-width:1440px;margin:0 auto;padding:1.5rem 2rem}
-
-  /* ── FILTROS ── */
-  .filter-section{margin-bottom:1.25rem}
-  .filter-title{font-size:10px;font-family:var(--mono);color:var(--amarelo);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
-  .filter-title::after{content:'';flex:1;height:1px;background:var(--border)}
-  .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;padding:1rem 1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:10px}
-  .filter-group{display:flex;flex-direction:column;gap:4px}
-  .filter-group label{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
-  .filter-row select,.filter-row input[type=text],.filter-row input[type=date]{
-    background:var(--bg);border:1px solid var(--border2);color:var(--text);
-    font-family:var(--font);font-size:12px;padding:6px 10px;border-radius:6px;
-    height:34px;outline:none;transition:all .15s;
+  /* TOPBAR */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 1.75rem;height:56px;
+    background:var(--s1);
+    border-bottom:1px solid var(--b1);
+    position:sticky;top:0;z-index:100;
+    backdrop-filter:blur(12px);
   }
-  .filter-row select:focus,.filter-row input:focus{border-color:var(--amarelo);box-shadow:0 0 0 2px rgba(247,203,69,.15)}
-  .filter-row input[type=text]{width:180px}
-  .filter-row input[type=date]{width:140px;color-scheme:dark}
-  .filter-divider{width:1px;height:34px;background:var(--border);align-self:flex-end;margin:0 4px}
-  .filter-actions{display:flex;gap:6px;align-self:flex-end}
+  .topbar-brand{display:flex;align-items:center;gap:10px}
+  .brand-logo{width:28px;height:28px;background:var(--y);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#000;letter-spacing:-.03em;flex-shrink:0}
+  .brand-name{font-size:13px;font-weight:600;color:var(--t1);letter-spacing:-.01em}
+  .brand-sep{width:1px;height:14px;background:var(--b2);margin:0 2px}
+  .brand-sub{font-size:12px;color:var(--t3);font-weight:400}
+  .topbar-right{display:flex;align-items:center;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--t3);background:var(--s2);border:1px solid var(--b1);border-radius:99px;padding:3px 10px;white-space:nowrap}
+  .chip .live{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
+  .chip-y{color:var(--y);border-color:rgba(247,203,69,.2);background:var(--y-dim)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .btn{background:var(--y);border:none;color:#000;font-family:var(--font);font-size:12px;font-weight:600;padding:0 14px;height:32px;border-radius:var(--r);cursor:pointer;transition:all .15s;white-space:nowrap;letter-spacing:-.01em}
+  .btn:hover{filter:brightness(1.1)}
+  .btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--t2);font-family:var(--font);font-size:12px;font-weight:500;padding:0 12px;height:32px;border-radius:var(--r);cursor:pointer;transition:all .15s;white-space:nowrap}
+  .btn-ghost:hover{border-color:var(--b3);color:var(--t1)}
+  .btn-link{background:none;border:none;color:var(--t3);font-family:var(--font);font-size:12px;padding:0 8px;height:32px;border-radius:var(--r);cursor:pointer;transition:color .15s}
+  .btn-link:hover{color:var(--t1)}
 
-  /* ── KPIs ── */
-  .kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:1.25rem}
-  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;position:relative;overflow:hidden;transition:all .2s;cursor:default}
-  .kpi:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
-  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-  .kpi:nth-child(1)::before{background:var(--cinza)}
-  .kpi:nth-child(2)::before{background:var(--amarelo)}
-  .kpi:nth-child(3)::before{background:var(--green)}
-  .kpi:nth-child(4)::before{background:#e05c4b}
-  .kpi:nth-child(5)::before{background:var(--areia)}
-  .kpi::after{content:'';position:absolute;bottom:0;right:0;width:60px;height:60px;border-radius:50%;opacity:.04;background:var(--amarelo);transform:translate(20px,20px)}
-  .kpi-icon{font-size:18px;margin-bottom:8px;line-height:1}
-  .kpi-label{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-  .kpi-val{font-size:18px;font-weight:700;color:var(--text);line-height:1;margin-bottom:6px;word-break:break-all}
-  .kpi-sub{font-size:10px;color:var(--muted);font-family:var(--mono)}
+  /* LOADER */
+  #loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:999}
+  .loader-ring{width:36px;height:36px;border:2px solid var(--b2);border-top-color:var(--y);border-radius:50%;animation:spin .75s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loader-msg{font-size:12px;color:var(--t3);font-family:var(--mono)}
 
-  /* ── TABS ── */
-  .tab-bar{display:flex;gap:0;margin-bottom:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;width:fit-content}
-  .tab{font-size:12px;font-weight:500;padding:7px 22px;border-radius:5px;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;font-family:var(--font);letter-spacing:.01em}
-  .tab.on{background:var(--amarelo);color:var(--preto);font-weight:700}
-  .tab:hover:not(.on){color:var(--text)}
+  /* ERROR */
+  #error-box{display:none;max-width:420px;margin:80px auto;background:var(--s2);border:1px solid rgba(239,68,68,.2);border-radius:var(--r2);padding:2rem;text-align:center}
+  #error-box h2{color:var(--red);font-size:15px;font-weight:600;margin-bottom:8px}
+  #error-box p{font-size:12px;color:var(--t3);line-height:1.6;margin-bottom:1.5rem}
+  code{font-family:var(--mono);font-size:10px;background:var(--s3);border:1px solid var(--b2);padding:1px 6px;border-radius:4px;word-break:break-all;color:var(--t2)}
+
+  /* LAYOUT */
+  #app{display:none}
+  .page{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 56px)}
+
+  /* SIDEBAR */
+  .sidebar{background:var(--s1);border-right:1px solid var(--b1);padding:1.25rem 0;display:flex;flex-direction:column;gap:2px;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+  .sidebar-section{padding:0 .75rem;margin-bottom:.25rem}
+  .sidebar-label{font-size:10px;font-family:var(--mono);font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;padding:.5rem .75rem .25rem;margin-top:.5rem}
+  .nav-item{display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:500;color:var(--t2);border:none;background:none;width:100%;text-align:left;transition:all .15s;font-family:var(--font)}
+  .nav-item:hover{background:var(--s2);color:var(--t1)}
+  .nav-item.on{background:var(--y-dim);color:var(--y);border:1px solid rgba(247,203,69,.15)}
+  .nav-item.on .nav-icon{color:var(--y)}
+  .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+  .sidebar-divider{height:1px;background:var(--b1);margin:.75rem .75rem}
+  .sidebar-footer{margin-top:auto;padding:.75rem;border-top:1px solid var(--b1)}
+  .sidebar-stat{padding:.6rem .75rem;border-radius:var(--r);background:var(--s2);border:1px solid var(--b1)}
+  .sidebar-stat-label{font-size:10px;color:var(--t3);font-family:var(--mono);margin-bottom:2px}
+  .sidebar-stat-val{font-size:13px;font-weight:600;color:var(--t1)}
+
+  /* MAIN CONTENT */
+  .main{padding:1.75rem 2rem;min-width:0}
+
+  /* SECTION HEADER */
+  .section-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;gap:16px}
+  .section-title{font-size:18px;font-weight:600;color:var(--t1);letter-spacing:-.02em;line-height:1.2}
+  .section-desc{font-size:13px;color:var(--t3);margin-top:3px}
+  .section-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+  /* FILTER BAR */
+  .filter-bar{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .fgroup{display:flex;flex-direction:column;gap:4px}
+  .fgroup label{font-size:10px;font-family:var(--mono);color:var(--t3);text-transform:uppercase;letter-spacing:.07em;padding-left:1px}
+  .filter-bar select,.filter-bar input{
+    background:var(--s2);border:1px solid var(--b2);color:var(--t1);
+    font-family:var(--font);font-size:12px;
+    padding:0 10px;height:32px;border-radius:var(--r);
+    outline:none;transition:all .15s;
+  }
+  .filter-bar select:hover,.filter-bar input:hover{border-color:var(--b3)}
+  .filter-bar select:focus,.filter-bar input:focus{border-color:rgba(247,203,69,.5);box-shadow:0 0 0 3px var(--y-glow)}
+  .filter-bar input[type=text]{width:175px}
+  .filter-bar input[type=date]{width:135px;color-scheme:dark}
+  .fdiv{width:1px;height:32px;background:var(--b1);align-self:flex-end;margin:0 2px}
+  .filter-bar .actions{display:flex;gap:6px;align-self:flex-end}
+  .filter-active-count{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:var(--y);color:#000;border-radius:99px;font-size:9px;font-weight:700;margin-left:4px}
+
+  /* KPI GRID */
+  .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.5rem}
+  .kpi{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:1.1rem 1.25rem;transition:all .2s;cursor:default;position:relative;overflow:hidden}
+  .kpi:hover{border-color:var(--b2);box-shadow:var(--shadow)}
+  .kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+  .kpi-label{font-size:11px;font-weight:500;color:var(--t3);letter-spacing:-.01em}
+  .kpi-icon-wrap{width:28px;height:28px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .kpi:nth-child(1) .kpi-icon-wrap{background:rgba(82,82,91,.2);border:1px solid rgba(82,82,91,.3)}
+  .kpi:nth-child(2) .kpi-icon-wrap{background:rgba(247,203,69,.1);border:1px solid rgba(247,203,69,.2)}
+  .kpi:nth-child(3) .kpi-icon-wrap{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2)}
+  .kpi:nth-child(4) .kpi-icon-wrap{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15)}
+  .kpi:nth-child(5) .kpi-icon-wrap{background:rgba(247,203,69,.08);border:1px solid rgba(247,203,69,.15)}
+  .kpi-val{font-size:20px;font-weight:700;letter-spacing:-.03em;line-height:1;margin-bottom:5px;color:var(--t1)}
+  .kpi:nth-child(2) .kpi-val{color:var(--y)}
+  .kpi:nth-child(3) .kpi-val,.kpi:nth-child(4) .kpi-val{color:var(--green)}
+  .kpi:nth-child(5) .kpi-val{color:rgba(247,203,69,.8)}
+  .kpi-sub{font-size:11px;color:var(--t3);font-family:var(--mono)}
+  .kpi-bar{position:absolute;bottom:0;left:0;right:0;height:2px}
+  .kpi:nth-child(1) .kpi-bar{background:linear-gradient(90deg,var(--b2),transparent)}
+  .kpi:nth-child(2) .kpi-bar{background:linear-gradient(90deg,var(--y),transparent)}
+  .kpi:nth-child(3) .kpi-bar{background:linear-gradient(90deg,var(--green),transparent)}
+  .kpi:nth-child(4) .kpi-bar{background:linear-gradient(90deg,rgba(34,197,94,.6),transparent)}
+  .kpi:nth-child(5) .kpi-bar{background:linear-gradient(90deg,rgba(247,203,69,.5),transparent)}
+
+  /* PANEL */
   .panel{display:none}.panel.on{display:block}
 
-  /* ── CHARTS ── */
-  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-  .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;transition:border-color .2s}
-  .chart-box:hover{border-color:var(--border2)}
-  .chart-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--amarelo);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
-  .chart-title::before{content:'';width:3px;height:12px;background:var(--amarelo);border-radius:2px}
-  .chart-wrap{position:relative;height:210px}
-  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-  .legend span{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:var(--mono)}
-  .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+  /* SECTION DIVIDER */
+  .sdiv{display:flex;align-items:center;gap:12px;margin-bottom:1rem}
+  .sdiv-label{font-size:11px;font-family:var(--mono);font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+  .sdiv-line{flex:1;height:1px;background:var(--b1)}
 
-  /* ── TABLE ── */
-  .table-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-  .table-header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.4rem;border-bottom:1px solid var(--border);background:var(--surface2)}
-  .table-header-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--amarelo)}
+  /* CHARTS */
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .chart-box{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:1.25rem;transition:border-color .15s}
+  .chart-box:hover{border-color:var(--b2)}
+  .chart-title{font-size:12px;font-weight:600;color:var(--t1);letter-spacing:-.01em;margin-bottom:.25rem}
+  .chart-sub{font-size:11px;color:var(--t3);margin-bottom:1rem}
+  .chart-wrap{position:relative;height:200px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .legend span{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3);font-family:var(--mono)}
+  .legend-dot{width:6px;height:6px;border-radius:2px;flex-shrink:0}
+
+  /* TABLE */
+  .table-wrap{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden}
+  .table-head{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border-bottom:1px solid var(--b1)}
+  .table-head-left{display:flex;align-items:center;gap:10px}
+  .table-head-title{font-size:13px;font-weight:600;color:var(--t1);letter-spacing:-.01em}
+  .table-head-count{font-size:11px;font-family:var(--mono);color:var(--t3)}
   .table-scroll{overflow-x:auto}
   table{width:100%;border-collapse:collapse;font-size:12px}
-  th{text-align:left;padding:9px 12px;font-size:9px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}
-  td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap}
+  th{text-align:left;padding:8px 12px;font-size:10px;font-family:var(--mono);font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--b1);white-space:nowrap;background:var(--s2)}
+  td{padding:9px 12px;border-bottom:1px solid var(--b1);color:var(--t1);white-space:nowrap;vertical-align:middle}
   tr:last-child td{border-bottom:none}
-  tr:hover td{background:rgba(247,203,69,.04)}
+  tbody tr{transition:background .1s}
+  tbody tr:hover td{background:var(--y-glow)}
 
-  /* ── BADGES ── */
-  .badge{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;font-weight:600;white-space:nowrap}
-  .b-novo {background:rgba(76,186,122,.15);color:#4cba7a;border:1px solid rgba(76,186,122,.25)}
-  .b-refin{background:rgba(247,203,69,.15);color:#f7cb45;border:1px solid rgba(247,203,69,.25)}
-  .b-port {background:rgba(209,201,202,.15);color:#d1c9ca;border:1px solid rgba(209,201,202,.25)}
-  .b-cart {background:rgba(224,92,75,.15);color:#e05c4b;border:1px solid rgba(224,92,75,.25)}
-  .b-ci   {background:rgba(62,67,68,.4);color:#a0a8aa;border:1px solid rgba(62,67,68,.6)}
-  .b-rp   {background:rgba(247,203,69,.1);color:#fbd96a;border:1px solid rgba(247,203,69,.2)}
-  .b-cd   {background:rgba(224,92,75,.1);color:#f08070;border:1px solid rgba(224,92,75,.2)}
-  .b-ep   {background:rgba(209,201,202,.1);color:#b8b2b3;border:1px solid rgba(209,201,202,.2)}
-  .b-cb   {background:rgba(76,186,122,.1);color:#7dd4a0;border:1px solid rgba(76,186,122,.2)}
-  .b-cbs  {background:rgba(247,203,69,.08);color:#f7cb45;border:1px solid rgba(247,203,69,.15)}
-  .b-cia  {background:rgba(62,67,68,.3);color:#8a9092;border:1px solid rgba(62,67,68,.5)}
-  .b-ac   {background:rgba(138,133,128,.12);color:#8a8580;border:1px solid rgba(138,133,128,.2)}
+  /* BADGES */
+  .badge{display:inline-flex;align-items:center;font-size:10px;font-family:var(--mono);font-weight:500;padding:2px 7px;border-radius:4px;white-space:nowrap;line-height:1.4}
+  .b-novo{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+  .b-refin{background:rgba(247,203,69,.1);color:#f7cb45;border:1px solid rgba(247,203,69,.2)}
+  .b-port{background:rgba(161,161,170,.1);color:#a1a1aa;border:1px solid rgba(161,161,170,.2)}
+  .b-cart{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+  .b-ci{background:rgba(99,102,241,.1);color:#a5b4fc;border:1px solid rgba(99,102,241,.2)}
+  .b-rp{background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.2)}
+  .b-cd{background:rgba(249,115,22,.1);color:#fb923c;border:1px solid rgba(249,115,22,.2)}
+  .b-ep{background:rgba(20,184,166,.1);color:#2dd4bf;border:1px solid rgba(20,184,166,.2)}
+  .b-cb{background:rgba(168,85,247,.1);color:#c084fc;border:1px solid rgba(168,85,247,.2)}
+  .b-cbs{background:rgba(236,72,153,.1);color:#f472b6;border:1px solid rgba(236,72,153,.2)}
+  .b-cia{background:rgba(6,182,212,.1);color:#22d3ee;border:1px solid rgba(6,182,212,.2)}
+  .b-ac{background:rgba(82,82,91,.15);color:#71717a;border:1px solid rgba(82,82,91,.25)}
 
-  /* ── PAGINAÇÃO ── */
-  .pag-bar{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.4rem;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+  /* PAGINATION */
+  .pag-bar{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-top:1px solid var(--b1);font-size:11px;color:var(--t3)}
   .pag-btns{display:flex;gap:6px}
-  .pag-btn{background:var(--bg);border:1px solid var(--border2);color:var(--muted);font-family:var(--font);font-size:11px;padding:5px 14px;border-radius:5px;cursor:pointer;transition:all .15s}
-  .pag-btn:hover:not(:disabled){border-color:var(--amarelo);color:var(--amarelo)}
+  .pag-btn{background:var(--s2);border:1px solid var(--b2);color:var(--t2);font-family:var(--font);font-size:11px;padding:0 12px;height:28px;border-radius:var(--r);cursor:pointer;transition:all .15s}
+  .pag-btn:hover:not(:disabled){border-color:var(--y);color:var(--y)}
   .pag-btn:disabled{opacity:.3;cursor:default}
 
+  /* MODAL */
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center}
+  .modal{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r3);padding:1.75rem;max-width:540px;width:90%;box-shadow:var(--shadow-lg)}
+  .modal-title{font-size:15px;font-weight:600;color:var(--t1);letter-spacing:-.02em;margin-bottom:6px}
+  .modal-desc{font-size:12px;color:var(--t3);line-height:1.6;margin-bottom:1.25rem}
+  .modal-input{width:100%;background:var(--s3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:11px;padding:8px 12px;border-radius:var(--r);height:36px;outline:none;transition:all .15s;margin-bottom:1rem}
+  .modal-input:focus{border-color:rgba(247,203,69,.5);box-shadow:0 0 0 3px var(--y-glow)}
+  .modal-actions{display:flex;gap:8px}
 
-  /* ── IA ANALISTA ── */
-  .ai-panel{display:flex;flex-direction:column;gap:16px}
-  .ai-toprow{display:grid;grid-template-columns:1fr 340px;gap:14px}
-  .ai-chat-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;height:520px}
-  .ai-chat-header{padding:.9rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:12px 12px 0 0}
-  .ai-chat-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--amarelo);display:flex;align-items:center;gap:8px}
-  .ai-chat-title::before{content:'';width:3px;height:12px;background:var(--amarelo);border-radius:2px}
-  .ai-badge{font-size:9px;font-family:var(--mono);background:rgba(247,203,69,.12);color:var(--amarelo);border:1px solid rgba(247,203,69,.25);padding:2px 8px;border-radius:10px}
-  .ai-msgs{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
-  .ai-msgs::-webkit-scrollbar{width:4px}.ai-msgs::-webkit-scrollbar-track{background:transparent}.ai-msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
-  .ai-msg{max-width:88%;padding:.75rem 1rem;border-radius:10px;font-size:13px;line-height:1.55;animation:fadeUp .2s ease}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-  .ai-msg.user{align-self:flex-end;background:var(--amarelo);color:var(--preto);font-weight:500;border-radius:10px 10px 2px 10px}
-  .ai-msg.bot{align-self:flex-start;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px 10px 10px 2px}
-  .ai-msg.bot.thinking{opacity:.6;font-style:italic;font-size:12px}
-  .ai-input-row{display:flex;gap:8px;padding:.85rem 1rem;border-top:1px solid var(--border);background:var(--surface2);border-radius:0 0 12px 12px}
-  .ai-input{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--font);font-size:13px;padding:8px 14px;border-radius:8px;outline:none;transition:all .15s}
-  .ai-input:focus{border-color:var(--amarelo);box-shadow:0 0 0 2px rgba(247,203,69,.12)}
-  .ai-send{background:var(--amarelo);border:none;color:var(--preto);font-size:18px;width:38px;height:38px;border-radius:8px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700}
-  .ai-send:hover{background:#ffd85a;transform:scale(1.05)}
-  .ai-send:disabled{opacity:.4;cursor:default;transform:none}
-  .ai-quick-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem;display:flex;flex-direction:column;gap:8px}
-  .ai-quick-title{font-size:10px;font-family:var(--mono);color:var(--amarelo);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;display:flex;align-items:center;gap:8px}
-  .ai-quick-title::before{content:'';width:3px;height:12px;background:var(--amarelo);border-radius:2px}
-  .ai-quick-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:9px 14px;border-radius:8px;cursor:pointer;text-align:left;transition:all .15s;line-height:1.4}
-  .ai-quick-btn:hover{border-color:var(--amarelo);color:var(--amarelo);background:rgba(247,203,69,.05)}
-  .ai-summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-  .ai-summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem}
-  .ai-summary-card-title{font-size:10px;font-family:var(--mono);color:var(--amarelo);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
-  .ai-summary-card-title::before{content:'';width:3px;height:12px;background:var(--amarelo);border-radius:2px}
-  .ai-summary-card-body{font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap}
-  .ai-key-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 12px;border-radius:6px;outline:none;transition:all .15s;margin-bottom:8px}
-  .ai-key-input:focus{border-color:var(--amarelo)}
-
-  @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.chart-grid{grid-template-columns:1fr}}
-  @media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.chart-grid{grid-template-columns:1fr}}
-  @media(max-width:600px){.kpi-grid{grid-template-columns:1fr}.container{padding:1rem}}
+  @media(max-width:1200px){
+    .page{grid-template-columns:1fr}
+    .sidebar{display:none}
+    .kpi-grid{grid-template-columns:repeat(3,1fr)}
+    .chart-grid{grid-template-columns:1fr}
+  }
+  @media(max-width:768px){
+    .kpi-grid{grid-template-columns:1fr 1fr}
+    .main{padding:1rem}
+  }
+  @media(max-width:480px){
+    .kpi-grid{grid-template-columns:1fr}
+    .topbar{padding:0 1rem}
+  }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </head>
 <body>
 
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-brand">
-    <div class="dot"></div>
-    LF PROMOTORA
-    <span class="brand-tag">PAINEL DE CONTRATOS</span>
+    <div class="brand-logo">LF</div>
+    <span class="brand-name">LF Promotora</span>
+    <div class="brand-sep"></div>
+    <span class="brand-sub">Painel de Contratos</span>
   </div>
   <div class="topbar-right">
-    <div class="status-pill"><div class="live"></div><span id="status-txt">iniciando</span></div>
-    <div class="status-pill" style="gap:5px">
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="flex-shrink:0"><circle cx="5" cy="5" r="4" stroke="var(--muted)" stroke-width="1.2"/><path d="M5 2.5V5L6.5 6.5" stroke="var(--muted)" stroke-width="1.2" stroke-linecap="round"/></svg>
-      <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">próx.</span>
-      <span id="countdown" style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--amarelo);min-width:28px">60s</span>
-    </div>
-    <span id="ts" style="font-size:11px;color:var(--muted);font-family:var(--mono)">—</span>
-    <button class="btn-ghost" onclick="openUrlModal()" title="Configurar URL do JSON">⚙ URL</button>
-    <button class="btn" onclick="reloadData()">↻ Atualizar</button>
+    <div class="chip"><div class="live"></div><span id="status-txt">iniciando</span></div>
+    <div class="chip chip-y">↻ <span id="countdown">60s</span></div>
+    <span id="ts" style="font-size:11px;color:var(--t3);font-family:var(--mono)">—</span>
+    <button class="btn-link" onclick="openUrlModal()">⚙ URL</button>
+    <button class="btn" onclick="reloadData()">Atualizar</button>
   </div>
 </div>
 
 <!-- LOADER -->
 <div id="loader">
   <div class="loader-ring"></div>
-  <div id="loader-msg">buscando dados via proxy...</div>
+  <div id="loader-msg" style="color:var(--t3);font-family:var(--mono);font-size:12px">buscando dados...</div>
 </div>
 
 <!-- ERROR -->
@@ -227,107 +250,154 @@
 </div>
 
 <!-- MODAL URL -->
-<div id="modal-url" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center">
-  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:2rem;max-width:560px;width:90%">
-    <p style="font-size:15px;font-weight:500;margin-bottom:6px;color:var(--text)">URL do JSON</p>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">Cole aqui o link do arquivo JSON gerado pelo progestor. O valor é salvo no navegador automaticamente.</p>
-    <input type="text" id="urlInput" placeholder="https://novo.progestor21.com.br/sistema/_lib/tmp/..." style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:8px 12px;border-radius:6px;height:36px;outline:none;margin-bottom:1rem">
-    <div style="display:flex;gap:8px">
-      <button class="btn" onclick="saveUrl()" style="flex:1">✓ Salvar e carregar</button>
-      <button class="btn-ghost" onclick="closeUrlModal()" style="padding:6px 18px">Cancelar</button>
+<div id="modal-url" class="modal-backdrop" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Fonte de dados</div>
+    <div class="modal-desc">Cole o link do JSON gerado pelo Progestor. Salvo automaticamente no navegador.</div>
+    <input type="text" id="urlInput" class="modal-input" placeholder="https://novo.progestor21.com.br/sistema/_lib/tmp/...">
+    <div class="modal-actions">
+      <button class="btn" onclick="saveUrl()" style="flex:1">Salvar e carregar</button>
+      <button class="btn-ghost" onclick="closeUrlModal()">Cancelar</button>
     </div>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app">
-<div class="container">
+<div class="page">
 
-  <!-- FILTROS -->
-  <div class="filter-section">
-    <div class="filter-title">Filtros</div>
-    <div class="filter-row">
-      <div class="filter-group">
-        <label>Mês</label>
-        <select id="fMes"><option value="">Todos</option></select>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <button class="nav-item on" onclick="switchTab('visao',this)" id="nav-visao">
+        <span class="nav-icon">◈</span> Visão Geral
+      </button>
+      <button class="nav-item" onclick="switchTab('corretores',this)" id="nav-corretores">
+        <span class="nav-icon">◎</span> Corretores
+      </button>
+      <button class="nav-item" onclick="switchTab('tabela',this)" id="nav-tabela">
+        <span class="nav-icon">≡</span> Contratos
+      </button>
+    </div>
+
+    <div class="sidebar-label">Filtros rápidos</div>
+    <div class="sidebar-section">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:0 4px">
+        <div class="fgroup">
+          <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Mês</label>
+          <select id="fMes" style="background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12px;padding:0 8px;height:30px;border-radius:6px;outline:none;width:100%"><option value="">Todos</option></select>
+        </div>
+        <div class="fgroup">
+          <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Filial</label>
+          <select id="fFil" style="background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12px;padding:0 8px;height:30px;border-radius:6px;outline:none;width:100%"><option value="">Todas</option></select>
+        </div>
+        <div class="fgroup">
+          <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Canal</label>
+          <select id="fCanal" style="background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12px;padding:0 8px;height:30px;border-radius:6px;outline:none;width:100%"><option value="">Todos</option></select>
+        </div>
       </div>
-      <div class="filter-group">
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-stat">
+        <div class="sidebar-stat-label">Registros carregados</div>
+        <div class="sidebar-stat-val" id="sidebar-total">—</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- FILTROS PRINCIPAIS -->
+    <div class="filter-bar">
+      <div class="fgroup">
         <label>De</label>
         <input type="date" id="fDe" onchange="applyFilter()">
       </div>
-      <div class="filter-group">
+      <div class="fgroup">
         <label>Até</label>
         <input type="date" id="fAte" onchange="applyFilter()">
       </div>
-      <div class="filter-divider"></div>
-      <div class="filter-group">
+      <div class="fdiv"></div>
+      <div class="fgroup">
         <label>Tipo</label>
         <select id="fTipo"><option value="">Todos</option></select>
       </div>
-      <div class="filter-group">
+      <div class="fgroup">
         <label>Banco</label>
         <select id="fBco"><option value="">Todos</option></select>
       </div>
-      <div class="filter-group">
+      <div class="fgroup">
         <label>Parceiro</label>
         <select id="fParc"><option value="">Todos</option></select>
       </div>
-      <div class="filter-group">
-        <label>Filial</label>
-        <select id="fFil"><option value="">Todas</option></select>
-      </div>
-      <div class="filter-group">
-        <label>Canal</label>
-        <select id="fCanal"><option value="">Todos</option></select>
-      </div>
-      <div class="filter-divider"></div>
-      <div class="filter-group">
+      <div class="fdiv"></div>
+      <div class="fgroup">
         <label>Busca</label>
         <input type="text" id="srch" placeholder="Nome ou contrato...">
       </div>
-      <div class="filter-actions">
-        <button class="btn-ghost" onclick="clearFilters()">✕ Limpar</button>
+      <div class="actions">
+        <button class="btn-ghost" onclick="clearFilters()">Limpar</button>
       </div>
     </div>
-  </div>
 
-  <!-- KPIs -->
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-icon">📋</div><div class="kpi-label">Total contratos</div><div class="kpi-val" id="kTot" style="color:var(--areia)">—</div><div class="kpi-sub" id="kTotS">—</div></div>
-    <div class="kpi"><div class="kpi-icon">💰</div><div class="kpi-label">Valor liberado</div><div class="kpi-val" id="kVal" style="color:var(--amarelo)">—</div><div class="kpi-sub" id="kValS">—</div></div>
-    <div class="kpi"><div class="kpi-icon">🏦</div><div class="kpi-label">Comissão loja</div><div class="kpi-val" id="kCom" style="color:var(--green)">—</div><div class="kpi-sub" id="kComS">—</div></div>
-    <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-label">Líquido loja</div><div class="kpi-val" id="kLiq" style="color:#4cba7a">—</div><div class="kpi-sub" id="kLiqS">—</div></div>
-    <div class="kpi"><div class="kpi-icon">🎯</div><div class="kpi-label">Ticket comissão</div><div class="kpi-val" id="kTick" style="color:var(--amarelo)">—</div><div class="kpi-sub" id="kTickS">—</div></div>
-  </div>
-
-  <!-- TABS -->
-  <div class="tab-bar">
-    <button class="tab on" onclick="switchTab('visao',this)">Visão Geral</button>
-    <button class="tab" onclick="switchTab('corretores',this)">Corretores</button>
-    <button class="tab" onclick="switchTab('tabela',this)">Contratos</button>
-    <button class="tab" onclick="switchTab('ia',this)">🤖 IA Analista</button>
-  </div>
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Contratos</span><div class="kpi-icon-wrap">📋</div></div>
+        <div class="kpi-val" id="kTot">—</div>
+        <div class="kpi-sub" id="kTotS">—</div>
+        <div class="kpi-bar"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Valor liberado</span><div class="kpi-icon-wrap">💰</div></div>
+        <div class="kpi-val" id="kVal">—</div>
+        <div class="kpi-sub" id="kValS">—</div>
+        <div class="kpi-bar"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Comissão loja</span><div class="kpi-icon-wrap">🏦</div></div>
+        <div class="kpi-val" id="kCom">—</div>
+        <div class="kpi-sub" id="kComS">—</div>
+        <div class="kpi-bar"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Líquido loja</span><div class="kpi-icon-wrap">✅</div></div>
+        <div class="kpi-val" id="kLiq">—</div>
+        <div class="kpi-sub" id="kLiqS">—</div>
+        <div class="kpi-bar"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Ticket comissão</span><div class="kpi-icon-wrap">🎯</div></div>
+        <div class="kpi-val" id="kTick">—</div>
+        <div class="kpi-sub" id="kTickS">—</div>
+        <div class="kpi-bar"></div>
+      </div>
+    </div>
 
   <!-- VISÃO GERAL -->
   <div id="p-visao" class="panel on">
     <div class="chart-grid">
-      <div class="chart-box"><div class="chart-title">Valor por tipo de operação</div><div class="chart-wrap"><canvas id="cTipo"></canvas></div><div class="legend" id="lgTipo"></div></div>
-      <div class="chart-box"><div class="chart-title">Valor por banco</div><div class="chart-wrap"><canvas id="cBco"></canvas></div><div class="legend" id="lgBco"></div></div>
+      <div class="chart-box"><div class="chart-title">Valor por tipo de operação</div><div class="chart-sub">distribuição por modalidade</div><div class="chart-wrap"><canvas id="cTipo"></canvas></div><div class="legend" id="lgTipo"></div></div>
+      <div class="chart-box"><div class="chart-title">Valor por banco</div><div class="chart-sub">produção por instituição</div><div class="chart-wrap"><canvas id="cBco"></canvas></div><div class="legend" id="lgBco"></div></div>
     </div>
     <div class="chart-grid">
-      <div class="chart-box"><div class="chart-title">Contratos por mês</div><div class="chart-wrap"><canvas id="cMes"></canvas></div></div>
-      <div class="chart-box"><div class="chart-title">Valor por parceiro</div><div class="chart-wrap"><canvas id="cParc"></canvas></div><div class="legend" id="lgParc"></div></div>
+      <div class="chart-box"><div class="chart-title">Contratos por mês</div><div class="chart-sub">evolução temporal</div><div class="chart-wrap"><canvas id="cMes"></canvas></div></div>
+      <div class="chart-box"><div class="chart-title">Valor por parceiro</div><div class="chart-sub">distribuição por parceiro</div><div class="chart-wrap"><canvas id="cParc"></canvas></div><div class="legend" id="lgParc"></div></div>
     </div>
     <div class="chart-grid">
-      <div class="chart-box"><div class="chart-title">Valor por filial</div><div class="chart-wrap"><canvas id="cFil"></canvas></div><div class="legend" id="lgFil"></div></div>
-      <div class="chart-box"><div class="chart-title">Valor por canal de venda</div><div class="chart-wrap"><canvas id="cCanal"></canvas></div><div class="legend" id="lgCanal"></div></div>
+      <div class="chart-box"><div class="chart-title">Valor por filial</div><div class="chart-sub">produção por unidade</div><div class="chart-wrap"><canvas id="cFil"></canvas></div><div class="legend" id="lgFil"></div></div>
+      <div class="chart-box"><div class="chart-title">Canal de venda</div><div class="chart-sub">origem dos contratos</div><div class="chart-wrap"><canvas id="cCanal"></canvas></div><div class="legend" id="lgCanal"></div></div>
     </div>
   </div>
 
   <!-- CORRETORES -->
   <div id="p-corretores" class="panel">
-    <div class="table-box">
-      <div class="table-header"><span class="table-header-title">Ranking de corretores</span></div>
+    <div class="table-wrap">
+      <div class="table-head"><div class="table-head-left"><span class="table-head-title">Ranking de corretores</span></div></div>
       <div class="table-scroll">
         <table><thead><tr><th>#</th><th>Corretor</th><th>Contratos</th><th>Valor Liberado</th><th>Comissão Est.</th><th>Ticket Médio</th></tr></thead>
         <tbody id="tbCorr"></tbody></table>
@@ -337,13 +407,13 @@
 
   <!-- TABELA -->
   <div id="p-tabela" class="panel">
-    <div class="table-box">
-      <div class="table-header">
-        <span class="table-header-title">Lista de contratos</span>
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="tblCount">—</span>
-          <button class="pag-btn" id="bVerTudo" onclick="toggleVerTudo()" style="font-size:11px;padding:4px 12px">Ver tudo</button>
+    <div class="table-wrap">
+      <div class="table-head">
+        <div class="table-head-left">
+          <span class="table-head-title">Lista de contratos</span>
+          <span class="table-head-count" id="tblCount">—</span>
         </div>
+        <button class="pag-btn" id="bVerTudo" onclick="toggleVerTudo()">Ver tudo</button>
       </div>
       <div class="table-scroll">
         <table><thead><tr>
@@ -365,68 +435,8 @@
     </div>
   </div>
 
-  <!-- IA ANALISTA -->
-  <div id="p-ia" class="panel">
-    <div class="ai-panel">
 
-      <!-- Configuração da API Key -->
-      <div id="ai-key-bar" style="background:var(--surface);border:1px solid rgba(247,203,69,.3);border-radius:10px;padding:1rem 1.4rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span style="font-size:12px;color:var(--muted);font-family:var(--mono)">🔑 API Key Anthropic:</span>
-        <input type="password" id="aiKeyInput" class="ai-key-input" placeholder="sk-ant-..." style="flex:1;min-width:280px;margin:0">
-        <button class="btn" onclick="saveAiKey()" style="font-size:12px;padding:6px 16px">Salvar</button>
-        <button class="btn-ghost" onclick="clearAiKey()" style="font-size:12px">Limpar</button>
-        <span id="ai-key-status" style="font-size:11px;font-family:var(--mono);color:var(--muted)"></span>
-      </div>
-
-      <div class="ai-toprow">
-        <!-- Chat -->
-        <div class="ai-chat-box">
-          <div class="ai-chat-header">
-            <div class="ai-chat-title">Assistente de Análise</div>
-            <span class="ai-badge">Claude Sonnet</span>
-          </div>
-          <div class="ai-msgs" id="aiMsgs">
-            <div class="ai-msg bot">👋 Olá! Sou seu analista de contratos com IA. Posso analisar os dados filtrados, identificar padrões, comparar períodos e gerar insights. Como posso ajudar?</div>
-          </div>
-          <div class="ai-input-row">
-            <input type="text" class="ai-input" id="aiInput" placeholder="Pergunte sobre os contratos..." onkeydown="if(event.key==='Enter')sendAiMsg()">
-            <button class="ai-send" id="aiSendBtn" onclick="sendAiMsg()">➤</button>
-          </div>
-        </div>
-
-        <!-- Perguntas rápidas -->
-        <div class="ai-quick-box">
-          <div class="ai-quick-title">Análises Rápidas</div>
-          <button class="ai-quick-btn" onclick="quickAsk('Faça um resumo executivo dos contratos filtrados: total, produção, comissão e principais destaques.')">📊 Resumo executivo</button>
-          <button class="ai-quick-btn" onclick="quickAsk('Quais os 3 melhores corretores em comissão gerada? Liste com valores.')">🏆 Top 3 corretores</button>
-          <button class="ai-quick-btn" onclick="quickAsk('Qual banco gerou mais valor liberado? Analise a distribuição por banco.')">🏦 Análise por banco</button>
-          <button class="ai-quick-btn" onclick="quickAsk('Analise a distribuição por tipo de operação (NOVO, REFINANCIAMENTO, PORTABILIDADE etc) e diga qual tem melhor comissão percentual média.')">📈 Melhor tipo de op.</button>
-          <button class="ai-quick-btn" onclick="quickAsk('Qual filial tem melhor desempenho em valor liberado e comissão? Compare as filiais.')">🏢 Ranking de filiais</button>
-          <button class="ai-quick-btn" onclick="quickAsk('Qual canal de venda traz mais contratos e maior valor? Analise a eficiência de cada canal.')">📡 Eficiência por canal</button>
-          <button class="ai-quick-btn" onclick="quickAsk('Existem contratos com comissão em mês diferente da liberação? Qual o impacto no fluxo de caixa?')">⚠️ Comissões defasadas</button>
-          <button class="ai-quick-btn" onclick="quickAsk('Dê 3 recomendações estratégicas baseadas nos dados atuais para aumentar a produção e comissão.')">💡 Recomendações IA</button>
-        </div>
-      </div>
-
-      <!-- Cards de sumário automático -->
-      <div class="ai-summary-row">
-        <div class="ai-summary-card">
-          <div class="ai-summary-card-title">📌 Contexto atual</div>
-          <div class="ai-summary-card-body" id="aiCtxCard">Carregando...</div>
-        </div>
-        <div class="ai-summary-card">
-          <div class="ai-summary-card-title">📉 Alertas</div>
-          <div class="ai-summary-card-body" id="aiAlertCard">—</div>
-        </div>
-        <div class="ai-summary-card">
-          <div class="ai-summary-card-title">🎯 Oportunidades</div>
-          <div class="ai-summary-card-body" id="aiOppCard">—</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
+  </main>
 </div>
 </div>
 
@@ -578,7 +588,7 @@ function reloadData(){ stopAutoRefresh(); loadData(); }
 function initData(data) {
   ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0)}));
   hide('loader'); hide('error-box'); show('app');
-  $('status-txt').textContent=ALL.length+' registros';
+  $('status-txt').textContent=ALL.length+' registros';if($('sidebar-total'))$('sidebar-total').textContent=ALL.length.toLocaleString('pt-BR');
   $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
   buildFilters();
   applyFilter();
@@ -797,201 +807,4 @@ function renderTabela(){
 }
 
 function changePage(d){PAGE+=d;renderTabela()}
-function switchTab(id,btn){document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));btn.classList.add('on');$('p-'+id).classList.add('on');if(id==='visao')setTimeout(renderCharts,50);if(id==='ia'){setTimeout(updateAiContext,100);setTimeout(autoAnalyze,200);}}
-
-// ── IA ANALISTA ──────────────────────────────────────────────────
-const AI_KEY_STORAGE = 'lf_ai_key';
-
-function saveAiKey(){
-  const k=$('aiKeyInput').value.trim();
-  if(!k){return;}
-  localStorage.setItem(AI_KEY_STORAGE,k);
-  $('aiKeyInput').value='';
-  $('ai-key-status').textContent='✓ salva';
-  $('ai-key-status').style.color='var(--green)';
-  setTimeout(()=>{$('ai-key-status').textContent='';},2000);
-}
-function clearAiKey(){
-  localStorage.removeItem(AI_KEY_STORAGE);
-  $('ai-key-status').textContent='removida';
-  $('ai-key-status').style.color='var(--muted)';
-  setTimeout(()=>{$('ai-key-status').textContent='';},2000);
-}
-function getAiKey(){ return localStorage.getItem(AI_KEY_STORAGE)||''; }
-
-function buildContext(){
-  const mes=$('fMes').value;
-  const label=mes?(()=>{const[y,m]=mes.split('-');return MES[parseInt(m)-1]+'/'+y.slice(2)})():'todos os meses';
-  const tot=FILTERED.length;
-  const sumV=FILTERED.reduce((a,r)=>a+val(r),0);
-  // comissão
-  const comRows=FILTERED.filter(r=>!mes||getMes(r['Data Comissao Loja'])===mes);
-  const sumC=comRows.reduce((a,r)=>a+(r['Base Comissao']||0)*com(r)/100,0);
-  const sumD=comRows.reduce((a,r)=>a+(r['Desconto Loja']||0),0);
-  // por tipo
-  const tipos={};FILTERED.forEach(r=>{const t=r.Tipo||'—';tipos[t]=(tipos[t]||0)+val(r);});
-  const topTipos=Object.entries(tipos).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([t,v])=>`${t}: ${fmt(v)}`).join(', ');
-  // por banco
-  const bancos={};FILTERED.forEach(r=>{const b=r.BCO||'—';bancos[b]=(bancos[b]||0)+val(r);});
-  const topBancos=Object.entries(bancos).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([b,v])=>`${b}: ${fmt(v)}`).join(', ');
-  // por corretor
-  const corr={};FILTERED.forEach(r=>{const c=(r.Corretor||'—').trim();corr[c]=(corr[c]||0)+val(r);});
-  const topCorr=Object.entries(corr).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c,v])=>`${c}: ${fmt(v)}`).join(', ');
-  // por filial
-  const fils={};FILTERED.forEach(r=>{const f=filialNome(r.Filial);fils[f]=(fils[f]||0)+val(r);});
-  const topFils=Object.entries(fils).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([f,v])=>`${f}: ${fmt(v)}`).join(', ');
-  // canais
-  const cans={};FILTERED.forEach(r=>{const c=canalNome(r.Canaldevenda);cans[c]=(cans[c]||0)+val(r);});
-  const topCans=Object.entries(cans).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c,v])=>`${c}: ${fmt(v)}`).join(', ');
-  // comissões defasadas
-  const defasados=mes?FILTERED.filter(r=>getMes(r['Data da Liberação'])!==mes&&getMes(r['Data Comissao Loja'])===mes).length:0;
-
-  return `DADOS DO PAINEL LF PROMOTORA — Período: ${label}
-Total de contratos: ${tot}
-Valor liberado total: ${fmt(sumV)}
-Comissão loja: ${fmt(sumC)}
-Desconto loja: ${fmt(sumD)}
-Líquido loja: ${fmt(sumC-sumD)}
-Ticket médio comissão: ${tot>0?fmt(sumC/tot):'—'}
-
-Por tipo de operação (top 5): ${topTipos}
-Por banco (top 4): ${topBancos}
-Por corretor (top 5): ${topCorr}
-Por filial (top 5): ${topFils}
-Por canal (top 5): ${topCans}
-Contratos com comissão defasada (liberação em outro mês): ${defasados}
-
-Filtrando por: Mês=${$('fMes').value||'todos'}, Tipo=${$('fTipo').value||'todos'}, Banco=${$('fBco').value||'todos'}, Parceiro=${$('fParc').value||'todos'}, Filial=${$('fFil').value||'todas'}, Canal=${$('fCanal').value||'todos'}`;
-}
-
-function updateAiContext(){
-  try{
-    const ctx=buildContext();
-    const lines=ctx.split('\n').slice(0,8).join('\n');
-    $('aiCtxCard').textContent=lines;
-  }catch(e){$('aiCtxCard').textContent='Carregue os dados primeiro.';}
-}
-
-function addMsg(role,text){
-  const box=$('aiMsgs');
-  const d=document.createElement('div');
-  d.className='ai-msg '+(role==='user'?'user':'bot');
-  d.textContent=text;
-  box.appendChild(d);
-  box.scrollTop=box.scrollHeight;
-  return d;
-}
-
-async function sendAiMsg(){
-  const key=getAiKey();
-  if(!key){addMsg('bot','⚠️ Configure sua API Key Anthropic no topo desta aba.');return;}
-  const input=$('aiInput');
-  const q=input.value.trim();
-  if(!q)return;
-  input.value='';
-  addMsg('user',q);
-  const btn=$('aiSendBtn');
-  btn.disabled=true;
-  const thinking=addMsg('bot','⏳ Analisando...');
-  thinking.classList.add('thinking');
-
-  try{
-    const ctx=buildContext();
-    const sys=`Você é um analista financeiro especialista em crédito consignado e produção de contratos. Analise os dados fornecidos e responda de forma clara, objetiva e em português. Use números e percentuais quando relevante. Seja direto e profissional.
-
-CONTEXTO DOS DADOS ATUAL:
-${ctx}`;
-
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:q}]})
-    });
-    const data=await resp.json();
-    if(data.error){thinking.textContent='❌ '+data.error.message;thinking.classList.remove('thinking');btn.disabled=false;return;}
-    const ans=data.content.map(b=>b.text||'').join('');
-    thinking.textContent=ans;
-    thinking.classList.remove('thinking');
-  }catch(e){
-    thinking.textContent='❌ Erro: '+e.message;
-    thinking.classList.remove('thinking');
-  }
-  btn.disabled=false;
-}
-
-function quickAsk(q){
-  $('aiInput').value=q;
-  sendAiMsg();
-  // Scroll para o chat
-  document.querySelector('.ai-chat-box .ai-msgs').scrollTop=99999;
-}
-
-// Analisa alertas e oportunidades automaticamente ao entrar na aba
-async function autoAnalyze(){
-  const key=getAiKey();
-  if(!key||!FILTERED.length)return;
-  $('aiAlertCard').textContent='🔍 Analisando...';
-  $('aiOppCard').textContent='🔍 Analisando...';
-  try{
-    const ctx=buildContext();
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:'Você é analista de crédito consignado. Responda SOMENTE em JSON com duas chaves: "alertas" (string com 2-3 alertas curtos separados por newline) e "oportunidades" (string com 2-3 oportunidades curtas separadas por newline). Sem markdown, sem explicações extras.',messages:[{role:'user',content:'Com base nesses dados, gere alertas e oportunidades:\n'+ctx}]})
-    });
-    const data=await resp.json();
-    const txt=data.content.map(b=>b.text||'').join('');
-    const clean=txt.replace(/```json|```/g,'').trim();
-    try{
-      const obj=JSON.parse(clean);
-      $('aiAlertCard').textContent=obj.alertas||'—';
-      $('aiOppCard').textContent=obj.oportunidades||'—';
-    }catch{
-      $('aiAlertCard').textContent=txt;
-      $('aiOppCard').textContent='—';
-    }
-  }catch(e){$('aiAlertCard').textContent='—';$('aiOppCard').textContent='—';}
-}
-
-// ── AUTO-REFRESH (60s) ────────────────────────────────────────
-const REFRESH_INTERVAL=60;
-let countdown=REFRESH_INTERVAL, countTimer=null;
-
-function startAutoRefresh(){
-  stopAutoRefresh();
-  countdown=REFRESH_INTERVAL; updateCountdown();
-  countTimer=setInterval(()=>{
-    countdown--;
-    updateCountdown();
-    if(countdown<=0){ countdown=REFRESH_INTERVAL; silentReload(); }
-  },1000);
-}
-
-function stopAutoRefresh(){ clearInterval(countTimer); }
-
-function updateCountdown(){
-  const el=$('countdown');if(!el)return;
-  el.textContent=countdown+'s';
-  el.style.color=countdown<=10?'var(--accent4)':'var(--muted)';
-}
-
-async function silentReload(){
-  $('status-txt').textContent='atualizando...';
-  try {
-    const manualUrl = localStorage.getItem('progestor_json_url');
-    const endpoint = manualUrl
-      ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
-      : 'trigger.php?_t=' + Date.now();
-    const data = await fetchJSON(endpoint, manualUrl ? 10000 : 50000);
-    ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0)}));
-    $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
-    $('status-txt').textContent=ALL.length+' registros';
-    buildFilters(); applyFilter();
-  } catch(e){ $('status-txt').textContent='falha ao atualizar'; }
-}
-
-// ── START ─────────────────────────────────────────────────────
-loadData();
-</script>
-</body>
-</html>
+function switchTab(id,btn){document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));if(btn)btn.classList.add('on');$('p-'+id).classList.add('on');if(id==='visao')setTimeout(renderCharts,50);}
