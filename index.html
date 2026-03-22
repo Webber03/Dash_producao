@@ -221,7 +221,7 @@
   .sb-drop-btn.open svg{transform:rotate(180deg)}
   .sb-drop-panel{display:none;position:absolute;top:34px;left:0;right:0;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);z-index:300;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.6)}
   .sb-drop-panel.open{display:block}
-  .sb-opt{display:flex;align-items:center;gap:7px;padding:6px 10px;cursor:pointer;font-size:11px;color:var(--t2);transition:all .12s;user-select:none;border-bottom:1px solid rgba(255,255,255,.03)}
+  .sb-opt{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;font-size:11px;color:var(--t2);transition:all .12s;user-select:none;border-bottom:1px solid rgba(255,255,255,.03)}
   .sb-opt:last-child{border-bottom:none}
   .sb-opt:hover{background:rgba(247,203,69,.05);color:var(--t1)}
   .sb-opt.sel{color:var(--y);background:rgba(247,203,69,.06)}
@@ -324,14 +324,10 @@
     <div class="sidebar-section">
       <div style="display:flex;flex-direction:column;gap:6px;padding:0 4px">
 
-        <!-- MÊS pills -->
+        <!-- MÊS select -->
         <div class="fgroup">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <label class="sb-filter-label" style="margin:0">Mês</label>
-            <button onclick="clearMes()" id="fMes-clear" style="display:none;font-size:9px;color:var(--t3);background:none;border:none;cursor:pointer;font-family:var(--mono);padding:0">limpar</button>
-          </div>
-          <div id="fMes-pills" style="display:flex;flex-wrap:wrap;gap:4px"></div>
-          <select id="fMes" multiple style="display:none"></select>
+          <label class="sb-filter-label">Mês</label>
+          <select id="fMes" class="sb-select"><option value="">Todos</option></select>
         </div>
 
         <!-- FILIAL dropdown multi -->
@@ -549,20 +545,22 @@ const TIPO_BADGE = {
 
 // ── FILIAIS ───────────────────────────────────────────────────
 const FILIAIS = {
-  '279': 'FEIRA DE SANTANA',
-  '281': 'LF & CREDSAMPAIO',
-  '303': 'INSS',
-  '315': 'MATRIZ',
-  '348': 'GOVERNOS E PREFEITURAS',
-  '358': 'JF SERVICOS / LF PROMOTORA',
-  '362': 'MEI / PREST. SERVI',
-  '365': 'FGTS [Externo]',
+  '377': 'CONSORCIO',
   '366': 'ERBANK',
+  '379': 'EXTERNO [ALIPIO LIMA]',
+  '279': 'FEIRA DE SANTANA',
+  '365': 'FGTS [Externo]',
+  '348': 'GOVERNOS E PREFEITURAS',
+  '303': 'INSS',
+  '358': 'JF SERVICOS',
+  '281': 'LF & CREDSAMPAIO',
+  '315': 'MATRIZ',
+  '362': 'MEI / PREST. SERVI',
   '372': 'MF SERVICOS',
   '373': 'SIAPE',
-  '377': 'CONSORCIO',
-  '379': 'EXTERNO [ALIPIO LIMA]',
 };
+// Filiais ordenadas alfabeticamente por nome
+const FILIAIS_ORDER = Object.entries(FILIAIS).sort((a,b)=>a[1].localeCompare(b[1]));
 const filialNome = codigo => FILIAIS[String(codigo)] || String(codigo);
 
 // ── CANAIS DE VENDA ───────────────────────────────────────────
@@ -688,11 +686,9 @@ function buildFilters(){
   const mesesCom = ALL.map(r=>getMes(r['Data Comissao Loja'])).filter(Boolean);
   const meses = [...new Set([...mesesLib, ...mesesCom])].sort();
   // MÊS — dropdown multi
-  const elMes=$('fMes');
-  const curMeses=[...elMes.selectedOptions].map(o=>o.value);
-  elMes.innerHTML='';
-  meses.forEach(m=>{const o=document.createElement('option');o.value=m;const[y,mo]=m.split('-');o.textContent=MES[parseInt(mo)-1]+'/'+y.slice(2);if(curMeses.includes(m))o.selected=true;elMes.appendChild(o)});
-  buildMesPills(meses, curMeses);
+  const elMes=$('fMes'), curM=elMes.value;
+  elMes.innerHTML='<option value="">Todos</option>';
+  meses.forEach(m=>{const[y,mo]=m.split('-');const o=document.createElement('option');o.value=m;o.textContent=MES[parseInt(mo)-1]+'/'+y.slice(2);if(m===curM)o.selected=true;elMes.appendChild(o)});
   // Filtra só os tipos permitidos
   const tiposPermitidos=Object.keys(TIPO_BADGE);
   const tiposPresentes=[...new Set(ALL.map(r=>r.Tipo))].filter(t=>tiposPermitidos.includes(t)).sort();
@@ -700,7 +696,9 @@ function buildFilters(){
   fillSelect('fBco',[...new Set(ALL.map(r=>r.BCO))].sort());
   fillSelect('fParc',[...new Set(ALL.map(r=>r.Parceiro))].sort());
   // Filial — valor é o código, label é o nome
-  const filCodes=[...new Set(ALL.map(r=>String(r.Filial||'')).filter(Boolean))].sort();
+  // Ordena filiais alfabeticamente pelo nome mapeado
+  const rawFilCodes=[...new Set(ALL.map(r=>String(r.Filial||'')).filter(Boolean))];
+  const filCodes=rawFilCodes.sort((a,b)=>(FILIAIS[a]||a).localeCompare(FILIAIS[b]||b));
   const elFil=$('fFil');
   const curFils=[...elFil.selectedOptions].map(o=>o.value);
   elFil.innerHTML='';
@@ -714,12 +712,11 @@ function buildFilters(){
 }
 
 function applyFilter(){
-  const tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
-  MESES_SEL=[...($('fMes').selectedOptions||[])].map(o=>o.value).filter(Boolean);
+  const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
+  MESES_SEL=mes?[mes]:[];
   FILS_SEL=[...($('fFil').selectedOptions||[])].map(o=>o.value).filter(Boolean);
   const meses=MESES_SEL;
   const fils=FILS_SEL;
-  const mes=meses.length===1?meses[0]:'';
   const fDe=$('fDe').value, fAte=$('fAte').value;
 
   // quando seleciona mês, limpa período e vice-versa
@@ -755,7 +752,7 @@ function applyFilter(){
 
 function clearFilters(){
   ['fTipo','fBco','fParc','fCanal'].forEach(id=>$(id).value='');
-  clearMes();
+  $('fMes').value='';
   // Limpar filial
   [...$('fFil').options].forEach(o=>o.selected=false);
   const filPanel=$('fFil-panel');
@@ -774,15 +771,15 @@ function clearMes(){
   if($('fMes-clear'))$('fMes-clear').style.display='none';
   MESES_SEL=[];
 }
-['fTipo','fBco','fParc','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
+['fMes','fTipo','fBco','fParc','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
 const srchEl=$('srch');if(srchEl)srchEl.oninput=applyFilter;
 
 // ── RENDER ────────────────────────────────────────────────────
 function render(){renderKpis();renderCharts();renderCorretores();renderTabela()}
 
 function renderKpis(){
-  const meses=MESES_SEL;
-  const mes=meses.length===1?meses[0]:'';
+  const mes=MESES_SEL.length?MESES_SEL[0]:'';
+  const meses=mes?[mes]:[];
   const tipo=$('fTipo').value, bco=$('fBco').value, parc=$('fParc').value;
 
   // Produção: contratos cuja Data da Liberação está nos meses filtrados
