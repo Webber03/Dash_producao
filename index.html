@@ -309,14 +309,14 @@
   /* ── FILTROS GAVETA MOBILE ── */
   .mob-filter-btn{display:none;position:fixed;bottom:72px;right:16px;z-index:190;width:44px;height:44px;border-radius:50%;background:var(--y);border:none;color:#000;font-size:18px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);align-items:center;justify-content:center}
   .mob-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:210;backdrop-filter:blur(2px)}
-  .mob-drawer{position:fixed;bottom:0;left:0;right:0;background:var(--s2);border-radius:16px 16px 0 0;border-top:1px solid var(--b2);z-index:220;padding:1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom,0px));max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+  .mob-drawer{position:fixed;bottom:0;left:0;right:0;background:#18181b;border-radius:16px 16px 0 0;border-top:2px solid rgba(247,203,69,.3);z-index:9999;padding:20px 20px 40px;min-height:200px;max-height:90vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s ease;color:#fafafa}
   .mob-drawer.open{transform:translateY(0)}
   .mob-drawer-handle{width:36px;height:4px;background:var(--b3);border-radius:2px;margin:0 auto 1.25rem}
-  .mob-drawer-title{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:1rem}
+  .mob-drawer-title{font-size:15px;font-weight:600;color:#fafafa;margin-bottom:1rem;display:block}
   .mob-drawer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .mob-drawer-grid .fgroup{display:flex;flex-direction:column;gap:4px}
   .mob-drawer-grid .fgroup.full{grid-column:1/-1}
-  .mob-drawer-grid select,.mob-drawer-grid input{background:var(--s3);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:13px;padding:0 10px;height:40px;border-radius:var(--r);outline:none;width:100%}
+  .mob-drawer-grid select,.mob-drawer-grid input{background:#232326;border:1px solid rgba(255,255,255,.15);color:#fafafa;font-family:var(--font);font-size:14px;padding:0 10px;height:44px;border-radius:8px;outline:none;width:100%}
   .mob-drawer-grid select:focus,.mob-drawer-grid input:focus{border-color:rgba(247,203,69,.5)}
 
   /* ── TABLET ── */
@@ -498,13 +498,13 @@
     <div style="display:flex;flex-direction:column;gap:14px">
       <div>
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">Filial</label>
-        <select id="mob-tvFil" onchange="TV_FIL=this.value" style="width:100%;height:44px;font-size:14px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 12px;outline:none;-webkit-appearance:menulist">
+        <select id="mob-tvFil" onchange="TV_FIL=this.value" style="width:100%;height:44px;font-size:14px;background:#232326;border:1px solid rgba(255,255,255,.15);color:#fafafa;border-radius:8px;padding:0 12px;outline:none">
           <option value="">— escolha uma filial —</option>
         </select>
       </div>
       <div>
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">Período</label>
-        <select id="mob-tvPeriodo" onchange="TV_PERIODO=this.value" style="width:100%;height:44px;font-size:14px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 12px;outline:none;-webkit-appearance:menulist">
+        <select id="mob-tvPeriodo" onchange="TV_PERIODO=this.value" style="width:100%;height:44px;font-size:14px;background:#232326;border:1px solid rgba(255,255,255,.15);color:#fafafa;border-radius:8px;padding:0 12px;outline:none">
           <option value="mes">Mês atual</option>
           <option value="30">Últimos 30 dias</option>
           <option value="7">Últimos 7 dias</option>
