@@ -381,7 +381,7 @@
         <span class="nav-icon">≡</span> Contratos
       </button>
       <button class="nav-item" onclick="switchTab('filial',this)" id="nav-filial">
-        <span class="nav-icon">📺</span> Filial — TV
+        <span class="nav-icon">🏢</span> Filial
       </button>
     </div>
 
@@ -414,6 +414,32 @@
           <select id="fCanal" class="sb-select"><option value="">Todos</option></select>
         </div>
 
+      </div>
+    </div>
+
+    <!-- CONTROLES FILIAL TV — aparece só quando tab filial está ativa -->
+    <div id="sb-filial-controls" style="display:none">
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-label">Painel da filial</div>
+      <div class="sidebar-section">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:0 4px">
+          <div class="fgroup">
+            <label class="sb-filter-label">Filial</label>
+            <select id="tvFil" class="sb-select" onchange="onTvFilChange()"><option value="">— escolha —</option></select>
+          </div>
+          <div id="tv-periodo-wrap" style="display:none" class="fgroup">
+            <label class="sb-filter-label">Período</label>
+            <select id="tvPeriodo" class="sb-select" onchange="renderTv()">
+              <option value="mes">Mês atual</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="hoje">Hoje</option>
+            </select>
+          </div>
+          <button id="tv-fullscreen-btn" onclick="openTvMode()" style="display:none;background:rgba(247,203,69,.12);border:1px solid rgba(247,203,69,.3);color:var(--y);font-family:var(--font);font-size:11px;padding:7px 12px;border-radius:var(--r);cursor:pointer;transition:all .15s;font-weight:600">
+            ⛶ Tela cheia
+          </button>
+        </div>
       </div>
     </div>
 
@@ -557,28 +583,10 @@
 
   <!-- PAINEL FILIAL TV -->
   <div id="p-filial" class="panel">
-    <!-- Estado inicial: escolha de filial -->
-    <div id="tv-setup" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1.5rem">
-      <div style="font-size:2rem">📺</div>
-      <div style="font-size:18px;font-weight:700;color:var(--t1)">Modo Filial — TV</div>
-      <div style="font-size:13px;color:var(--t3)">Selecione a filial para carregar o painel</div>
-      <div style="display:flex;flex-direction:column;gap:10px;width:280px">
-        <div class="fgroup">
-          <label class="sb-filter-label">Filial</label>
-          <select id="tvFil" class="sb-select" onchange="onTvFilChange()"><option value="">— escolha uma filial —</option></select>
-        </div>
-        <div id="tv-periodo-wrap" style="display:none" class="fgroup">
-          <label class="sb-filter-label">Período</label>
-          <select id="tvPeriodo" class="sb-select" onchange="renderTv()">
-            <option value="mes">Mês atual</option>
-            <option value="30">Últimos 30 dias</option>
-            <option value="7">Últimos 7 dias</option>
-            <option value="hoje">Hoje</option>
-          </select>
-        </div>
-      </div>
+    <div id="tv-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1rem;color:var(--t3)">
+      <span style="font-size:3rem;opacity:.3">🏢</span>
+      <span style="font-family:var(--mono);font-size:12px">Selecione uma filial na sidebar</span>
     </div>
-    <!-- Conteúdo TV (preenchido via JS) -->
     <div id="tv-content"></div>
   </div>
 
@@ -1132,15 +1140,20 @@ function switchTab(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
   if(btn)btn.classList.add('on');
   $('p-'+id).classList.add('on');
-  if(id==='visao')setTimeout(renderCharts,50);
-  if(id==='filial'){
+
+  const isFilial = id==='filial';
+  // Mostrar/ocultar controles sidebar de filial
+  const sbCtrl=$('sb-filial-controls');
+  if(sbCtrl) sbCtrl.style.display=isFilial?'block':'none';
+  // Esconder filter-bar e kpi-grid quando em modo filial
+  document.querySelectorAll('.filter-bar,.kpi-grid').forEach(el=>{
+    el.style.display=isFilial?'none':'';
+  });
+
+  if(id==='visao') setTimeout(renderCharts,50);
+  if(isFilial){
     if(TV_FIL) renderTv();
-    else{
-      const setup=$('tv-setup');
-      const tc=$('tv-content');
-      if(setup)setup.style.display='flex';
-      if(tc)tc.innerHTML='';
-    }
+    // se não tem filial, mostra estado vazio (sidebar direciona)
   }
 }
 
@@ -1203,15 +1216,20 @@ function buildTvFilSelect(){
 function onTvFilChange(){
   TV_FIL = $('tvFil').value;
   const wrap = $('tv-periodo-wrap');
+  const fsBtn = $('tv-fullscreen-btn');
   if(wrap) wrap.style.display = TV_FIL ? 'block' : 'none';
-  if(TV_FIL){
-    TV_PERIODO = $('tvPeriodo') ? $('tvPeriodo').value : 'mes';
-    renderTv();
+  if(fsBtn) fsBtn.style.display = TV_FIL ? 'block' : 'none';
+  const empty = $('tv-empty');
+  if(!TV_FIL){
+    if(empty) empty.style.display='flex';
+    const tc=$('tv-content'); if(tc) tc.innerHTML='';
+    return;
   }
+  if(empty) empty.style.display='none';
+  TV_PERIODO = $('tvPeriodo') ? $('tvPeriodo').value : 'mes';
+  renderTv();
 }
-function switchTvFilial(){
-  onTvFilChange();
-}
+function switchTvFilial(){ onTvFilChange(); }
 
 function getTvData(){
   const now = new Date();
@@ -1300,10 +1318,10 @@ function renderTv(){
       <!-- KPIs -->
       <div class="tv-kpis">
         <div class="tv-kpi">
-          <div class="tv-kpi-label">Produção — Contratos</div>
-          <div class="tv-kpi-val">${nContratos.toLocaleString('pt-BR')}</div>
-          <div class="tv-kpi-sub">${fmt(sumV)} liberados</div>
-          <div class="tv-kpi-icon">📋</div>
+          <div class="tv-kpi-label">Valor liberado</div>
+          <div class="tv-kpi-val">${fmt(sumV)}</div>
+          <div class="tv-kpi-sub">${nContratos.toLocaleString('pt-BR')} contrato${nContratos!==1?'s':''}</div>
+          <div class="tv-kpi-icon">💰</div>
         </div>
         <div class="tv-kpi">
           <div class="tv-kpi-label">Comissão loja</div>
@@ -1311,10 +1329,13 @@ function renderTv(){
           <div class="tv-kpi-sub">por Data Comissão</div>
           <div class="tv-kpi-icon">🏦</div>
         </div>
-        <div class="tv-kpi">
+        <div class="tv-kpi" style="grid-column:span 1;border-color:rgba(34,211,238,.2)">
           <div class="tv-kpi-label">Líquido loja</div>
-          <div class="tv-kpi-val">${fmt(sumL)}</div>
-          <div class="tv-kpi-sub">${sumD>0?'− '+fmt(sumD)+' descontos':'sem descontos'}</div>
+          <div class="tv-kpi-val" style="font-size:3.2rem">${fmt(sumL)}</div>
+          <div style="margin-top:.4rem">
+            <div style="font-size:13px;color:var(--t3);font-family:var(--mono)">bruto ${fmt(sumC)}</div>
+            <div style="font-size:11px;color:var(--t3);font-family:var(--mono)">${sumD>0?'− '+fmt(sumD)+' descontos':'sem descontos'}</div>
+          </div>
           <div class="tv-kpi-icon">✅</div>
         </div>
       </div>
@@ -1364,14 +1385,12 @@ function renderTv(){
     </div>
   </div>`;
 
-  // Atualiza conteúdo inline
-  const setup = $('tv-setup');
-  if(setup) setup.style.display = 'none';
-  const tvContent = $('tv-content');
-  if(tvContent) tvContent.innerHTML = html;
-  // Atualiza modal fullscreen
-  const inner = $('tv-inner');
-  if(inner) inner.innerHTML = html;
+  const empty=$('tv-empty');
+  if(empty) empty.style.display='none';
+  const tvContent=$('tv-content');
+  if(tvContent) tvContent.innerHTML=html;
+  const inner=$('tv-inner');
+  if(inner) inner.innerHTML=html;
 
   // Relógio
   updateTvClock();
@@ -1405,14 +1424,10 @@ function startTvProgress(){
 }
 
 function openTvMode(){
-  if(!TV_FIL){ alert('Selecione uma filial primeiro.'); return; }
+  if(!TV_FIL){ return; }
   const modal = $('tv-modal');
   modal.style.display = 'block';
   renderTv();
-  // Garante que modal também tem o conteúdo atualizado
-  const tvContent = $('tv-content');
-  const inner = $('tv-inner');
-  if(tvContent && inner) inner.innerHTML = tvContent.innerHTML;
   // Botão fechar
   if(!$('tv-close-btn')){
     const btn = document.createElement('button');
