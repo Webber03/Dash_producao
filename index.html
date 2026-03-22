@@ -207,7 +207,26 @@
   .modal-input:focus{border-color:rgba(247,203,69,.5);box-shadow:0 0 0 3px var(--y-glow)}
   .modal-actions{display:flex;gap:8px}
 
-  /* FILIAL DROPDOWN */
+  /* SIDEBAR DROPDOWNS */
+  .sb-filter-label{font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px}
+  .sb-select{width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12px;padding:0 8px;height:30px;border-radius:var(--r);outline:none;cursor:pointer;transition:border-color .15s;appearance:auto}
+  .sb-select:hover{border-color:var(--b3)}
+  .sb-select:focus{border-color:rgba(247,203,69,.5)}
+  .sb-drop-wrap{position:relative;width:100%}
+  .sb-drop-btn{width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12px;padding:0 10px;height:30px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px;transition:all .15s;white-space:nowrap;overflow:hidden}
+  .sb-drop-btn:hover{border-color:var(--b3)}
+  .sb-drop-btn.open{border-color:rgba(247,203,69,.5);box-shadow:0 0 0 2px var(--y-glow)}
+  .sb-drop-btn span{flex:1;overflow:hidden;text-overflow:ellipsis;text-align:left}
+  .sb-drop-btn svg{color:var(--t3);flex-shrink:0;transition:transform .15s}
+  .sb-drop-btn.open svg{transform:rotate(180deg)}
+  .sb-drop-panel{display:none;position:absolute;top:34px;left:0;right:0;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);z-index:300;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+  .sb-drop-panel.open{display:block}
+  .sb-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:12px;color:var(--t2);transition:background .1s;user-select:none;border-bottom:1px solid var(--b1)}
+  .sb-opt:last-child{border-bottom:none}
+  .sb-opt:hover{background:var(--s3);color:var(--t1)}
+  .sb-opt.sel{color:var(--y)}
+  .sb-opt input[type=checkbox]{width:12px;height:12px;accent-color:var(--y);cursor:pointer;flex-shrink:0;border-radius:3px}
+  /* FILIAL DROPDOWN (legacy compat) */
   .fil-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:12px;color:var(--t1);transition:background .1s;user-select:none}
   .fil-opt:hover{background:var(--s3)}
   .fil-opt input[type=checkbox]{width:13px;height:13px;accent-color:var(--y);cursor:pointer;flex-shrink:0}
@@ -300,27 +319,39 @@
     <div class="sidebar-label">Filtros rápidos</div>
     <div class="sidebar-section">
       <div style="display:flex;flex-direction:column;gap:6px;padding:0 4px">
+
+        <!-- MÊS dropdown multi -->
         <div class="fgroup">
-          <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Mês</label>
-          <select id="fMes" style="background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12px;padding:0 8px;height:30px;border-radius:6px;outline:none;width:100%"><option value="">Todos</option></select>
-        </div>
-        <div class="fgroup">
-          <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Filial</label>
-          <div id="fFil-wrap" style="position:relative;width:100%">
-            <button id="fFil-btn" onclick="toggleFilDropdown(event)" style="width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12px;padding:0 10px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-align:left;transition:all .15s" onblur="setTimeout(()=>closeFilDropdown(),150)">
-              <span id="fFil-label">Todas</span>
-              <span style="color:var(--t3);font-size:10px">▾</span>
+          <label class="sb-filter-label">Mês</label>
+          <div class="sb-drop-wrap" id="fMes-wrap">
+            <button class="sb-drop-btn" id="fMes-btn" onclick="toggleDrop('fMes',event)">
+              <span id="fMes-label">Todos</span>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
-            <div id="fFil-dropdown" style="display:none;position:absolute;top:34px;left:0;right:0;background:var(--s2);border:1px solid var(--b2);border-radius:6px;z-index:200;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5)">
-            </div>
+            <div class="sb-drop-panel" id="fMes-panel"></div>
+            <select id="fMes" multiple style="display:none"></select>
           </div>
-          <!-- hidden select para compatibilidade com buildFilters -->
-          <select id="fFil" multiple style="display:none"></select>
         </div>
+
+        <!-- FILIAL dropdown multi -->
         <div class="fgroup">
-          <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Canal</label>
-          <select id="fCanal" style="background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12px;padding:0 8px;height:30px;border-radius:6px;outline:none;width:100%"><option value="">Todos</option></select>
+          <label class="sb-filter-label">Filial</label>
+          <div class="sb-drop-wrap" id="fFil-wrap">
+            <button class="sb-drop-btn" id="fFil-btn" onclick="toggleDrop('fFil',event)">
+              <span id="fFil-label">Todas</span>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="sb-drop-panel" id="fFil-panel"></div>
+            <select id="fFil" multiple style="display:none"></select>
+          </div>
         </div>
+
+        <!-- CANAL dropdown simples -->
+        <div class="fgroup">
+          <label class="sb-filter-label">Canal</label>
+          <select id="fCanal" class="sb-select"><option value="">Todos</option></select>
+        </div>
+
       </div>
     </div>
 
@@ -556,7 +587,7 @@ const CANAIS = {
 const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
 
 // ── ESTADO ────────────────────────────────────────────────────
-let ALL=[], FILTERED=[], PAGE=0;
+let ALL=[], FILTERED=[], PAGE=0, MESES_SEL=[], FILS_SEL=[];
 const PER=20;
 let CHARTS={};
 const COLORS=['#f7cb45','#4cba7a','#3e4344','#e05c4b','#d1c9ca','#fbd96a','#7dd4a0','#a0a8aa','#f08070','#b8b2b3','#ffd85a','#6b8f6e'];
@@ -655,9 +686,12 @@ function buildFilters(){
   const mesesLib = ALL.map(r=>getMes(r['Data da Liberação'])).filter(Boolean);
   const mesesCom = ALL.map(r=>getMes(r['Data Comissao Loja'])).filter(Boolean);
   const meses = [...new Set([...mesesLib, ...mesesCom])].sort();
-  const elMes=$('fMes'),curM=elMes.value;
-  elMes.innerHTML='<option value="">Todos</option>';
-  meses.forEach(m=>{const[y,mo]=m.split('-'),o=document.createElement('option');o.value=m;o.textContent=MES[parseInt(mo)-1]+'/'+y.slice(2);if(m===curM)o.selected=true;elMes.appendChild(o)});
+  // MÊS — dropdown multi
+  const elMes=$('fMes');
+  const curMeses=[...elMes.selectedOptions].map(o=>o.value);
+  elMes.innerHTML='';
+  meses.forEach(m=>{const o=document.createElement('option');o.value=m;const[y,mo]=m.split('-');o.textContent=MES[parseInt(mo)-1]+'/'+y.slice(2);if(curMeses.includes(m))o.selected=true;elMes.appendChild(o)});
+  buildDropdown('fMes', meses.map(m=>{const[y,mo]=m.split('-');return{val:m,label:MES[parseInt(mo)-1]+'/'+y.slice(2)};}), curMeses, 'Todos', 'Todos os meses');
   // Filtra só os tipos permitidos
   const tiposPermitidos=Object.keys(TIPO_BADGE);
   const tiposPresentes=[...new Set(ALL.map(r=>r.Tipo))].filter(t=>tiposPermitidos.includes(t)).sort();
@@ -668,23 +702,9 @@ function buildFilters(){
   const filCodes=[...new Set(ALL.map(r=>String(r.Filial||'')).filter(Boolean))].sort();
   const elFil=$('fFil');
   const curFils=[...elFil.selectedOptions].map(o=>o.value);
-  // Rebuild hidden select
   elFil.innerHTML='';
   filCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=filialNome(cod);if(curFils.includes(cod))o.selected=true;elFil.appendChild(o)});
-  // Rebuild checkbox dropdown
-  const drop=$('fFil-dropdown');
-  if(drop){
-    drop.innerHTML='';
-    filCodes.forEach(cod=>{
-      const nome=filialNome(cod);
-      const item=document.createElement('label');
-      item.className='fil-opt'+(curFils.includes(cod)?' checked':'');
-      item.innerHTML=`<input type="checkbox" value="${cod}"${curFils.includes(cod)?' checked':''}> ${nome}`;
-      item.querySelector('input').addEventListener('change',()=>{syncFilSel();applyFilter();});
-      drop.appendChild(item);
-    });
-    updateFilLabel();
-  }
+  buildDropdown('fFil', filCodes.map(c=>({val:c,label:filialNome(c)})), curFils, 'Todas', 'Todas as filiais');
   // Canal de venda
   const canalCodes=[...new Set(ALL.map(r=>String(r.Canaldevenda||'')).filter(Boolean))].sort((a,b)=>Number(a)-Number(b));
   const elCanal=$('fCanal'),curCanal=elCanal.value;
@@ -693,8 +713,12 @@ function buildFilters(){
 }
 
 function applyFilter(){
-  const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
-  const fils=[...($('fFil').selectedOptions||[])].map(o=>o.value).filter(Boolean);
+  const tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
+  MESES_SEL=[...($('fMes').selectedOptions||[])].map(o=>o.value).filter(Boolean);
+  FILS_SEL=[...($('fFil').selectedOptions||[])].map(o=>o.value).filter(Boolean);
+  const meses=MESES_SEL;
+  const fils=FILS_SEL;
+  const mes=meses.length===1?meses[0]:'';
   const fDe=$('fDe').value, fAte=$('fAte').value;
 
   // quando seleciona mês, limpa período e vice-versa
@@ -709,10 +733,10 @@ function applyFilter(){
   };
 
   FILTERED=ALL.filter(r=>{
-    if(mes){
+    if(meses.length){
       const mesLib = getMes(r['Data da Liberação'])  || '';
       const mesCom = getMes(r['Data Comissao Loja']) || '';
-      if(mesLib!==mes && mesCom!==mes) return false;
+      if(!meses.includes(mesLib) && !meses.includes(mesCom)) return false;
     }
     if(fDe||fAte){
       const lib=r['Data da Liberação']||'';
@@ -728,28 +752,43 @@ function applyFilter(){
   PAGE=0; render();
 }
 
-function clearFilters(){['fMes','fTipo','fBco','fParc','fCanal'].forEach(id=>$(id).value='');[...$('fFil').options].forEach(o=>o.selected=false);if($('fFil-dropdown'))[...$('fFil-dropdown').querySelectorAll('input')].forEach(c=>{c.checked=false;c.closest('.fil-opt').classList.remove('checked')});updateFilLabel();$('fDe').value='';$('fAte').value='';$('srch').value='';applyFilter()}
-['fMes','fTipo','fBco','fParc','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
+function clearFilters(){
+  ['fTipo','fBco','fParc','fCanal'].forEach(id=>$(id).value='');
+  ['fMes','fFil'].forEach(id=>{
+    [...$(id).options].forEach(o=>o.selected=false);
+    const panel=$(id+'-panel');
+    if(panel){
+      panel.querySelectorAll('input[type=checkbox]').forEach(c=>{c.checked=false;});
+      panel.querySelectorAll('.sb-opt').forEach(o=>o.classList.remove('sel'));
+    }
+    const lbl=$(id+'-label');
+    if(lbl)lbl.textContent=id==='fMes'?'Todos':'Todas';
+  });
+  $('fDe').value='';$('fAte').value='';$('srch').value='';
+  applyFilter();
+}
+['fTipo','fBco','fParc','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
 const srchEl=$('srch');if(srchEl)srchEl.oninput=applyFilter;
 
 // ── RENDER ────────────────────────────────────────────────────
 function render(){renderKpis();renderCharts();renderCorretores();renderTabela()}
 
 function renderKpis(){
-  const mes = $('fMes').value;
+  const meses=MESES_SEL;
+  const mes=meses.length===1?meses[0]:'';
   const tipo=$('fTipo').value, bco=$('fBco').value, parc=$('fParc').value;
 
-  // Produção: apenas contratos cuja Data da Liberação está no mês filtrado
-  const prodRows = mes
-    ? FILTERED.filter(r => getMes(r['Data da Liberação']) === mes)
+  // Produção: contratos cuja Data da Liberação está nos meses filtrados
+  const prodRows = meses.length
+    ? FILTERED.filter(r => meses.includes(getMes(r['Data da Liberação'])||''))
     : FILTERED;
   const tot  = prodRows.length;
   const sumV = prodRows.reduce((a,r)=>a+val(r), 0);
   const tick = tot ? sumV/tot : 0;
 
-  // Comissão Loja: contratos cuja Data Comissao Loja está no mês filtrado
+  // Comissão Loja: contratos cuja Data Comissao Loja está nos meses filtrados
   const sumC = FILTERED.filter(r => {
-    if (mes && getMes(r['Data Comissao Loja']) !== mes) return false;
+    if (meses.length && !meses.includes(getMes(r['Data Comissao Loja'])||'')) return false;
     return true;
   }).reduce((a,r) => a + (r['Base Comissao']||0)*com(r)/100, 0);
 
@@ -759,7 +798,7 @@ function renderKpis(){
   $('kValS').textContent = 'valor total liberado';
   // Desconto Loja: mesmo filtro da comissão
   const sumD = FILTERED.filter(r => {
-    if (mes && getMes(r['Data Comissao Loja']) !== mes) return false;
+    if (meses.length && !meses.includes(getMes(r['Data Comissao Loja'])||'')) return false;
     return true;
   }).reduce((a,r) => a + (r['Desconto Loja']||0), 0);
 
@@ -769,7 +808,7 @@ function renderKpis(){
   $('kComS').textContent = 'por Data Comissão Loja';
   $('kLiq').textContent  = fmtK(sumL);
   $('kLiqS').textContent = sumD>0 ? '− '+fmtK(sumD)+' descontos' : 'sem descontos';
-  const comRows = FILTERED.filter(r => !mes || getMes(r['Data Comissao Loja']) === mes);
+  const comRows = FILTERED.filter(r => !meses.length || meses.includes(getMes(r['Data Comissao Loja'])||''));
   const tickCom = comRows.length ? sumC / comRows.length : 0;
   $('kTick').textContent  = fmtK(tickCom);
   $('kTickS').textContent = 'ticket médio de comissão';
@@ -891,40 +930,68 @@ function renderTabela(){
 }
 
 function changePage(d){PAGE+=d;renderTabela()}
-// ── FILIAL DROPDOWN ──────────────────────────────────────────
-function toggleFilDropdown(e){
-  e.stopPropagation();
-  const d=$('fFil-dropdown');
-  d.style.display=d.style.display==='none'?'block':'none';
+// ── DROPDOWNS GENÉRICOS (Mês + Filial) ───────────────────────
+function buildDropdown(id, items, selected, emptyLabel, allLabel){
+  const panel=$(id+'-panel');
+  const sel=$(id);
+  const lbl=$(id+'-label');
+  if(!panel)return;
+  panel.innerHTML='';
+  items.forEach(({val,label})=>{
+    const div=document.createElement('label');
+    div.className='sb-opt'+(selected.includes(val)?' sel':'');
+    const cb=document.createElement('input');
+    cb.type='checkbox'; cb.value=val; cb.checked=selected.includes(val);
+    cb.addEventListener('change',()=>{
+      div.classList.toggle('sel',cb.checked);
+      syncDrop(id);
+      applyFilter();
+    });
+    div.appendChild(cb);
+    div.appendChild(document.createTextNode(' '+label));
+    panel.appendChild(div);
+  });
+  updateDropLabel(id, emptyLabel, allLabel);
 }
-function closeFilDropdown(){
-  const d=$('fFil-dropdown');
-  if(d)d.style.display='none';
-}
-document.addEventListener('click',e=>{
-  if(!e.target.closest('#fFil-wrap'))closeFilDropdown();
-});
-function syncFilSel(){
-  // sincroniza checkboxes → hidden select
-  const checks=[...$('fFil-dropdown').querySelectorAll('input[type=checkbox]')];
-  [...$('fFil').options].forEach(o=>{
+
+function syncDrop(id){
+  const panel=$(id+'-panel');
+  const sel=$(id);
+  if(!panel||!sel)return;
+  const checks=[...panel.querySelectorAll('input[type=checkbox]')];
+  [...sel.options].forEach(o=>{
     const cb=checks.find(c=>c.value===o.value);
     o.selected=cb?cb.checked:false;
   });
-  // atualiza estilo checked
-  checks.forEach(cb=>{
-    cb.closest('.fil-opt').classList.toggle('checked',cb.checked);
-  });
-  updateFilLabel();
 }
-function updateFilLabel(){
-  const sel=[...$('fFil').selectedOptions].map(o=>o.textContent);
-  const lbl=$('fFil-label');
-  if(!lbl)return;
-  if(sel.length===0)lbl.textContent='Todas';
-  else if(sel.length===1)lbl.textContent=sel[0].slice(0,18);
-  else lbl.textContent=sel.length+' filiais';
+
+function updateDropLabel(id, emptyLabel, allLabel){
+  const sel=$(id);
+  const lbl=$(id+'-label');
+  if(!sel||!lbl)return;
+  const chosen=[...sel.selectedOptions].map(o=>o.textContent);
+  if(chosen.length===0) lbl.textContent=emptyLabel||'Todos';
+  else if(chosen.length===1) lbl.textContent=chosen[0].slice(0,20);
+  else lbl.textContent=chosen.length+' selecionados';
 }
+
+function toggleDrop(id,e){
+  e.stopPropagation();
+  const panel=$(id+'-panel');
+  const btn=$(id+'-btn');
+  const isOpen=panel.classList.contains('open');
+  // fecha todos
+  document.querySelectorAll('.sb-drop-panel.open').forEach(p=>p.classList.remove('open'));
+  document.querySelectorAll('.sb-drop-btn.open').forEach(b=>b.classList.remove('open'));
+  if(!isOpen){panel.classList.add('open');btn.classList.add('open');}
+}
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.sb-drop-wrap')){
+    document.querySelectorAll('.sb-drop-panel.open').forEach(p=>p.classList.remove('open'));
+    document.querySelectorAll('.sb-drop-btn.open').forEach(b=>b.classList.remove('open'));
+  }
+});
 
 function switchTab(id,btn){document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));if(btn)btn.classList.add('on');$('p-'+id).classList.add('on');if(id==='visao')setTimeout(renderCharts,50);}
 
