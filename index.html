@@ -298,19 +298,88 @@
   .tv-ticker-bar{height:2px;background:var(--b1);border-radius:1px;overflow:hidden;flex:1;max-width:80px}
   .tv-ticker-fill{height:100%;background:var(--y);border-radius:1px;transition:width 1s linear}
 
+
+  /* ── BOTTOM NAV MOBILE ── */
+  .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--s1);border-top:1px solid var(--b2);z-index:200;padding:6px 0 env(safe-area-inset-bottom,6px)}
+  .mob-nav-inner{display:flex;justify-content:space-around;align-items:center}
+  .mob-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--t3);font-family:var(--font);font-size:9px;font-weight:500;padding:4px 12px;cursor:pointer;transition:color .15s;min-width:56px}
+  .mob-nav-btn .mob-icon{font-size:18px;line-height:1}
+  .mob-nav-btn.on{color:var(--y)}
+
+  /* ── FILTROS GAVETA MOBILE ── */
+  .mob-filter-btn{display:none;position:fixed;bottom:72px;right:16px;z-index:190;width:44px;height:44px;border-radius:50%;background:var(--y);border:none;color:#000;font-size:18px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);align-items:center;justify-content:center}
+  .mob-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:210;backdrop-filter:blur(2px)}
+  .mob-drawer{position:fixed;bottom:0;left:0;right:0;background:var(--s2);border-radius:16px 16px 0 0;border-top:1px solid var(--b2);z-index:220;padding:1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom,0px));max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+  .mob-drawer.open{transform:translateY(0)}
+  .mob-drawer-handle{width:36px;height:4px;background:var(--b3);border-radius:2px;margin:0 auto 1.25rem}
+  .mob-drawer-title{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:1rem}
+  .mob-drawer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mob-drawer-grid .fgroup{display:flex;flex-direction:column;gap:4px}
+  .mob-drawer-grid .fgroup.full{grid-column:1/-1}
+  .mob-drawer-grid select,.mob-drawer-grid input{background:var(--s3);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:13px;padding:0 10px;height:40px;border-radius:var(--r);outline:none;width:100%}
+  .mob-drawer-grid select:focus,.mob-drawer-grid input:focus{border-color:rgba(247,203,69,.5)}
+
+  /* ── TABLET ── */
   @media(max-width:1200px){
     .page{grid-template-columns:1fr}
     .sidebar{display:none}
     .kpi-grid{grid-template-columns:repeat(3,1fr)}
     .chart-grid{grid-template-columns:1fr}
+    .tv-kpis{grid-template-columns:repeat(3,1fr)}
   }
+
+  /* ── MOBILE ── */
   @media(max-width:768px){
-    .kpi-grid{grid-template-columns:1fr 1fr}
-    .main{padding:1rem}
+    /* Topbar compacta */
+    .topbar{padding:0 1rem;height:52px}
+    .brand-sub{display:none}
+    .brand-sep{display:none}
+    .chip-y{display:none}
+    #ts{display:none}
+    .btn-link{display:none}
+
+    /* Layout */
+    .page{grid-template-columns:1fr}
+    .main{padding:.875rem 1rem 80px}
+
+    /* KPIs: 2 colunas */
+    .kpi-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+    .kpi{padding:.875rem 1rem}
+    .kpi-val{font-size:16px}
+
+    /* Filter bar oculta — vira gaveta */
+    .filter-bar{display:none}
+
+    /* Botão flutuante de filtros */
+    .mob-filter-btn{display:flex}
+
+    /* Bottom nav visível */
+    .mob-nav{display:block}
+
+    /* Charts */
+    .chart-grid{grid-template-columns:1fr;gap:10px;margin-bottom:10px}
+    .chart-wrap{height:180px}
+
+    /* Tabela scroll horizontal */
+    .table-scroll{-webkit-overflow-scrolling:touch}
+
+    /* TV */
+    .tv-header{padding:.875rem 1rem;flex-wrap:wrap;gap:8px}
+    .tv-kpis{grid-template-columns:1fr;gap:10px}
+    .tv-kpi-val{font-size:2rem}
+    .tv-bottom{grid-template-columns:1fr;gap:10px}
+    .tv-body{padding:1rem;gap:1rem}
+    .tv-meta-time{font-size:16px}
   }
+
+  /* ── MOBILE PEQUENO ── */
   @media(max-width:480px){
-    .kpi-grid{grid-template-columns:1fr}
-    .topbar{padding:0 1rem}
+    .topbar{padding:0 .875rem}
+    .kpi-grid{grid-template-columns:1fr 1fr;gap:8px}
+    .kpi{padding:.75rem .875rem}
+    .kpi-val{font-size:15px}
+    .main{padding:.75rem .875rem 80px}
+    .brand-name{font-size:12px}
   }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -364,6 +433,60 @@
   </div>
 </div>
 
+<!-- BOTTOM NAV MOBILE -->
+<nav class="mob-nav" id="mob-nav">
+  <div class="mob-nav-inner">
+    <button class="mob-nav-btn on" onclick="switchTab('visao',this);closeMobDrawer()" id="mob-visao">
+      <span class="mob-icon">◈</span>Visão
+    </button>
+    <button class="mob-nav-btn" onclick="switchTab('corretores',this);closeMobDrawer()" id="mob-corretores">
+      <span class="mob-icon">◎</span>Corretores
+    </button>
+    <button class="mob-nav-btn" onclick="switchTab('tabela',this);closeMobDrawer()" id="mob-tabela">
+      <span class="mob-icon">≡</span>Contratos
+    </button>
+    <button class="mob-nav-btn" onclick="switchTab('filial',this);closeMobDrawer()" id="mob-filial">
+      <span class="mob-icon">🏢</span>Filial
+    </button>
+  </div>
+</nav>
+
+<!-- BOTÃO FILTROS FLUTUANTE -->
+<button class="mob-filter-btn" id="mob-filter-btn" onclick="openMobDrawer()">⚙</button>
+
+<!-- GAVETA DE FILTROS -->
+<div class="mob-drawer-overlay" id="mob-overlay" onclick="closeMobDrawer()"></div>
+<div class="mob-drawer" id="mob-drawer">
+  <div class="mob-drawer-handle"></div>
+  <div class="mob-drawer-title">Filtros</div>
+  <div class="mob-drawer-grid">
+    <div class="fgroup">
+      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Mês</label>
+      <select onchange="$('fMes').value=this.value;applyFilter()" id="mob-fMes"><option value="">Todos</option></select>
+    </div>
+    <div class="fgroup">
+      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Tipo</label>
+      <select onchange="$('fTipo').value=this.value;applyFilter()" id="mob-fTipo"><option value="">Todos</option></select>
+    </div>
+    <div class="fgroup">
+      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Banco</label>
+      <select onchange="$('fBco').value=this.value;applyFilter()" id="mob-fBco"><option value="">Todos</option></select>
+    </div>
+    <div class="fgroup">
+      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Parceiro</label>
+      <select onchange="$('fParc').value=this.value;applyFilter()" id="mob-fParc"><option value="">Todos</option></select>
+    </div>
+    <div class="fgroup full">
+      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Busca</label>
+      <input type="text" id="mob-srch" placeholder="Nome, contrato ou CPF..." oninput="$('srch').value=this.value;applyFilter()" style="font-size:13px">
+    </div>
+    <div class="fgroup full" style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn" onclick="closeMobDrawer()" style="flex:1;height:40px;font-size:13px">Aplicar</button>
+      <button class="btn-ghost" onclick="clearFilters();syncMobFilters()" style="height:40px;font-size:13px">Limpar</button>
+    </div>
+  </div>
+</div>
+
 <!-- APP -->
 <div id="app">
 <div class="page">
@@ -381,7 +504,7 @@
         <span class="nav-icon">≡</span> Contratos
       </button>
       <button class="nav-item" onclick="switchTab('filial',this)" id="nav-filial">
-        <span class="nav-icon">🏢</span> Filial
+        <span class="nav-icon"><img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABAAEADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AIyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//9k=" width="16" height="16" style="opacity:.65;filter:invert(1);vertical-align:middle;margin-top:-2px"></span> Filial
       </button>
     </div>
 
@@ -482,7 +605,7 @@
       <div class="fdiv"></div>
       <div class="fgroup">
         <label>Busca</label>
-        <input type="text" id="srch" placeholder="Nome ou contrato...">
+        <input type="text" id="srch" placeholder="Nome, contrato ou CPF...">
       </div>
       <div class="actions">
         <button class="btn-ghost" onclick="clearFilters()">Limpar</button>
@@ -563,7 +686,7 @@
       <div class="table-scroll">
         <table><thead><tr>
           <th>Nome</th><th>CPF</th><th>Contrato</th><th>Banco</th><th>Tipo</th><th>Produto</th>
-          <th>Parcelas</th><th>Valor Liberado</th><th>Base Comissão</th>
+          <th>Parcelas</th><th>Valor Liberado</th>
           <th>Com.%</th><th>Com. R$</th><th>Líquido R$</th>
           <th>Liberação</th><th>Dt.Comissão</th><th>St.Comissão</th>
           <th>Canal</th><th>Parceiro</th><th>Corretor</th><th>Filial</th>
@@ -769,6 +892,7 @@ function initData(data) {
   $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
   buildFilters();
   buildTvFilSelect();
+  rebuildMobFilters();
   applyFilter();
   startAutoRefresh();
 }
@@ -834,7 +958,7 @@ function applyFilter(){
     if(parc&&r.Parceiro!==parc)return false;
     if(fils.length&&!fils.includes(String(r.Filial||'')))return false;
     if(canal&&String(r.Canaldevenda||'')!==canal)return false;
-    if(srch&&!(r.Nome||'').toLowerCase().includes(srch)&&!(r.Contrato||'').toLowerCase().includes(srch))return false;
+    if(srch&&!(r.Nome||'').toLowerCase().includes(srch)&&!(r.Contrato||'').toLowerCase().includes(srch)&&!(r.CPF||'').includes(srch))return false;
     return true;
   };
 
@@ -1023,7 +1147,6 @@ function renderTabela(){
     <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--muted);white-space:nowrap">${r.Produto||'—'}</td>
     <td style="font-family:var(--mono);text-align:center">${r['QuantidadedePrestação']||'—'}</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(val(r))}</td>
-    <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(baseC(r))}</td>
     <td style="font-family:var(--mono);text-align:right">${com(r).toFixed(2)}%</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#4ade80">${comR>0?fmt(comR):'—'}</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#22d3ee;font-weight:600">${(()=>{const d=parseFloat(r['Desconto Loja']||0);const l=comR-d;return comR>0?fmt(l):'—'})()}</td>
@@ -1445,6 +1568,61 @@ function closeTvMode(){
   if($('tv-close-btn')) $('tv-close-btn').style.display = 'none';
   clearInterval(tvRefreshTimer);
   if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+}
+
+// ── MOBILE GAVETA + BOTTOM NAV ───────────────────────────────
+function openMobDrawer(){
+  $('mob-drawer').classList.add('open');
+  $('mob-overlay').style.display='block';
+  syncMobFilters();
+}
+function closeMobDrawer(){
+  $('mob-drawer').classList.remove('open');
+  $('mob-overlay').style.display='none';
+}
+
+function syncMobFilters(){
+  // Sincroniza selects da gaveta com os principais
+  ['fMes','fTipo','fBco','fParc'].forEach(id=>{
+    const mob=$('mob-'+id), main=$(id);
+    if(!mob||!main)return;
+    // Popular opções se vazias
+    if(mob.options.length<=1 && main.options.length>1){
+      [...main.options].forEach(o=>{
+        const c=document.createElement('option');
+        c.value=o.value; c.textContent=o.textContent;
+        mob.appendChild(c);
+      });
+    }
+    mob.value=main.value;
+  });
+  const mobSrch=$('mob-srch');
+  if(mobSrch) mobSrch.value=$('srch').value;
+}
+
+// Atualizar bottom nav quando switchTab é chamado
+const _origSwitchTab = switchTab;
+function switchTab(id,btn){
+  _origSwitchTab(id,btn);
+  // Sync bottom nav
+  document.querySelectorAll('.mob-nav-btn').forEach(b=>b.classList.remove('on'));
+  const mobBtn=$('mob-'+id);
+  if(mobBtn) mobBtn.classList.add('on');
+}
+
+// Rebuild gaveta ao carregar dados
+function rebuildMobFilters(){
+  ['fMes','fTipo','fBco','fParc'].forEach(id=>{
+    const mob=$('mob-'+id), main=$(id);
+    if(!mob||!main)return;
+    mob.innerHTML='';
+    [...main.options].forEach(o=>{
+      const c=document.createElement('option');
+      c.value=o.value; c.textContent=o.textContent;
+      if(o.selected)c.selected=true;
+      mob.appendChild(c);
+    });
+  });
 }
 
 // ── START ─────────────────────────────────────────────────────
