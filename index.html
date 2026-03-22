@@ -446,7 +446,7 @@
       <span class="mob-icon">≡</span>Contratos
     </button>
     <button class="mob-nav-btn" onclick="switchTab('filial',this);closeMobDrawer()" id="mob-filial">
-      <span class="mob-icon">🏢</span>Filial
+      <span class="mob-icon"><img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABAAEADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AIyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//9k=" width="18" height="18" style="filter:invert(1);opacity:.7;vertical-align:middle"></span>Filial
     </button>
   </div>
 </nav>
@@ -1264,19 +1264,30 @@ function switchTab(id,btn){
   if(btn)btn.classList.add('on');
   $('p-'+id).classList.add('on');
 
+  // Sync bottom nav mobile
+  document.querySelectorAll('.mob-nav-btn').forEach(b=>b.classList.remove('on'));
+  const mobBtn=$('mob-'+id);
+  if(mobBtn) mobBtn.classList.add('on');
+
   const isFilial = id==='filial';
-  // Mostrar/ocultar controles sidebar de filial
   const sbCtrl=$('sb-filial-controls');
   if(sbCtrl) sbCtrl.style.display=isFilial?'block':'none';
-  // Esconder filter-bar e kpi-grid quando em modo filial
   document.querySelectorAll('.filter-bar,.kpi-grid').forEach(el=>{
     el.style.display=isFilial?'none':'';
   });
+  // Botão flutuante de filtros: esconde em filial
+  const mobFBtn=$('mob-filter-btn');
+  if(mobFBtn) mobFBtn.style.display=isFilial?'none':'';
 
   if(id==='visao') setTimeout(renderCharts,50);
   if(isFilial){
     if(TV_FIL) renderTv();
-    // se não tem filial, mostra estado vazio (sidebar direciona)
+    else{
+      const empty=$('tv-empty');
+      const tc=$('tv-content');
+      if(empty)empty.style.display='flex';
+      if(tc)tc.innerHTML='';
+    }
   }
 }
 
@@ -1600,15 +1611,7 @@ function syncMobFilters(){
   if(mobSrch) mobSrch.value=$('srch').value;
 }
 
-// Atualizar bottom nav quando switchTab é chamado
-const _origSwitchTab = switchTab;
-function switchTab(id,btn){
-  _origSwitchTab(id,btn);
-  // Sync bottom nav
-  document.querySelectorAll('.mob-nav-btn').forEach(b=>b.classList.remove('on'));
-  const mobBtn=$('mob-'+id);
-  if(mobBtn) mobBtn.classList.add('on');
-}
+
 
 // Rebuild gaveta ao carregar dados
 function rebuildMobFilters(){
