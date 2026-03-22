@@ -380,29 +380,9 @@
       <button class="nav-item" onclick="switchTab('tabela',this)" id="nav-tabela">
         <span class="nav-icon">≡</span> Contratos
       </button>
-    </div>
-
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-label">📺 Modo TV — Filial</div>
-    <div class="sidebar-section">
-      <div style="display:flex;flex-direction:column;gap:6px;padding:0 4px">
-        <div class="fgroup">
-          <label class="sb-filter-label">Selecionar filial</label>
-          <select id="tvFil" class="sb-select" onchange="switchTvFilial()"><option value="">— escolha —</option></select>
-        </div>
-        <div class="fgroup">
-          <label class="sb-filter-label">Período</label>
-          <select id="tvPeriodo" class="sb-select" onchange="renderTv()">
-            <option value="mes">Mês atual</option>
-            <option value="30">Últimos 30 dias</option>
-            <option value="7">Últimos 7 dias</option>
-            <option value="hoje">Hoje</option>
-          </select>
-        </div>
-        <button class="btn" onclick="openTvMode()" style="margin-top:4px;font-size:11px;height:28px">
-          ⛶ Abrir em tela cheia
-        </button>
-      </div>
+      <button class="nav-item" onclick="switchTab('filial',this)" id="nav-filial">
+        <span class="nav-icon">📺</span> Filial — TV
+      </button>
     </div>
 
     <div class="sidebar-label">Filtros rápidos</div>
@@ -576,7 +556,31 @@
 
 
   <!-- PAINEL FILIAL TV -->
-  <div id="p-filial" class="panel"></div>
+  <div id="p-filial" class="panel">
+    <!-- Estado inicial: escolha de filial -->
+    <div id="tv-setup" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1.5rem">
+      <div style="font-size:2rem">📺</div>
+      <div style="font-size:18px;font-weight:700;color:var(--t1)">Modo Filial — TV</div>
+      <div style="font-size:13px;color:var(--t3)">Selecione a filial para carregar o painel</div>
+      <div style="display:flex;flex-direction:column;gap:10px;width:280px">
+        <div class="fgroup">
+          <label class="sb-filter-label">Filial</label>
+          <select id="tvFil" class="sb-select" onchange="onTvFilChange()"><option value="">— escolha uma filial —</option></select>
+        </div>
+        <div id="tv-periodo-wrap" style="display:none" class="fgroup">
+          <label class="sb-filter-label">Período</label>
+          <select id="tvPeriodo" class="sb-select" onchange="renderTv()">
+            <option value="mes">Mês atual</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="7">Últimos 7 dias</option>
+            <option value="hoje">Hoje</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <!-- Conteúdo TV (preenchido via JS) -->
+    <div id="tv-content"></div>
+  </div>
 
   </main>
 </div>
@@ -1123,7 +1127,22 @@ document.addEventListener('click',e=>{
   }
 });
 
-function switchTab(id,btn){document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));if(btn)btn.classList.add('on');$('p-'+id).classList.add('on');if(id==='visao')setTimeout(renderCharts,50);if(id==='filial')renderTv();}
+function switchTab(id,btn){
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  $('p-'+id).classList.add('on');
+  if(id==='visao')setTimeout(renderCharts,50);
+  if(id==='filial'){
+    if(TV_FIL) renderTv();
+    else{
+      const setup=$('tv-setup');
+      const tc=$('tv-content');
+      if(setup)setup.style.display='flex';
+      if(tc)tc.innerHTML='';
+    }
+  }
+}
 
 // ── AUTO-REFRESH ──────────────────────────────────────────────
 const REFRESH_INTERVAL=60;
@@ -1181,10 +1200,17 @@ function buildTvFilSelect(){
   });
 }
 
-function switchTvFilial(){
+function onTvFilChange(){
   TV_FIL = $('tvFil').value;
-  TV_PERIODO = $('tvPeriodo').value;
-  if(TV_FIL) renderTv();
+  const wrap = $('tv-periodo-wrap');
+  if(wrap) wrap.style.display = TV_FIL ? 'block' : 'none';
+  if(TV_FIL){
+    TV_PERIODO = $('tvPeriodo') ? $('tvPeriodo').value : 'mes';
+    renderTv();
+  }
+}
+function switchTvFilial(){
+  onTvFilChange();
 }
 
 function getTvData(){
@@ -1338,9 +1364,12 @@ function renderTv(){
     </div>
   </div>`;
 
-  // Atualiza painel inline e modal fullscreen
-  const panel = $('p-filial');
-  if(panel) panel.innerHTML = html;
+  // Atualiza conteúdo inline
+  const setup = $('tv-setup');
+  if(setup) setup.style.display = 'none';
+  const tvContent = $('tv-content');
+  if(tvContent) tvContent.innerHTML = html;
+  // Atualiza modal fullscreen
   const inner = $('tv-inner');
   if(inner) inner.innerHTML = html;
 
@@ -1380,6 +1409,10 @@ function openTvMode(){
   const modal = $('tv-modal');
   modal.style.display = 'block';
   renderTv();
+  // Garante que modal também tem o conteúdo atualizado
+  const tvContent = $('tv-content');
+  const inner = $('tv-inner');
+  if(tvContent && inner) inner.innerHTML = tvContent.innerHTML;
   // Botão fechar
   if(!$('tv-close-btn')){
     const btn = document.createElement('button');
