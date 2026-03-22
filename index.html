@@ -244,9 +244,13 @@
 
 <!-- ERROR -->
 <div id="error-box">
-  <h2>Erro ao carregar dados</h2>
-  <p>Não foi possível buscar o JSON via <code>proxy.php</code>.<br>Verifique se o arquivo está na mesma pasta do servidor e tente novamente.</p>
-  <button class="btn" onclick="reloadData()">↻ Tentar novamente</button>
+  <h2>Não foi possível carregar os dados</h2>
+  <p>O sistema tentou carregar automaticamente mas falhou.<br><br>
+  <strong style="color:var(--t1)">Solução:</strong> Clique em <strong style="color:var(--y)">⚙ URL</strong> na barra superior, cole o link do JSON gerado pelo Progestor e clique em Salvar.</p>
+  <div style="display:flex;gap:8px;justify-content:center;margin-top:1rem">
+    <button class="btn" onclick="openUrlModal()">⚙ Configurar URL</button>
+    <button class="btn-ghost" onclick="reloadData()">↻ Tentar novamente</button>
+  </div>
 </div>
 
 <!-- MODAL URL -->
@@ -552,6 +556,7 @@ async function loadData() {
 
   const manualUrl = localStorage.getItem('progestor_json_url');
 
+  // 1. URL manual salva → proxy.php
   if (manualUrl) {
     $('loader-msg').textContent = 'carregando via URL manual...';
     try {
@@ -560,19 +565,30 @@ async function loadData() {
     } catch(e) {
       console.warn('proxy.php falhou:', e.message);
     }
+
+    // 2. Tenta direto (sem proxy) — funciona se CORS liberado
+    $('loader-msg').textContent = 'tentando acesso direto...';
+    try {
+      const data = await fetchJSON(manualUrl, 15000);
+      initData(data); return;
+    } catch(e) {
+      console.warn('direto falhou:', e.message);
+    }
   }
 
-  // Modo automático — trigger.php
-  $('loader-msg').textContent = 'buscando dados via trigger.php...';
+  // 3. trigger.php (com timeout curto — se demorar é porque falhou)
+  $('loader-msg').textContent = 'buscando dados automáticos...';
   try {
-    const data = await fetchJSON('trigger.php?_t=' + Date.now(), 55000);
+    const data = await fetchJSON('trigger.php?_t=' + Date.now(), 20000);
     initData(data); return;
   } catch(e) {
     console.warn('trigger.php falhou:', e.message);
-    $('loader-msg').textContent = 'trigger.php falhou — tente configurar a URL manualmente';
   }
 
-  setTimeout(() => { hide('loader'); show('error-box'); $('status-txt').textContent = 'erro'; }, 800);
+  // 4. Nenhum funcionou — mostra erro com instrução clara
+  hide('loader');
+  show('error-box');
+  $('status-txt').textContent = 'erro';
 }
 
 async function fetchJSON(url, timeout=10000) {
@@ -816,3 +832,48 @@ function renderTabela(){
 
 function changePage(d){PAGE+=d;renderTabela()}
 function switchTab(id,btn){document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));if(btn)btn.classList.add('on');$('p-'+id).classList.add('on');if(id==='visao')setTimeout(renderCharts,50);}
+
+// ── AUTO-REFRESH ──────────────────────────────────────────────
+const REFRESH_INTERVAL=60;
+let countdown=REFRESH_INTERVAL, countTimer=null, refreshTimer=null;
+
+function updateCountdown(){
+  if($('countdown')) $('countdown').textContent=countdown+'s';
+  if(countdown<=0){ autoRefresh(); return; }
+  countdown--;
+  countTimer=setTimeout(updateCountdown,1000);
+}
+
+function startAutoRefresh(){
+  stopAutoRefresh();
+  countdown=REFRESH_INTERVAL;
+  updateCountdown();
+}
+
+function stopAutoRefresh(){
+  clearTimeout(countTimer);
+  clearTimeout(refreshTimer);
+}
+
+async function autoRefresh(){
+  try {
+    const manualUrl = localStorage.getItem('progestor_json_url');
+    const endpoint = manualUrl
+      ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
+      : 'trigger.php?_t=' + Date.now();
+    const data = await fetchJSON(endpoint, manualUrl ? 10000 : 20000);
+    ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0)}));
+    $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
+    $('status-txt').textContent=ALL.length+' registros';
+    if($('sidebar-total'))$('sidebar-total').textContent=ALL.length.toLocaleString('pt-BR');
+    buildFilters(); applyFilter();
+  } catch(e){ $('status-txt').textContent='falha ao atualizar'; }
+  countdown=REFRESH_INTERVAL;
+  updateCountdown();
+}
+
+// ── START ─────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
