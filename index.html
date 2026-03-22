@@ -460,56 +460,61 @@
 <div class="mob-drawer-overlay" id="mob-overlay" onclick="closeMobDrawer()"></div>
 <div class="mob-drawer" id="mob-drawer">
   <div class="mob-drawer-handle"></div>
-  <div id="mob-drawer-content">
-  <div class="mob-drawer-title">Filtros</div>
-  <div class="mob-drawer-grid">
-    <div class="fgroup">
-      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Mês</label>
-      <select onchange="$('fMes').value=this.value;applyFilter()" id="mob-fMes"><option value="">Todos</option></select>
-    </div>
-    <div class="fgroup">
-      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Tipo</label>
-      <select onchange="$('fTipo').value=this.value;applyFilter()" id="mob-fTipo"><option value="">Todos</option></select>
-    </div>
-    <div class="fgroup">
-      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Banco</label>
-      <select onchange="$('fBco').value=this.value;applyFilter()" id="mob-fBco"><option value="">Todos</option></select>
-    </div>
-    <div class="fgroup">
-      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Parceiro</label>
-      <select onchange="$('fParc').value=this.value;applyFilter()" id="mob-fParc"><option value="">Todos</option></select>
-    </div>
-    <div class="fgroup full">
-      <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Busca</label>
-      <input type="text" id="mob-srch" placeholder="Nome, contrato ou CPF..." oninput="$('srch').value=this.value;applyFilter()" style="font-size:13px">
-    </div>
-    <div class="fgroup full" style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn" onclick="closeMobDrawer()" style="flex:1;height:40px;font-size:13px">Aplicar</button>
-      <button class="btn-ghost" onclick="clearFilters();syncMobFilters()" style="height:40px;font-size:13px">Limpar</button>
-    </div>
-  </div><!-- /mob-drawer-content -->
 
-  <!-- FILIAL TV controles mobile -->
+  <!-- SEÇÃO: FILTROS GERAIS -->
+  <div id="mob-drawer-content">
+    <div class="mob-drawer-title">Filtros</div>
+    <div class="mob-drawer-grid">
+      <div class="fgroup">
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Mês</label>
+        <select onchange="$('fMes').value=this.value;applyFilter()" id="mob-fMes"><option value="">Todos</option></select>
+      </div>
+      <div class="fgroup">
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Tipo</label>
+        <select onchange="$('fTipo').value=this.value;applyFilter()" id="mob-fTipo"><option value="">Todos</option></select>
+      </div>
+      <div class="fgroup">
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Banco</label>
+        <select onchange="$('fBco').value=this.value;applyFilter()" id="mob-fBco"><option value="">Todos</option></select>
+      </div>
+      <div class="fgroup">
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Parceiro</label>
+        <select onchange="$('fParc').value=this.value;applyFilter()" id="mob-fParc"><option value="">Todos</option></select>
+      </div>
+      <div class="fgroup full">
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Busca</label>
+        <input type="text" id="mob-srch" placeholder="Nome, contrato ou CPF..." oninput="$('srch').value=this.value;applyFilter()" style="font-size:13px">
+      </div>
+      <div class="fgroup full" style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn" onclick="closeMobDrawer()" style="flex:1;height:40px;font-size:13px">Aplicar</button>
+        <button class="btn-ghost" onclick="clearFilters();syncMobFilters()" style="height:40px;font-size:13px">Limpar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO: FILIAL TV -->
   <div id="mob-filial-controls" style="display:none">
     <div class="mob-drawer-title">Painel da Filial</div>
-    <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;flex-direction:column;gap:14px">
       <div>
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">Filial</label>
-        <select id="mob-tvFil" onchange="mobSelectFilial(this.value)" style="width:100%;height:44px;font-size:14px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 12px;outline:none;-webkit-appearance:auto"></select>
+        <select id="mob-tvFil" onchange="TV_FIL=this.value" style="width:100%;height:44px;font-size:14px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 12px;outline:none;-webkit-appearance:menulist">
+          <option value="">— escolha uma filial —</option>
+        </select>
       </div>
       <div>
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">Período</label>
-        <select id="mob-tvPeriodo" onchange="mobSelectPeriodo(this.value)" style="width:100%;height:44px;font-size:14px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 12px;outline:none;-webkit-appearance:auto">
+        <select id="mob-tvPeriodo" onchange="TV_PERIODO=this.value" style="width:100%;height:44px;font-size:14px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 12px;outline:none;-webkit-appearance:menulist">
           <option value="mes">Mês atual</option>
           <option value="30">Últimos 30 dias</option>
           <option value="7">Últimos 7 dias</option>
           <option value="hoje">Hoje</option>
         </select>
       </div>
-      <button class="btn" onclick="mobAplicarFilial()" style="height:44px;font-size:14px;width:100%;border-radius:var(--r)">Ver painel</button>
+      <button class="btn" onclick="mobAplicarFilial()" style="height:44px;font-size:14px;width:100%">Ver painel</button>
     </div>
   </div>
-  </div>
+
 </div>
 
 <!-- APP -->
@@ -1630,35 +1635,35 @@ function getActiveTab(){
   return p?p.id.replace('p-',''):'visao';
 }
 
-function populateMobTvFil(){
-  const mob=$('mob-tvFil');
-  if(!mob)return;
-  // Sempre repopular com dados atuais
-  mob.innerHTML='<option value="">— escolha uma filial —</option>';
-  FILIAIS_ORDER.forEach(([cod,nome])=>{
-    if(!ALL.some(r=>String(r.Filial)===cod))return;
-    const o=document.createElement('option');
-    o.value=cod; o.textContent=nome;
-    if(cod===TV_FIL)o.selected=true;
-    mob.appendChild(o);
-  });
-}
-
 function openMobDrawer(){
   const drawer=$('mob-drawer');
   const overlay=$('mob-overlay');
   if(!drawer||!overlay)return;
 
   const isFilial=(getActiveTab()==='filial');
+
+  // Mostrar seção correta
   const filtros=$('mob-drawer-content');
   const filCtrl=$('mob-filial-controls');
   if(filtros) filtros.style.display=isFilial?'none':'block';
   if(filCtrl) filCtrl.style.display=isFilial?'block':'none';
 
   if(isFilial){
-    populateMobTvFil();
-    const mobPer=$('mob-tvPeriodo');
-    if(mobPer) mobPer.value=TV_PERIODO||'mes';
+    // Popular select de filiais direto do ALL
+    const sel=$('mob-tvFil');
+    if(sel){
+      sel.innerHTML='<option value="">— escolha uma filial —</option>';
+      const codsPresentes=[...new Set(ALL.map(r=>String(r.Filial||'')).filter(Boolean))];
+      FILIAIS_ORDER.forEach(([cod,nome])=>{
+        if(!codsPresentes.includes(cod))return;
+        const o=document.createElement('option');
+        o.value=cod; o.textContent=nome;
+        if(cod===TV_FIL)o.selected=true;
+        sel.appendChild(o);
+      });
+    }
+    const per=$('mob-tvPeriodo');
+    if(per) per.value=TV_PERIODO||'mes';
   } else {
     syncMobFilters();
   }
@@ -1667,16 +1672,19 @@ function openMobDrawer(){
   requestAnimationFrame(()=>drawer.classList.add('open'));
 }
 
-function mobSelectFilial(val){TV_FIL=val;}
-function mobSelectPeriodo(val){TV_PERIODO=val;}
 function mobAplicarFilial(){
-  if(!TV_FIL){alert('Escolha uma filial');return;}
-  // Sync com os selects ocultos do desktop
+  const sel=$('mob-tvFil');
+  const per=$('mob-tvPeriodo');
+  TV_FIL = sel?sel.value:'';
+  TV_PERIODO = per?per.value:'mes';
+  if(!TV_FIL){ sel.focus(); return; }
   const mainFil=$('tvFil');
   const mainPer=$('tvPeriodo');
   if(mainFil)mainFil.value=TV_FIL;
-  if(mainPer)mainPer.value=TV_PERIODO||'mes';
+  if(mainPer)mainPer.value=TV_PERIODO;
   closeMobDrawer();
+  const empty=$('tv-empty');
+  if(empty)empty.style.display='none';
   renderTv();
 }
 
