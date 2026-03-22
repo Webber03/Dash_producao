@@ -221,11 +221,15 @@
   .sb-drop-btn.open svg{transform:rotate(180deg)}
   .sb-drop-panel{display:none;position:absolute;top:34px;left:0;right:0;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);z-index:300;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.6)}
   .sb-drop-panel.open{display:block}
-  .sb-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:12px;color:var(--t2);transition:background .1s;user-select:none;border-bottom:1px solid var(--b1)}
+  .sb-opt{display:flex;align-items:center;gap:7px;padding:6px 10px;cursor:pointer;font-size:11px;color:var(--t2);transition:all .12s;user-select:none;border-bottom:1px solid rgba(255,255,255,.03)}
   .sb-opt:last-child{border-bottom:none}
-  .sb-opt:hover{background:var(--s3);color:var(--t1)}
-  .sb-opt.sel{color:var(--y)}
-  .sb-opt input[type=checkbox]{width:12px;height:12px;accent-color:var(--y);cursor:pointer;flex-shrink:0;border-radius:3px}
+  .sb-opt:hover{background:rgba(247,203,69,.05);color:var(--t1)}
+  .sb-opt.sel{color:var(--y);background:rgba(247,203,69,.06)}
+  .sb-opt input[type=checkbox]{width:10px;height:10px;accent-color:var(--y);cursor:pointer;flex-shrink:0;border-radius:2px;opacity:.8;margin-top:1px}
+  /* MÊS PILLS */
+  .mes-pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:99px;font-size:10px;font-family:var(--mono);font-weight:500;cursor:pointer;border:1px solid var(--b2);background:var(--s2);color:var(--t3);transition:all .15s;white-space:nowrap;user-select:none}
+  .mes-pill:hover{border-color:var(--b3);color:var(--t1)}
+  .mes-pill.on{background:var(--y-dim);border-color:rgba(247,203,69,.4);color:var(--y)}
   /* FILIAL DROPDOWN (legacy compat) */
   .fil-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:12px;color:var(--t1);transition:background .1s;user-select:none}
   .fil-opt:hover{background:var(--s3)}
@@ -320,17 +324,14 @@
     <div class="sidebar-section">
       <div style="display:flex;flex-direction:column;gap:6px;padding:0 4px">
 
-        <!-- MÊS dropdown multi -->
+        <!-- MÊS pills -->
         <div class="fgroup">
-          <label class="sb-filter-label">Mês</label>
-          <div class="sb-drop-wrap" id="fMes-wrap">
-            <button class="sb-drop-btn" id="fMes-btn" onclick="toggleDrop('fMes',event)">
-              <span id="fMes-label">Todos</span>
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <div class="sb-drop-panel" id="fMes-panel"></div>
-            <select id="fMes" multiple style="display:none"></select>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <label class="sb-filter-label" style="margin:0">Mês</label>
+            <button onclick="clearMes()" id="fMes-clear" style="display:none;font-size:9px;color:var(--t3);background:none;border:none;cursor:pointer;font-family:var(--mono);padding:0">limpar</button>
           </div>
+          <div id="fMes-pills" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+          <select id="fMes" multiple style="display:none"></select>
         </div>
 
         <!-- FILIAL dropdown multi -->
@@ -691,7 +692,7 @@ function buildFilters(){
   const curMeses=[...elMes.selectedOptions].map(o=>o.value);
   elMes.innerHTML='';
   meses.forEach(m=>{const o=document.createElement('option');o.value=m;const[y,mo]=m.split('-');o.textContent=MES[parseInt(mo)-1]+'/'+y.slice(2);if(curMeses.includes(m))o.selected=true;elMes.appendChild(o)});
-  buildDropdown('fMes', meses.map(m=>{const[y,mo]=m.split('-');return{val:m,label:MES[parseInt(mo)-1]+'/'+y.slice(2)};}), curMeses, 'Todos', 'Todos os meses');
+  buildMesPills(meses, curMeses);
   // Filtra só os tipos permitidos
   const tiposPermitidos=Object.keys(TIPO_BADGE);
   const tiposPresentes=[...new Set(ALL.map(r=>r.Tipo))].filter(t=>tiposPermitidos.includes(t)).sort();
@@ -754,18 +755,24 @@ function applyFilter(){
 
 function clearFilters(){
   ['fTipo','fBco','fParc','fCanal'].forEach(id=>$(id).value='');
-  ['fMes','fFil'].forEach(id=>{
-    [...$(id).options].forEach(o=>o.selected=false);
-    const panel=$(id+'-panel');
-    if(panel){
-      panel.querySelectorAll('input[type=checkbox]').forEach(c=>{c.checked=false;});
-      panel.querySelectorAll('.sb-opt').forEach(o=>o.classList.remove('sel'));
-    }
-    const lbl=$(id+'-label');
-    if(lbl)lbl.textContent=id==='fMes'?'Todos':'Todas';
-  });
+  clearMes();
+  // Limpar filial
+  [...$('fFil').options].forEach(o=>o.selected=false);
+  const filPanel=$('fFil-panel');
+  if(filPanel){
+    filPanel.querySelectorAll('input[type=checkbox]').forEach(c=>{c.checked=false;});
+    filPanel.querySelectorAll('.sb-opt').forEach(o=>o.classList.remove('sel'));
+  }
+  const filLbl=$('fFil-label');
+  if(filLbl)filLbl.textContent='Todas';
   $('fDe').value='';$('fAte').value='';$('srch').value='';
   applyFilter();
+}
+function clearMes(){
+  [...$('fMes').options].forEach(o=>o.selected=false);
+  if($('fMes-pills'))$('fMes-pills').querySelectorAll('.mes-pill').forEach(p=>p.classList.remove('on'));
+  if($('fMes-clear'))$('fMes-clear').style.display='none';
+  MESES_SEL=[];
 }
 ['fTipo','fBco','fParc','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
 const srchEl=$('srch');if(srchEl)srchEl.oninput=applyFilter;
@@ -930,6 +937,36 @@ function renderTabela(){
 }
 
 function changePage(d){PAGE+=d;renderTabela()}
+// ── MÊS PILLS ────────────────────────────────────────────────
+function buildMesPills(meses, selected){
+  const container=$('fMes-pills');
+  if(!container)return;
+  container.innerHTML='';
+  meses.forEach(m=>{
+    const [y,mo]=m.split('-');
+    const label=MES[parseInt(mo)-1]+'/'+y.slice(2);
+    const pill=document.createElement('span');
+    pill.className='mes-pill'+(selected.includes(m)?' on':'');
+    pill.textContent=label;
+    pill.dataset.val=m;
+    pill.onclick=()=>{
+      pill.classList.toggle('on');
+      // sync hidden select
+      [...$('fMes').options].forEach(o=>{
+        if(o.value===m) o.selected=pill.classList.contains('on');
+      });
+      // mostrar/esconder botão limpar
+      const hasAny=!!container.querySelector('.mes-pill.on');
+      if($('fMes-clear'))$('fMes-clear').style.display=hasAny?'':'none';
+      MESES_SEL=[...($('fMes').selectedOptions||[])].map(o=>o.value).filter(Boolean);
+      applyFilter();
+    };
+    container.appendChild(pill);
+  });
+  // mostrar botão limpar se há seleção
+  if($('fMes-clear'))$('fMes-clear').style.display=selected.length?'':'none';
+}
+
 // ── DROPDOWNS GENÉRICOS (Mês + Filial) ───────────────────────
 function buildDropdown(id, items, selected, emptyLabel, allLabel){
   const panel=$(id+'-panel');
