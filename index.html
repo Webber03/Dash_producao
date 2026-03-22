@@ -119,22 +119,29 @@
   .kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
   .kpi-label{font-size:11px;font-weight:500;color:var(--t3);letter-spacing:-.01em}
   .kpi-icon-wrap{width:28px;height:28px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  /* KPI 1: Contratos — cinza */
   .kpi:nth-child(1) .kpi-icon-wrap{background:rgba(82,82,91,.2);border:1px solid rgba(82,82,91,.3)}
-  .kpi:nth-child(2) .kpi-icon-wrap{background:rgba(247,203,69,.1);border:1px solid rgba(247,203,69,.2)}
-  .kpi:nth-child(3) .kpi-icon-wrap{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2)}
-  .kpi:nth-child(4) .kpi-icon-wrap{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15)}
-  .kpi:nth-child(5) .kpi-icon-wrap{background:rgba(247,203,69,.08);border:1px solid rgba(247,203,69,.15)}
-  .kpi-val{font-size:20px;font-weight:700;letter-spacing:-.03em;line-height:1;margin-bottom:5px;color:var(--t1)}
+  .kpi:nth-child(1) .kpi-val{color:var(--t1)}
+  .kpi:nth-child(1) .kpi-bar{background:linear-gradient(90deg,rgba(161,161,170,.5),transparent)}
+  /* KPI 2: Valor liberado — amarelo */
+  .kpi:nth-child(2) .kpi-icon-wrap{background:rgba(247,203,69,.12);border:1px solid rgba(247,203,69,.25)}
   .kpi:nth-child(2) .kpi-val{color:var(--y)}
-  .kpi:nth-child(3) .kpi-val,.kpi:nth-child(4) .kpi-val{color:var(--green)}
-  .kpi:nth-child(5) .kpi-val{color:rgba(247,203,69,.8)}
+  .kpi:nth-child(2) .kpi-bar{background:linear-gradient(90deg,var(--y),transparent)}
+  /* KPI 3: Comissão loja — verde */
+  .kpi:nth-child(3) .kpi-icon-wrap{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
+  .kpi:nth-child(3) .kpi-val{color:#4ade80}
+  .kpi:nth-child(3) .kpi-bar{background:linear-gradient(90deg,#4ade80,transparent)}
+  /* KPI 4: Líquido loja — ciano (distinto do verde) */
+  .kpi:nth-child(4) .kpi-icon-wrap{background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25)}
+  .kpi:nth-child(4) .kpi-val{color:#22d3ee}
+  .kpi:nth-child(4) .kpi-bar{background:linear-gradient(90deg,#22d3ee,transparent)}
+  /* KPI 5: Ticket — amarelo mais suave */
+  .kpi:nth-child(5) .kpi-icon-wrap{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.25)}
+  .kpi:nth-child(5) .kpi-val{color:#fbbf24}
+  .kpi:nth-child(5) .kpi-bar{background:linear-gradient(90deg,#fbbf24,transparent)}
+  .kpi-val{font-size:20px;font-weight:700;letter-spacing:-.03em;line-height:1;margin-bottom:5px}
   .kpi-sub{font-size:11px;color:var(--t3);font-family:var(--mono)}
   .kpi-bar{position:absolute;bottom:0;left:0;right:0;height:2px}
-  .kpi:nth-child(1) .kpi-bar{background:linear-gradient(90deg,var(--b2),transparent)}
-  .kpi:nth-child(2) .kpi-bar{background:linear-gradient(90deg,var(--y),transparent)}
-  .kpi:nth-child(3) .kpi-bar{background:linear-gradient(90deg,var(--green),transparent)}
-  .kpi:nth-child(4) .kpi-bar{background:linear-gradient(90deg,rgba(34,197,94,.6),transparent)}
-  .kpi:nth-child(5) .kpi-bar{background:linear-gradient(90deg,rgba(247,203,69,.5),transparent)}
 
   /* PANEL */
   .panel{display:none}.panel.on{display:block}
@@ -293,7 +300,8 @@
         </div>
         <div class="fgroup">
           <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Filial</label>
-          <select id="fFil" style="background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:12px;padding:0 8px;height:30px;border-radius:6px;outline:none;width:100%"><option value="">Todas</option></select>
+          <select id="fFil" multiple size="4" style="background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-family:var(--font);font-size:11px;padding:4px 6px;border-radius:6px;outline:none;width:100%;height:auto;min-height:80px"></select>
+          <span style="font-size:9px;color:var(--t3);font-family:var(--mono);padding-left:2px">Ctrl+clique p/ múltiplas</span>
         </div>
         <div class="fgroup">
           <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Canal</label>
@@ -403,7 +411,7 @@
     <div class="table-wrap">
       <div class="table-head"><div class="table-head-left"><span class="table-head-title">Ranking de corretores</span></div></div>
       <div class="table-scroll">
-        <table><thead><tr><th>#</th><th>Corretor</th><th>Contratos</th><th>Valor Liberado</th><th>Comissão Est.</th><th>Ticket Médio</th></tr></thead>
+        <table><thead><tr><th>#</th><th>Corretor</th><th>Contratos</th><th>Valor Liberado</th><th>Comissão</th><th>Desconto</th><th>Líquido</th><th>Ticket Médio</th></tr></thead>
         <tbody id="tbCorr"></tbody></table>
       </div>
     </div>
@@ -423,7 +431,7 @@
         <table><thead><tr>
           <th>Nome</th><th>CPF</th><th>Contrato</th><th>Banco</th><th>Tipo</th><th>Produto</th>
           <th>Parcelas</th><th>Valor Liberado</th><th>Base Comissão</th>
-          <th>Com.%</th><th>Com. R$</th>
+          <th>Com.%</th><th>Com. R$</th><th>Líquido R$</th>
           <th>Liberação</th><th>Dt.Comissão</th><th>St.Comissão</th>
           <th>Canal</th><th>Parceiro</th><th>Corretor</th><th>Filial</th>
         </tr></thead>
@@ -644,9 +652,10 @@ function buildFilters(){
   fillSelect('fParc',[...new Set(ALL.map(r=>r.Parceiro))].sort());
   // Filial — valor é o código, label é o nome
   const filCodes=[...new Set(ALL.map(r=>String(r.Filial||'')).filter(Boolean))].sort();
-  const elFil=$('fFil'),curFil=elFil.value;
-  elFil.innerHTML='<option value="">Todas</option>';
-  filCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=filialNome(cod);if(cod===curFil)o.selected=true;elFil.appendChild(o)});
+  const elFil=$('fFil');
+  const curFils=[...elFil.selectedOptions].map(o=>o.value);
+  elFil.innerHTML='';
+  filCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=filialNome(cod);if(curFils.includes(cod))o.selected=true;elFil.appendChild(o)});
   // Canal de venda
   const canalCodes=[...new Set(ALL.map(r=>String(r.Canaldevenda||'')).filter(Boolean))].sort((a,b)=>Number(a)-Number(b));
   const elCanal=$('fCanal'),curCanal=elCanal.value;
@@ -655,7 +664,8 @@ function buildFilters(){
 }
 
 function applyFilter(){
-  const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,fil=$('fFil').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
+  const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
+  const fils=[...($('fFil').selectedOptions||[])].map(o=>o.value).filter(Boolean);
   const fDe=$('fDe').value, fAte=$('fAte').value;
 
   // quando seleciona mês, limpa período e vice-versa
@@ -663,7 +673,7 @@ function applyFilter(){
     if(tipo&&r.Tipo!==tipo)return false;
     if(bco&&r.BCO!==bco)return false;
     if(parc&&r.Parceiro!==parc)return false;
-    if(fil&&String(r.Filial||'')!==fil)return false;
+    if(fils.length&&!fils.includes(String(r.Filial||'')))return false;
     if(canal&&String(r.Canaldevenda||'')!==canal)return false;
     if(srch&&!(r.Nome||'').toLowerCase().includes(srch)&&!(r.Contrato||'').toLowerCase().includes(srch))return false;
     return true;
@@ -689,7 +699,7 @@ function applyFilter(){
   PAGE=0; render();
 }
 
-function clearFilters(){['fMes','fTipo','fBco','fParc','fFil','fCanal'].forEach(id=>$(id).value='');$('fDe').value='';$('fAte').value='';$('srch').value='';applyFilter()}
+function clearFilters(){['fMes','fTipo','fBco','fParc','fCanal'].forEach(id=>$(id).value='');[...$('fFil').options].forEach(o=>o.selected=false);$('fDe').value='';$('fAte').value='';$('srch').value='';applyFilter()}
 ['fMes','fTipo','fBco','fParc','fFil','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
 const srchEl=$('srch');if(srchEl)srchEl.oninput=applyFilter;
 
@@ -698,7 +708,7 @@ function render(){renderKpis();renderCharts();renderCorretores();renderTabela()}
 
 function renderKpis(){
   const mes = $('fMes').value;
-  const tipo=$('fTipo').value, bco=$('fBco').value, parc=$('fParc').value, fil=$('fFil').value;
+  const tipo=$('fTipo').value, bco=$('fBco').value, parc=$('fParc').value;
 
   // Produção: apenas contratos cuja Data da Liberação está no mês filtrado
   const prodRows = mes
@@ -758,7 +768,7 @@ function renderCharts(){
   makeLegend($('lgTipo'),byTipo.map(x=>x[0]),COLORS);
   mkChart('cBco','doughnut',byBco.map(x=>x[0]),byBco.map(x=>x[1]),COLORS.slice(2,2+byBco.length),{extra:{cutout:'62%'}});
   makeLegend($('lgBco'),byBco.map(x=>x[0]),COLORS.slice(2));
-  mkChart('cMes','bar',mesLabels,mesArr.map(x=>x[1]),'#4f7cff',{ds:{backgroundColor:'#4f7cff'},scales:barScales});
+  mkChart('cMes','bar',mesLabels,mesArr.map(x=>x[1]),'#f7cb45',{ds:{backgroundColor:'rgba(247,203,69,.8)',borderRadius:4,hoverBackgroundColor:'#f7cb45'},scales:barScales});
   mkChart('cParc','doughnut',byParc.map(x=>x[0]),byParc.map(x=>x[1]),COLORS.slice(4,4+byParc.length),{extra:{cutout:'62%'}});
   makeLegend($('lgParc'),byParc.map(x=>x[0]),COLORS.slice(4));
 
@@ -776,8 +786,28 @@ function renderCharts(){
 }
 
 function renderCorretores(){
-  const m={};FILTERED.forEach(r=>{const k=(r.Corretor||'—').trim();if(!m[k])m[k]={n:0,v:0,c:0};m[k].n++;m[k].v+=val(r);m[k].c+=val(r)*com(r)/100});
-  $('tbCorr').innerHTML=Object.entries(m).sort((a,b)=>b[1].v-a[1].v).map(([nome,d],i)=>`<tr><td style="color:var(--muted);font-family:var(--mono)">${i+1}</td><td style="font-weight:500">${nome}</td><td style="font-family:var(--mono)">${d.n}</td><td style="font-family:var(--mono)">${fmt(d.v)}</td><td style="font-family:var(--mono)">${fmt(d.c)}</td><td style="font-family:var(--mono)">${fmt(d.v/d.n)}</td></tr>`).join('');
+  const m={};
+  FILTERED.forEach(r=>{
+    const k=(r.Corretor||'—').trim();
+    if(!m[k])m[k]={n:0,v:0,c:0,d:0};
+    m[k].n++;
+    m[k].v+=val(r);
+    m[k].c+=(r['Base Comissao']||0)*com(r)/100;
+    m[k].d+=(r['Desconto Loja']||0);
+  });
+  $('tbCorr').innerHTML=Object.entries(m).sort((a,b)=>b[1].c-a[1].c).map(([nome,d],i)=>{
+    const liq=d.c-d.d;
+    return `<tr>
+      <td style="color:var(--t3);font-family:var(--mono);font-size:11px">${i+1}</td>
+      <td style="font-weight:600">${nome}</td>
+      <td style="font-family:var(--mono);text-align:center">${d.n}</td>
+      <td style="font-family:var(--mono);text-align:right">${fmt(d.v)}</td>
+      <td style="font-family:var(--mono);text-align:right;color:#4ade80">${fmt(d.c)}</td>
+      <td style="font-family:var(--mono);text-align:right;color:var(--red)">${d.d>0?'−'+fmt(d.d):'—'}</td>
+      <td style="font-family:var(--mono);text-align:right;color:#22d3ee;font-weight:600">${fmt(liq)}</td>
+      <td style="font-family:var(--mono);text-align:right;color:var(--t2)">${fmt(d.v/d.n)}</td>
+    </tr>`;
+  }).join('');
 }
 
 let VER_TUDO = false;
@@ -815,7 +845,8 @@ function renderTabela(){
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(val(r))}</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(baseC(r))}</td>
     <td style="font-family:var(--mono);text-align:right">${com(r).toFixed(2)}%</td>
-    <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:var(--accent2)">${comR>0?fmt(comR):'—'}</td>
+    <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#4ade80">${comR>0?fmt(comR):'—'}</td>
+    <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#22d3ee;font-weight:600">${(()=>{const d=parseFloat(r['Desconto Loja']||0);const l=comR-d;return comR>0?fmt(l):'—'})()}</td>
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data Comissao Loja'])}</td>
     <td style="text-align:center">${stCom(r['Status Comissao Loja'])}</td>
