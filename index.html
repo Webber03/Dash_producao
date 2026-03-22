@@ -734,8 +734,9 @@
   <!-- PAINEL FILIAL TV -->
   <div id="p-filial" class="panel">
     <div id="tv-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1rem;color:var(--t3)">
-      <span style="font-size:3rem;opacity:.3">🏢</span>
-      <span style="font-family:var(--mono);font-size:12px">Selecione uma filial na sidebar</span>
+      <span style="font-size:3rem;opacity:.3">◉</span>
+      <span style="font-family:var(--mono);font-size:12px" id="tv-empty-msg">Selecione uma filial</span>
+      <button onclick="openMobDrawer()" style="display:none;background:var(--y);border:none;color:#000;font-family:var(--font);font-size:12px;font-weight:600;padding:0 16px;height:36px;border-radius:var(--r);cursor:pointer" id="tv-empty-btn">Escolher filial</button>
     </div>
     <div id="tv-content"></div>
   </div>
@@ -1329,6 +1330,11 @@ function switchTab(id,btn){
       const tc=$('tv-content');
       if(empty)empty.style.display='flex';
       if(tc)tc.innerHTML='';
+      // No mobile, mostrar botão de escolha e abrir gaveta automaticamente
+      const isMob = window.innerWidth <= 1200;
+      const emptyBtn=$('tv-empty-btn');
+      if(emptyBtn) emptyBtn.style.display=isMob?'block':'none';
+      if(isMob) setTimeout(openMobDrawer, 300);
     }
   }
 }
