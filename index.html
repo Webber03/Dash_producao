@@ -489,26 +489,24 @@
     </div>
   </div><!-- /mob-drawer-content -->
 
-  <!-- FILIAL TV controles mobile — aparece só no tab filial -->
+  <!-- FILIAL TV controles mobile -->
   <div id="mob-filial-controls" style="display:none">
     <div class="mob-drawer-title">Painel da Filial</div>
-    <div class="mob-drawer-grid">
-      <div class="fgroup full">
-        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Filial</label>
-        <select id="mob-tvFil" class="sb-select" style="height:40px;font-size:13px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 10px;width:100%;outline:none" onchange="$('tvFil').value=this.value;onTvFilChange()"><option value="">— escolha —</option></select>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">Filial</label>
+        <select id="mob-tvFil" onchange="mobSelectFilial(this.value)" style="width:100%;height:44px;font-size:14px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 12px;outline:none;-webkit-appearance:auto"></select>
       </div>
-      <div class="fgroup full">
-        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Período</label>
-        <select id="mob-tvPeriodo" style="height:40px;font-size:13px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 10px;width:100%;outline:none" onchange="$('tvPeriodo').value=this.value;renderTv()">
+      <div>
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">Período</label>
+        <select id="mob-tvPeriodo" onchange="mobSelectPeriodo(this.value)" style="width:100%;height:44px;font-size:14px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:var(--r);padding:0 12px;outline:none;-webkit-appearance:auto">
           <option value="mes">Mês atual</option>
           <option value="30">Últimos 30 dias</option>
           <option value="7">Últimos 7 dias</option>
           <option value="hoje">Hoje</option>
         </select>
       </div>
-      <div class="fgroup full" style="margin-top:4px">
-        <button class="btn" onclick="closeMobDrawer()" style="height:40px;font-size:13px;width:100%">Ver painel</button>
-      </div>
+      <button class="btn" onclick="mobAplicarFilial()" style="height:44px;font-size:14px;width:100%;border-radius:var(--r)">Ver painel</button>
     </div>
   </div>
   </div>
@@ -1627,10 +1625,23 @@ function closeTvMode(){
 }
 
 // ── MOBILE GAVETA + BOTTOM NAV ───────────────────────────────
-// Qual aba está ativa agora
 function getActiveTab(){
   const p=document.querySelector('.panel.on');
   return p?p.id.replace('p-',''):'visao';
+}
+
+function populateMobTvFil(){
+  const mob=$('mob-tvFil');
+  if(!mob)return;
+  // Sempre repopular com dados atuais
+  mob.innerHTML='<option value="">— escolha uma filial —</option>';
+  FILIAIS_ORDER.forEach(([cod,nome])=>{
+    if(!ALL.some(r=>String(r.Filial)===cod))return;
+    const o=document.createElement('option');
+    o.value=cod; o.textContent=nome;
+    if(cod===TV_FIL)o.selected=true;
+    mob.appendChild(o);
+  });
 }
 
 function openMobDrawer(){
@@ -1638,33 +1649,35 @@ function openMobDrawer(){
   const overlay=$('mob-overlay');
   if(!drawer||!overlay)return;
 
-  const tab=getActiveTab();
-  const isFilial=(tab==='filial');
-
-  // Mostrar seção correta na gaveta
+  const isFilial=(getActiveTab()==='filial');
   const filtros=$('mob-drawer-content');
   const filCtrl=$('mob-filial-controls');
   if(filtros) filtros.style.display=isFilial?'none':'block';
   if(filCtrl) filCtrl.style.display=isFilial?'block':'none';
 
-  // Sync filial select
   if(isFilial){
-    const mobSel=$('mob-tvFil');
-    const mainSel=$('tvFil');
-    if(mobSel&&mainSel&&mobSel.options.length<=1){
-      [...mainSel.options].forEach(o=>{
-        const c=document.createElement('option');
-        c.value=o.value;c.textContent=o.textContent;
-        mobSel.appendChild(c);
-      });
-    }
-    if(mobSel&&mainSel) mobSel.value=mainSel.value;
+    populateMobTvFil();
+    const mobPer=$('mob-tvPeriodo');
+    if(mobPer) mobPer.value=TV_PERIODO||'mes';
   } else {
     syncMobFilters();
   }
 
   overlay.style.display='block';
   requestAnimationFrame(()=>drawer.classList.add('open'));
+}
+
+function mobSelectFilial(val){TV_FIL=val;}
+function mobSelectPeriodo(val){TV_PERIODO=val;}
+function mobAplicarFilial(){
+  if(!TV_FIL){alert('Escolha uma filial');return;}
+  // Sync com os selects ocultos do desktop
+  const mainFil=$('tvFil');
+  const mainPer=$('tvPeriodo');
+  if(mainFil)mainFil.value=TV_FIL;
+  if(mainPer)mainPer.value=TV_PERIODO||'mes';
+  closeMobDrawer();
+  renderTv();
 }
 
 function closeMobDrawer(){
