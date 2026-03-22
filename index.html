@@ -1364,17 +1364,17 @@ function renderTv(){
             <span style="font-size:10px;font-family:var(--mono);color:var(--t3)">${rows.length} no período</span>
           </div>
           ${ultimos.map(r => `
-          <div class="tv-rank-item">
-            <div class="tv-rank-num" style="font-size:9px;color:var(--t3)">${fmtData(r['Data da Liberação'])}</div>
+          <div class="tv-contract-item">
             <div style="flex:1;min-width:0">
-              <div class="tv-rank-name">${r.Nome||'—'}</div>
-              <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+              <div class="tv-contract-nome">${r.Nome||'—'}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
                 <span class="badge ${TIPO_BADGE[(r.Tipo||'').trim()]||'b-ac'}" style="font-size:9px">${(r.Tipo||'—').trim()}</span>
-                <span style="font-size:10px;color:var(--t3);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.Corretor?r.Corretor.trim():''}</span>
+                <span class="tv-contract-data">${r.Corretor?r.Corretor.trim():''}</span>
               </div>
             </div>
-            <div class="tv-rank-vals">
-              <div class="tv-rank-com">${fmt(val(r))}</div>
+            <div style="text-align:right;flex-shrink:0;min-width:120px">
+              <div style="font-size:14px;font-weight:700;color:var(--y);font-family:var(--mono)">${fmt(val(r))}</div>
+              <div class="tv-contract-data">${fmtData(r['Data da Liberação'])}</div>
             </div>
           </div>`).join('')}
         </div>
