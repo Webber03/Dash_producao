@@ -1464,7 +1464,7 @@ function renderTv(){
     corrMap[k].c += (r['Base Comissao']||0)*com(r)/100;
     corrMap[k].d += (r['Desconto Loja']||0);
   });
-  const ranking = Object.entries(corrMap).sort((a,b)=>b[1].c-a[1].c).slice(0,8);
+  const ranking = Object.entries(corrMap).sort((a,b)=>(b[1].c-b[1].d)-(a[1].c-a[1].d)).slice(0,8);
 
   // Últimos contratos
   const ultimos = [...rows].sort((a,b)=>(b['Data da Liberação']||'').localeCompare(a['Data da Liberação']||'')).slice(0,6);
