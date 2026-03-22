@@ -345,7 +345,7 @@
 
         <!-- CANAL dropdown simples -->
         <div class="fgroup">
-          <label class="sb-filter-label">Canal</label>
+          <label class="sb-filter-label">Canal de venda</label>
           <select id="fCanal" class="sb-select"><option value="">Todos</option></select>
         </div>
 
@@ -565,23 +565,23 @@ const filialNome = codigo => FILIAIS[String(codigo)] || String(codigo);
 
 // ── CANAIS DE VENDA ───────────────────────────────────────────
 const CANAIS = {
-  '27': 'URA ATENDE',
   '28': 'ATIVO',
-  '29': 'SMS',
-  '30': 'DISPARADOR WHATSAPP',
   '31': 'CALL CENTER MANUAL',
-  '32': 'INDICAÇÃO CLIENTE',
-  '34': 'LEAD TRÁFEGO PAGO',
-  '65': 'FACEBOOK | INSTAGRAM',
-  '78': 'POS-VENDA',
-  '79': 'INDICACAO FABRICIO',
-  '81': 'URA WHATSAPP',
-  '82': 'DISP. WHATSAPP RECEPTIVO',
-  '83': 'INDICAÇÃO ESRON MENEZES',
   '84': 'DISCADORA',
-  '86': 'URA VOIP',
-  '87': 'ESTAGIÁRIO(A)',
   '107': 'DISP WHATSAPP INTELIGENTE',
+  '82': 'DISP. WHATSAPP RECEPTIVO',
+  '30': 'DISPARADOR WHATSAPP',
+  '87': 'ESTAGIÁRIO(A)',
+  '65': 'FACEBOOK | INSTAGRAM',
+  '32': 'INDICAÇÃO CLIENTE',
+  '83': 'INDICAÇÃO ESRON MENEZES',
+  '79': 'INDICACAO FABRICIO',
+  '34': 'LEAD TRÁFEGO PAGO',
+  '78': 'POS-VENDA',
+  '29': 'SMS',
+  '27': 'URA ATENDE',
+  '86': 'URA VOIP',
+  '81': 'URA WHATSAPP',
 };
 const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
 
@@ -705,14 +705,14 @@ function buildFilters(){
   filCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=filialNome(cod);if(curFils.includes(cod))o.selected=true;elFil.appendChild(o)});
   buildDropdown('fFil', filCodes.map(c=>({val:c,label:filialNome(c)})), curFils, 'Todas', 'Todas as filiais');
   // Canal de venda
-  const canalCodes=[...new Set(ALL.map(r=>String(r.Canaldevenda||'')).filter(Boolean))].sort((a,b)=>Number(a)-Number(b));
-  const elCanal=$('fCanal'),curCanal=elCanal.value;
-  elCanal.innerHTML='<option value="">Todos</option>';
-  canalCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=canalNome(cod);if(cod===curCanal)o.selected=true;elCanal.appendChild(o)});
+  const canalCodes=[...new Set(ALL.map(r=>String(r.devenda||'')).filter(Boolean))].sort((a,b)=>Number(a)-Number(b));
+  const el=$('f'),cur=el.value;
+  el.innerHTML='<option value="">Todos</option>';
+  Codes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=Nome(cod);if(cod===cur)o.selected=true;el.appendChild(o)});
 }
 
 function applyFilter(){
-  const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
+  const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,=$('f').value,srch=$('srch').value.toLowerCase().trim();
   MESES_SEL=mes?[mes]:[];
   FILS_SEL=[...($('fFil').selectedOptions||[])].map(o=>o.value).filter(Boolean);
   const meses=MESES_SEL;
@@ -725,7 +725,7 @@ function applyFilter(){
     if(bco&&r.BCO!==bco)return false;
     if(parc&&r.Parceiro!==parc)return false;
     if(fils.length&&!fils.includes(String(r.Filial||'')))return false;
-    if(canal&&String(r.Canaldevenda||'')!==canal)return false;
+    if(&&String(r.devenda||'')!==)return false;
     if(srch&&!(r.Nome||'').toLowerCase().includes(srch)&&!(r.Contrato||'').toLowerCase().includes(srch))return false;
     return true;
   };
@@ -751,7 +751,7 @@ function applyFilter(){
 }
 
 function clearFilters(){
-  ['fTipo','fBco','fParc','fCanal'].forEach(id=>$(id).value='');
+  ['fTipo','fBco','fParc','f'].forEach(id=>$(id).value='');
   $('fMes').value='';
   // Limpar filial
   [...$('fFil').options].forEach(o=>o.selected=false);
@@ -771,7 +771,7 @@ function clearMes(){
   if($('fMes-clear'))$('fMes-clear').style.display='none';
   MESES_SEL=[];
 }
-['fMes','fTipo','fBco','fParc','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
+['fMes','fTipo','fBco','fParc','f'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
 const srchEl=$('srch');if(srchEl)srchEl.oninput=applyFilter;
 
 // ── RENDER ────────────────────────────────────────────────────
@@ -851,8 +851,8 @@ function renderCharts(){
   makeLegend($('lgFil'),byFil.map(x=>x[0]),COLORS.slice(6));
 
   // Canais de venda
-  const byCanalRaw=groupBy(FILTERED,'Canaldevenda',val).slice(0,10);
-  const byCanal=byCanalRaw.map(([cod,v])=>[canalNome(cod),v]);
+  const byRaw=groupBy(FILTERED,'devenda',val).slice(0,10);
+  const by=byCanalRaw.map(([cod,v])=>[canalNome(cod),v]);
   mkChart('cCanal','doughnut',byCanal.map(x=>x[0]),byCanal.map(x=>x[1]),COLORS.slice(8,8+byCanal.length),{extra:{cutout:'62%'}});
   makeLegend($('lgCanal'),byCanal.map(x=>x[0]),COLORS.slice(8));
 }
