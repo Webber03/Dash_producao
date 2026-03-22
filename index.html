@@ -300,7 +300,7 @@
 
 
   /* ── BOTTOM NAV MOBILE ── */
-  .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--s1);border-top:1px solid var(--b2);z-index:200;padding:6px 0 env(safe-area-inset-bottom,6px)}
+  .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--s1);border-top:1px solid var(--b2);z-index:200;padding:6px 0 env(safe-area-inset-bottom,6px);-webkit-transform:translateZ(0)}
   .mob-nav-inner{display:flex;justify-content:space-around;align-items:center}
   .mob-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--t3);font-family:var(--font);font-size:9px;font-weight:500;padding:4px 12px;cursor:pointer;transition:color .15s;min-width:56px}
   .mob-nav-btn .mob-icon{font-size:18px;line-height:1}
@@ -352,10 +352,10 @@
     .filter-bar{display:none}
 
     /* Botão flutuante de filtros */
-    .mob-filter-btn{display:flex}
+    .mob-filter-btn{display:flex!important}
 
     /* Bottom nav visível */
-    .mob-nav{display:block}
+    .mob-nav{display:block!important}
 
     /* Charts */
     .chart-grid{grid-template-columns:1fr;gap:10px;margin-bottom:10px}
@@ -921,6 +921,10 @@ function initData(data) {
   buildFilters();
   buildTvFilSelect();
   rebuildMobFilters();
+  // Mostrar/esconder elementos mobile
+  const isMobile = window.innerWidth <= 1200;
+  if($('mob-nav')) $('mob-nav').style.display = isMobile ? 'block' : 'none';
+  if($('mob-filter-btn')) $('mob-filter-btn').style.display = isMobile ? 'flex' : 'none';
   applyFilter();
   startAutoRefresh();
 }
@@ -1303,24 +1307,7 @@ function switchTab(id,btn){
   document.querySelectorAll('.filter-bar,.kpi-grid').forEach(el=>{
     el.style.display=isFilial?'none':'';
   });
-  // Botão flutuante de filtros: sempre visível (abre gaveta)
-  // Na gaveta, mostra controles corretos conforme aba
-  const mobFiltros=$('mob-drawer-content');
-  const mobFilCtrl=$('mob-filial-controls');
-  if(mobFiltros) mobFiltros.style.display=isFilial?'none':'block';
-  if(mobFilCtrl) mobFilCtrl.style.display=isFilial?'block':'none';
-  // Sync select filial da gaveta
-  if(isFilial && $('mob-tvFil') && $('tvFil')){
-    const mobSel=$('mob-tvFil');
-    if(mobSel.options.length<=1){
-      [...$('tvFil').options].forEach(o=>{
-        const c=document.createElement('option');
-        c.value=o.value;c.textContent=o.textContent;
-        mobSel.appendChild(c);
-      });
-    }
-    mobSel.value=$('tvFil').value;
-  }
+  // gaveta: seção correta gerenciada pelo openMobDrawer()
 
   if(id==='visao') setTimeout(renderCharts,50);
   if(isFilial){
@@ -1334,7 +1321,7 @@ function switchTab(id,btn){
       const isMob = window.innerWidth <= 1200;
       const emptyBtn=$('tv-empty-btn');
       if(emptyBtn) emptyBtn.style.display=isMob?'block':'none';
-      if(isMob) setTimeout(openMobDrawer, 300);
+      if(isMob) setTimeout(()=>openMobDrawer(),400);
     }
   }
 }
@@ -1640,15 +1627,62 @@ function closeTvMode(){
 }
 
 // ── MOBILE GAVETA + BOTTOM NAV ───────────────────────────────
+// Qual aba está ativa agora
+function getActiveTab(){
+  const p=document.querySelector('.panel.on');
+  return p?p.id.replace('p-',''):'visao';
+}
+
 function openMobDrawer(){
-  $('mob-drawer').classList.add('open');
-  $('mob-overlay').style.display='block';
-  syncMobFilters();
+  const drawer=$('mob-drawer');
+  const overlay=$('mob-overlay');
+  if(!drawer||!overlay)return;
+
+  const tab=getActiveTab();
+  const isFilial=(tab==='filial');
+
+  // Mostrar seção correta na gaveta
+  const filtros=$('mob-drawer-content');
+  const filCtrl=$('mob-filial-controls');
+  if(filtros) filtros.style.display=isFilial?'none':'block';
+  if(filCtrl) filCtrl.style.display=isFilial?'block':'none';
+
+  // Sync filial select
+  if(isFilial){
+    const mobSel=$('mob-tvFil');
+    const mainSel=$('tvFil');
+    if(mobSel&&mainSel&&mobSel.options.length<=1){
+      [...mainSel.options].forEach(o=>{
+        const c=document.createElement('option');
+        c.value=o.value;c.textContent=o.textContent;
+        mobSel.appendChild(c);
+      });
+    }
+    if(mobSel&&mainSel) mobSel.value=mainSel.value;
+  } else {
+    syncMobFilters();
+  }
+
+  overlay.style.display='block';
+  requestAnimationFrame(()=>drawer.classList.add('open'));
 }
+
 function closeMobDrawer(){
-  $('mob-drawer').classList.remove('open');
-  $('mob-overlay').style.display='none';
+  const d=$('mob-drawer');
+  const o=$('mob-overlay');
+  if(d) d.classList.remove('open');
+  if(o) o.style.display='none';
 }
+// Swipe para fechar gaveta
+document.addEventListener('DOMContentLoaded',()=>{
+  const drawer=$('mob-drawer');
+  if(!drawer)return;
+  let startY=0;
+  drawer.addEventListener('touchstart',e=>{startY=e.touches[0].clientY},{passive:true});
+  drawer.addEventListener('touchend',e=>{
+    if(e.changedTouches[0].clientY - startY > 60) closeMobDrawer();
+  },{passive:true});
+});
 
 function syncMobFilters(){
   // Sincroniza selects da gaveta com os principais
