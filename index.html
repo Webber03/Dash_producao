@@ -1332,10 +1332,7 @@ function renderTv(){
         <div class="tv-kpi" style="grid-column:span 1;border-color:rgba(34,211,238,.2)">
           <div class="tv-kpi-label">Líquido loja</div>
           <div class="tv-kpi-val" style="font-size:3.2rem">${fmt(sumL)}</div>
-          <div style="margin-top:.4rem">
-            <div style="font-size:13px;color:var(--t3);font-family:var(--mono)">bruto ${fmt(sumC)}</div>
-            <div style="font-size:11px;color:var(--t3);font-family:var(--mono)">${sumD>0?'− '+fmt(sumD)+' descontos':'sem descontos'}</div>
-          </div>
+          <div class="tv-kpi-sub">${sumD>0?'− '+fmt(sumD)+' descontos':'sem descontos'}</div>
           <div class="tv-kpi-icon">✅</div>
         </div>
       </div>
@@ -1353,8 +1350,8 @@ function renderTv(){
             <div class="tv-rank-num ${i<3?medalClass[i]:''}">${i<3?medals[i]:i+1}</div>
             <div class="tv-rank-name">${nome}</div>
             <div class="tv-rank-vals">
-              <div class="tv-rank-com">${fmt(d.c)}</div>
-              <div class="tv-rank-liq">líq. ${fmt(d.c-d.d)}</div>
+              <div class="tv-rank-com" style="color:#22d3ee">${fmt(d.c-d.d)}</div>
+              <div class="tv-rank-liq">com. ${fmt(d.c)}</div>
               <div class="tv-rank-n">${d.n} contrato${d.n!==1?'s':''}</div>
             </div>
           </div>`).join('')}
@@ -1367,17 +1364,17 @@ function renderTv(){
             <span style="font-size:10px;font-family:var(--mono);color:var(--t3)">${rows.length} no período</span>
           </div>
           ${ultimos.map(r => `
-          <div class="tv-contract-item">
-            <div>
-              <div class="tv-contract-nome">${r.Nome||'—'}</div>
-              <div style="display:flex;gap:8px;margin-top:2px">
+          <div class="tv-rank-item">
+            <div class="tv-rank-num" style="font-size:9px;color:var(--t3)">${fmtData(r['Data da Liberação'])}</div>
+            <div style="flex:1;min-width:0">
+              <div class="tv-rank-name">${r.Nome||'—'}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
                 <span class="badge ${TIPO_BADGE[(r.Tipo||'').trim()]||'b-ac'}" style="font-size:9px">${(r.Tipo||'—').trim()}</span>
-                <span class="tv-contract-data">${r.Corretor?r.Corretor.trim():''}</span>
+                <span style="font-size:10px;color:var(--t3);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.Corretor?r.Corretor.trim():''}</span>
               </div>
             </div>
-            <div style="text-align:right;flex-shrink:0">
-              <div class="tv-contract-val">${fmt(val(r))}</div>
-              <div class="tv-contract-data">${fmtData(r['Data da Liberação'])}</div>
+            <div class="tv-rank-vals">
+              <div class="tv-rank-com">${fmt(val(r))}</div>
             </div>
           </div>`).join('')}
         </div>
