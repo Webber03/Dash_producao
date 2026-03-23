@@ -1004,12 +1004,12 @@ function applyFilter(){
       if(!meses.includes(mesLib) && !meses.includes(mesCom)) return false;
     }
     if(fDe||fAte){
-      const lib=r['Data da Liberação']||'';
-      const com=r['Data Comissao Loja']||'';
-      const dataRef=lib||com;
-      if(!dataRef) return false;
-      if(fDe && dataRef < fDe) return false;
-      if(fAte && dataRef > fAte) return false;
+      const lib=(r['Data da Liberação']||'').slice(0,10);
+      const com=(r['Data Comissao Loja']||'').slice(0,10);
+      // mesma lógica do filtro de mês: passa se qualquer data está no período
+      const libOk = lib && (!fDe||lib>=fDe) && (!fAte||lib<=fAte);
+      const comOk = com && (!fDe||com>=fDe) && (!fAte||com<=fAte);
+      if(!libOk && !comOk) return false;
     }
     return baseFilter(r);
   });
