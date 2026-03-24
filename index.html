@@ -1134,7 +1134,7 @@ function renderCorretores(){
     m[k].c+=(r['Base Comissao']||0)*com(r)/100;
     m[k].d+=(r['Desconto Loja']||0);
   });
-  $('tbCorr').innerHTML=Object.entries(m).sort((a,b)=>b[1].c-a[1].c).map(([nome,d],i)=>{
+  $('tbCorr').innerHTML=Object.entries(m).sort((a,b)=>(b[1].c-b[1].d)-(a[1].c-a[1].d)).map(([nome,d],i)=>{
     const liq=d.c-d.d;
     return `<tr>
       <td style="color:var(--t3);font-family:var(--mono);font-size:11px">${i+1}</td>
