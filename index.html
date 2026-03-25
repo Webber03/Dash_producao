@@ -855,6 +855,8 @@ const MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','De
 const $=id=>document.getElementById(id);
 const val=r=>parseFloat(r['Valor Liberado']||0);
 const com=r=>parseFloat(r['Comissao Loja']||0);
+// comissão total em R$: percentual aplicado sobre base + bônus absolutos
+const comTotal=r=>(r['Base Comissao']||0)*com(r)/100+(r['Bonus1']||0)+(r['Bonus2']||0);
 const fmt=n=>'R$ '+parseFloat(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtK=n=>'R$ '+parseFloat(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const getMes=d=>{if(!d)return null;const p=d.split('-');return p[0]+'-'+p[1]};
@@ -917,7 +919,7 @@ function reloadData(){ stopAutoRefresh(); loadData(); }
 
 // ── INIT ──────────────────────────────────────────────────────
 function initData(data) {
-  ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0)}));
+  ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0),'Bonus1':parseFloat(r['R$ Bonus Loja 1']||0),'Bonus2':parseFloat(r['R$ Bonus Loja 2']||0)}));
   hide('loader'); hide('error-box'); show('app');
   $('status-txt').textContent=ALL.length+' registros';if($('sidebar-total'))$('sidebar-total').textContent=ALL.length.toLocaleString('pt-BR');
   $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
@@ -1061,7 +1063,7 @@ function renderKpis(){
   const sumC = FILTERED.filter(r => {
     if (meses.length && !meses.includes(getMes(r['Data Comissao Loja'])||'')) return false;
     return true;
-  }).reduce((a,r) => a + (r['Base Comissao']||0)*com(r)/100, 0);
+  }).reduce((a,r) => a + comTotal(r), 0);
 
   $('kTot').textContent  = tot.toLocaleString('pt-BR');
   $('kTotS').textContent = 'de ' + ALL.length + ' totais';
@@ -1131,7 +1133,7 @@ function renderCorretores(){
     if(!m[k])m[k]={n:0,v:0,c:0,d:0};
     m[k].n++;
     m[k].v+=val(r);
-    m[k].c+=(r['Base Comissao']||0)*com(r)/100;
+    m[k].c+=comTotal(r);
     m[k].d+=(r['Desconto Loja']||0);
   });
   $('tbCorr').innerHTML=Object.entries(m).sort((a,b)=>(b[1].c-b[1].d)-(a[1].c-a[1].d)).map(([nome,d],i)=>{
@@ -1172,7 +1174,7 @@ function renderTabela(){
   $('tblCount').textContent=FILTERED.length+' registros';
   const baseC=r=>parseFloat(r['Base Comissao']||0);
   $('tbContr').innerHTML=slice.map(r=>{
-    const comR=(baseC(r)*com(r)/100);
+    const comR=comTotal(r);
     return `<tr>
     <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;font-weight:500;white-space:nowrap">${r.Nome||'—'}</td>
     <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.CPF||'—'}</td>
@@ -1358,7 +1360,7 @@ async function autoRefresh(){
       ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
       : 'trigger.php?_t=' + Date.now();
     const data = await fetchJSON(endpoint, manualUrl ? 10000 : 20000);
-    ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0)}));
+    ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0),'Bonus1':parseFloat(r['R$ Bonus Loja 1']||0),'Bonus2':parseFloat(r['R$ Bonus Loja 2']||0)}));
     $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
     $('status-txt').textContent=ALL.length+' registros';
     if($('sidebar-total'))$('sidebar-total').textContent=ALL.length.toLocaleString('pt-BR');
@@ -1450,7 +1452,7 @@ function renderTv(){
   // KPIs
   const nContratos = rows.length;
   const sumV = rows.reduce((a,r)=>a+val(r),0);
-  const sumC = rows.reduce((a,r)=>a+(r['Base Comissao']||0)*com(r)/100,0);
+  const sumC = rows.reduce((a,r)=>a+comTotal(r),0);
   const sumD = rows.reduce((a,r)=>a+(r['Desconto Loja']||0),0);
   const sumL = sumC - sumD;
 
@@ -1461,7 +1463,7 @@ function renderTv(){
     if(!corrMap[k]) corrMap[k] = {n:0,v:0,c:0,d:0};
     corrMap[k].n++;
     corrMap[k].v += val(r);
-    corrMap[k].c += (r['Base Comissao']||0)*com(r)/100;
+    corrMap[k].c += comTotal(r);
     corrMap[k].d += (r['Desconto Loja']||0);
   });
   const ranking = Object.entries(corrMap).sort((a,b)=>(b[1].c-b[1].d)-(a[1].c-a[1].d)).slice(0,8);
