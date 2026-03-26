@@ -688,16 +688,16 @@
       </div>
     </div>
     <div class="chart-grid">
-      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por tipo de operação</div><div class="chart-sub">distribuição por modalidade</div><div class="chart-wrap"><canvas id="cTipo"></canvas></div><div class="legend" id="lgTipo"></div></div>
-      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por banco</div><div class="chart-sub">produção por instituição</div><div class="chart-wrap"><canvas id="cBco"></canvas></div><div class="legend" id="lgBco"></div></div>
+      <div class="chart-box"><div class="chart-title">Valor por tipo de operação</div><div class="chart-sub">distribuição por modalidade</div><div class="chart-wrap"><canvas id="cTipo"></canvas></div><div class="legend" id="lgTipo"></div></div>
+      <div class="chart-box"><div class="chart-title">Valor por banco</div><div class="chart-sub">produção por instituição</div><div class="chart-wrap"><canvas id="cBco"></canvas></div><div class="legend" id="lgBco"></div></div>
     </div>
     <div class="chart-grid">
-      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por mês</div><div class="chart-sub">evolução temporal</div><div class="chart-wrap"><canvas id="cMes"></canvas></div></div>
-      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por parceiro</div><div class="chart-sub">distribuição por parceiro</div><div class="chart-wrap"><canvas id="cParc"></canvas></div><div class="legend" id="lgParc"></div></div>
+      <div class="chart-box"><div class="chart-title">Contratos por mês</div><div class="chart-sub">evolução temporal</div><div class="chart-wrap"><canvas id="cMes"></canvas></div></div>
+      <div class="chart-box"><div class="chart-title">Valor por parceiro</div><div class="chart-sub">distribuição por parceiro</div><div class="chart-wrap"><canvas id="cParc"></canvas></div><div class="legend" id="lgParc"></div></div>
     </div>
     <div class="chart-grid">
-      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por filial</div><div class="chart-sub">produção por unidade</div><div class="chart-wrap"><canvas id="cFil"></canvas></div><div class="legend" id="lgFil"></div></div>
-      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por canal</div><div class="chart-sub">origem dos contratos</div><div class="chart-wrap"><canvas id="cCanal"></canvas></div><div class="legend" id="lgCanal"></div></div>
+      <div class="chart-box"><div class="chart-title">Valor por filial</div><div class="chart-sub">produção por unidade</div><div class="chart-wrap"><canvas id="cFil"></canvas></div><div class="legend" id="lgFil"></div></div>
+      <div class="chart-box"><div class="chart-title">Canal de venda</div><div class="chart-sub">origem dos contratos</div><div class="chart-wrap"><canvas id="cCanal"></canvas></div><div class="legend" id="lgCanal"></div></div>
     </div>
   </div>
 
@@ -865,8 +865,6 @@ function setMetric(m) {
   $('btnMetricVal').style.border = m === 'val' ? '' : 'none';
   $('btnMetricLiq').className = m === 'liq' ? 'btn' : 'btn-ghost';
   $('btnMetricLiq').style.border = m === 'liq' ? '' : 'none';
-  const lbls = document.querySelectorAll('.c-metric-lbl');
-  lbls.forEach(lbl => lbl.textContent = m === 'val' ? 'Valor' : 'Líquido');
   renderCharts();
 }
 
@@ -1197,7 +1195,7 @@ function renderCharts(){
   const byTipo=groupBy(FILTERED,'Tipo',metricFn).slice(0,12);
   const byBco=groupBy(FILTERED,'BCO',metricFn).slice(0,8);
   const byParc=groupBy(FILTERED,'Parceiro',metricFn).slice(0,6);
-  const mesMap={};FILTERED.forEach(r=>{const k=getMes(r['Data da Liberação']);if(k)mesMap[k]=(mesMap[k]||0)+metricFn(r)});
+  const mesMap={};FILTERED.forEach(r=>{const k=getMes(r['Data da Liberação']);if(k)mesMap[k]=(mesMap[k]||0)+1});
   const mesArr=Object.entries(mesMap).sort((a,b)=>a[0].localeCompare(b[0]));
   const mesLabels=mesArr.map(([k])=>{const[y,mo]=k.split('-');return MES[parseInt(mo)-1]+'/'+y.slice(2)});
   const barScales={x:{grid:{color:'transparent'},ticks:{color:'#6b7080',font:{size:10},maxRotation:45}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#6b7080',font:{size:10},callback:n=>Math.round(n)}}};
