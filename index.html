@@ -156,6 +156,9 @@
   .chart-box{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:1.25rem;transition:border-color .15s}
   .chart-box:hover{border-color:var(--b2)}
   .chart-title{font-size:12px;font-weight:600;color:var(--t1);letter-spacing:-.01em;margin-bottom:.25rem}
+  .chart-active-filter{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);color:var(--y);background:rgba(247,203,69,.1);border:1px solid rgba(247,203,69,.25);border-radius:99px;padding:2px 8px;margin-left:6px;cursor:pointer;transition:all .15s}
+  .chart-active-filter:hover{background:rgba(247,203,69,.2)}
+  .chart-box{cursor:pointer}
   .chart-sub{font-size:11px;color:var(--t3);margin-bottom:1rem}
   .chart-wrap{position:relative;height:200px}
   .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -1092,10 +1095,82 @@ function groupBy(arr,key,valFn){const m={};arr.forEach(r=>{const k=r[key]||'—'
 function mkChart(id,type,labels,data,colors,opts={}){
   if(CHARTS[id])CHARTS[id].destroy();
   const ctx=$(id).getContext('2d');
-  CHARTS[id]=new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,borderRadius:type==='bar'?4:0,...(opts.ds||{})}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},...(opts.plugins||{})},scales:opts.scales||{},...(opts.extra||{})}});
+  CHARTS[id]=new Chart(ctx,{
+    type,
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,borderRadius:type==='bar'?4:0,...(opts.ds||{})}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},...(opts.plugins||{})},
+      scales:opts.scales||{},
+      onClick:(e,els)=>{
+        if(!els.length)return;
+        const label=CHARTS[id].data.labels[els[0].index];
+        if(opts.onClickLabel) opts.onClickLabel(label);
+      },
+      onHover:(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default';},
+      ...( ({onClick:_,onHover:__,...rest})=>rest )(opts.extra||{})
+    }
+  });
 }
 
 function makeLegend(el,labels,colors){el.innerHTML=labels.map((l,i)=>`<span><span class="legend-dot" style="background:${colors[i%colors.length]}"></span>${l.slice(0,22)}</span>`).join('')}
+
+// Aplica filtro ao clicar num gráfico, com toggle (clica 2x para remover)
+function applyChartFilter(field, value){
+  const el=$(field);
+  if(!el)return;
+  if(el.value===value){el.value='';} // toggle off
+  else{el.value=value;}
+  applyFilter();
+  setTimeout(renderCharts,50);
+}
+
+// Aplica filtro de mês ao clicar no gráfico de barras
+function applyChartMes(label){
+  const el=$('fMes');
+  if(!el)return;
+  // Converter label "Jan/24" → "2024-01"
+  const parts=label.split('/');
+  const mo=String(MES.indexOf(parts[0])+1).padStart(2,'0');
+  const yr='20'+parts[1];
+  const val=yr+'-'+mo;
+  if(el.value===val){el.value='';}
+  else{el.value=val;}
+  applyFilter();
+  setTimeout(renderCharts,50);
+}
+
+// Aplica filtro de filial ao clicar — precisa mapear nome→código
+function applyChartFilial(nome){
+  const el=$('fFil');
+  if(!el)return;
+  const entry=Object.entries(FILIAIS).find(([,n])=>n===nome);
+  if(!entry)return;
+  const cod=entry[0];
+  // toggle: se já selecionado, deseleciona
+  const opt=[...el.options].find(o=>o.value===cod);
+  if(opt){opt.selected=!opt.selected;}
+  // Sync dropdown de filiais
+  const panel=$('fFil-panel');
+  if(panel){
+    const cb=panel.querySelector(`input[value="${cod}"]`);
+    if(cb){cb.checked=opt?opt.selected:false;cb.closest('.sb-opt').classList.toggle('sel',cb.checked);}
+  }
+  FILS_SEL=[...el.selectedOptions].map(o=>o.value);
+  applyFilter();
+  setTimeout(renderCharts,50);
+}
+
+// Aplica filtro de canal ao clicar — mapeia nome→código
+function applyChartCanal(nome){
+  const el=$('fCanal');
+  if(!el)return;
+  const entry=Object.entries(CANAIS).find(([,n])=>n===nome);
+  if(!entry)return;
+  el.value=el.value===entry[0]?'':entry[0];
+  applyFilter();
+  setTimeout(renderCharts,50);
+}
 
 function renderCharts(){
   const byTipo=groupBy(FILTERED,'Tipo',val).slice(0,12);
@@ -1105,24 +1180,28 @@ function renderCharts(){
   const mesArr=Object.entries(mesMap).sort((a,b)=>a[0].localeCompare(b[0]));
   const mesLabels=mesArr.map(([k])=>{const[y,mo]=k.split('-');return MES[parseInt(mo)-1]+'/'+y.slice(2)});
   const barScales={x:{grid:{color:'transparent'},ticks:{color:'#6b7080',font:{size:10},maxRotation:45}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#6b7080',font:{size:10},callback:n=>Math.round(n)}}};
-  mkChart('cTipo','doughnut',byTipo.map(x=>x[0]),byTipo.map(x=>x[1]),COLORS.slice(0,byTipo.length),{extra:{cutout:'62%'}});
+
+  mkChart('cTipo','doughnut',byTipo.map(x=>x[0]),byTipo.map(x=>x[1]),COLORS.slice(0,byTipo.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartFilter('fTipo',v)});
   makeLegend($('lgTipo'),byTipo.map(x=>x[0]),COLORS);
-  mkChart('cBco','doughnut',byBco.map(x=>x[0]),byBco.map(x=>x[1]),COLORS.slice(2,2+byBco.length),{extra:{cutout:'62%'}});
+
+  mkChart('cBco','doughnut',byBco.map(x=>x[0]),byBco.map(x=>x[1]),COLORS.slice(2,2+byBco.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartFilter('fBco',v)});
   makeLegend($('lgBco'),byBco.map(x=>x[0]),COLORS.slice(2));
-  mkChart('cMes','bar',mesLabels,mesArr.map(x=>x[1]),'#f7cb45',{ds:{backgroundColor:'rgba(247,203,69,.8)',borderRadius:4,hoverBackgroundColor:'#f7cb45'},scales:barScales});
-  mkChart('cParc','doughnut',byParc.map(x=>x[0]),byParc.map(x=>x[1]),COLORS.slice(4,4+byParc.length),{extra:{cutout:'62%'}});
+
+  mkChart('cMes','bar',mesLabels,mesArr.map(x=>x[1]),'#f7cb45',{ds:{backgroundColor:'rgba(247,203,69,.8)',borderRadius:4,hoverBackgroundColor:'#f7cb45'},scales:barScales,onClickLabel:v=>applyChartMes(v)});
+
+  mkChart('cParc','doughnut',byParc.map(x=>x[0]),byParc.map(x=>x[1]),COLORS.slice(4,4+byParc.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartFilter('fParc',v)});
   makeLegend($('lgParc'),byParc.map(x=>x[0]),COLORS.slice(4));
 
   // Filiais
   const byFilRaw=groupBy(FILTERED,'Filial',val).slice(0,10);
   const byFil=byFilRaw.map(([cod,v])=>[filialNome(cod),v]);
-  mkChart('cFil','doughnut',byFil.map(x=>x[0]),byFil.map(x=>x[1]),COLORS.slice(6,6+byFil.length),{extra:{cutout:'62%'}});
+  mkChart('cFil','doughnut',byFil.map(x=>x[0]),byFil.map(x=>x[1]),COLORS.slice(6,6+byFil.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartFilial(v)});
   makeLegend($('lgFil'),byFil.map(x=>x[0]),COLORS.slice(6));
 
   // Canais de venda
   const byCanalRaw=groupBy(FILTERED,'Canaldevenda',val).slice(0,10);
   const byCanal=byCanalRaw.map(([cod,v])=>[canalNome(cod),v]);
-  mkChart('cCanal','doughnut',byCanal.map(x=>x[0]),byCanal.map(x=>x[1]),COLORS.slice(8,8+byCanal.length),{extra:{cutout:'62%'}});
+  mkChart('cCanal','doughnut',byCanal.map(x=>x[0]),byCanal.map(x=>x[1]),COLORS.slice(8,8+byCanal.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartCanal(v)});
   makeLegend($('lgCanal'),byCanal.map(x=>x[0]),COLORS.slice(8));
 }
 
