@@ -681,17 +681,23 @@
 
   <!-- VISÃO GERAL -->
   <div id="p-visao" class="panel on">
-    <div class="chart-grid">
-      <div class="chart-box"><div class="chart-title">Valor por tipo de operação</div><div class="chart-sub">distribuição por modalidade</div><div class="chart-wrap"><canvas id="cTipo"></canvas></div><div class="legend" id="lgTipo"></div></div>
-      <div class="chart-box"><div class="chart-title">Valor por banco</div><div class="chart-sub">produção por instituição</div><div class="chart-wrap"><canvas id="cBco"></canvas></div><div class="legend" id="lgBco"></div></div>
+    <div style="display:flex; justify-content:flex-end; margin-bottom:12px">
+      <div style="background:var(--s1); padding:4px; border-radius:var(--r); border:1px solid var(--b1); display:flex; gap:4px">
+        <button id="btnMetricVal" class="btn" onclick="setMetric('val')">Valor Liberado</button>
+        <button id="btnMetricLiq" class="btn-ghost" style="border:none" onclick="setMetric('liq')">Líquido Loja</button>
+      </div>
     </div>
     <div class="chart-grid">
-      <div class="chart-box"><div class="chart-title">Contratos por mês</div><div class="chart-sub">evolução temporal</div><div class="chart-wrap"><canvas id="cMes"></canvas></div></div>
-      <div class="chart-box"><div class="chart-title">Valor por parceiro</div><div class="chart-sub">distribuição por parceiro</div><div class="chart-wrap"><canvas id="cParc"></canvas></div><div class="legend" id="lgParc"></div></div>
+      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por tipo de operação</div><div class="chart-sub">distribuição por modalidade</div><div class="chart-wrap"><canvas id="cTipo"></canvas></div><div class="legend" id="lgTipo"></div></div>
+      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por banco</div><div class="chart-sub">produção por instituição</div><div class="chart-wrap"><canvas id="cBco"></canvas></div><div class="legend" id="lgBco"></div></div>
     </div>
     <div class="chart-grid">
-      <div class="chart-box"><div class="chart-title">Valor por filial</div><div class="chart-sub">produção por unidade</div><div class="chart-wrap"><canvas id="cFil"></canvas></div><div class="legend" id="lgFil"></div></div>
-      <div class="chart-box"><div class="chart-title">Canal de venda</div><div class="chart-sub">origem dos contratos</div><div class="chart-wrap"><canvas id="cCanal"></canvas></div><div class="legend" id="lgCanal"></div></div>
+      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por mês</div><div class="chart-sub">evolução temporal</div><div class="chart-wrap"><canvas id="cMes"></canvas></div></div>
+      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por parceiro</div><div class="chart-sub">distribuição por parceiro</div><div class="chart-wrap"><canvas id="cParc"></canvas></div><div class="legend" id="lgParc"></div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por filial</div><div class="chart-sub">produção por unidade</div><div class="chart-wrap"><canvas id="cFil"></canvas></div><div class="legend" id="lgFil"></div></div>
+      <div class="chart-box"><div class="chart-title"><span class="c-metric-lbl">Valor</span> por canal</div><div class="chart-sub">origem dos contratos</div><div class="chart-wrap"><canvas id="cCanal"></canvas></div><div class="legend" id="lgCanal"></div></div>
     </div>
   </div>
 
@@ -851,6 +857,19 @@ const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
 let ALL=[], FILTERED=[], PAGE=0, MESES_SEL=[], FILS_SEL=[];
 const PER=20;
 let CHARTS={};
+let METRIC='val';
+
+function setMetric(m) {
+  METRIC = m;
+  $('btnMetricVal').className = m === 'val' ? 'btn' : 'btn-ghost';
+  $('btnMetricVal').style.border = m === 'val' ? '' : 'none';
+  $('btnMetricLiq').className = m === 'liq' ? 'btn' : 'btn-ghost';
+  $('btnMetricLiq').style.border = m === 'liq' ? '' : 'none';
+  const lbls = document.querySelectorAll('.c-metric-lbl');
+  lbls.forEach(lbl => lbl.textContent = m === 'val' ? 'Valor' : 'Líquido');
+  renderCharts();
+}
+
 const COLORS=['#f7cb45','#4cba7a','#3e4344','#e05c4b','#d1c9ca','#fbd96a','#7dd4a0','#a0a8aa','#f08070','#b8b2b3','#ffd85a','#6b8f6e'];
 const MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -1173,10 +1192,12 @@ function applyChartCanal(nome){
 }
 
 function renderCharts(){
-  const byTipo=groupBy(FILTERED,'Tipo',val).slice(0,12);
-  const byBco=groupBy(FILTERED,'BCO',val).slice(0,8);
-  const byParc=groupBy(FILTERED,'Parceiro',val).slice(0,6);
-  const mesMap={};FILTERED.forEach(r=>{const k=getMes(r['Data da Liberação']);if(k)mesMap[k]=(mesMap[k]||0)+1});
+  const metricFn = METRIC === 'val' ? val : r => comTotal(r) - parseFloat(r['Desconto Loja']||0);
+
+  const byTipo=groupBy(FILTERED,'Tipo',metricFn).slice(0,12);
+  const byBco=groupBy(FILTERED,'BCO',metricFn).slice(0,8);
+  const byParc=groupBy(FILTERED,'Parceiro',metricFn).slice(0,6);
+  const mesMap={};FILTERED.forEach(r=>{const k=getMes(r['Data da Liberação']);if(k)mesMap[k]=(mesMap[k]||0)+metricFn(r)});
   const mesArr=Object.entries(mesMap).sort((a,b)=>a[0].localeCompare(b[0]));
   const mesLabels=mesArr.map(([k])=>{const[y,mo]=k.split('-');return MES[parseInt(mo)-1]+'/'+y.slice(2)});
   const barScales={x:{grid:{color:'transparent'},ticks:{color:'#6b7080',font:{size:10},maxRotation:45}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#6b7080',font:{size:10},callback:n=>Math.round(n)}}};
@@ -1193,13 +1214,13 @@ function renderCharts(){
   makeLegend($('lgParc'),byParc.map(x=>x[0]),COLORS.slice(4));
 
   // Filiais
-  const byFilRaw=groupBy(FILTERED,'Filial',val).slice(0,10);
+  const byFilRaw=groupBy(FILTERED,'Filial',metricFn).slice(0,10);
   const byFil=byFilRaw.map(([cod,v])=>[filialNome(cod),v]);
   mkChart('cFil','doughnut',byFil.map(x=>x[0]),byFil.map(x=>x[1]),COLORS.slice(6,6+byFil.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartFilial(v)});
   makeLegend($('lgFil'),byFil.map(x=>x[0]),COLORS.slice(6));
 
   // Canais de venda
-  const byCanalRaw=groupBy(FILTERED,'Canaldevenda',val).slice(0,10);
+  const byCanalRaw=groupBy(FILTERED,'Canaldevenda',metricFn).slice(0,10);
   const byCanal=byCanalRaw.map(([cod,v])=>[canalNome(cod),v]);
   mkChart('cCanal','doughnut',byCanal.map(x=>x[0]),byCanal.map(x=>x[1]),COLORS.slice(8,8+byCanal.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartCanal(v)});
   makeLegend($('lgCanal'),byCanal.map(x=>x[0]),COLORS.slice(8));
