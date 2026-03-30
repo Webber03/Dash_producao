@@ -1,0 +1,1078 @@
+// ── CONFIG ────────────────────────────────────────────────────
+// URL padrão — usada apenas se não houver nada salvo no navegador
+const JSON_URL_DEFAULT = 'https://novo.progestor21.com.br/sistema/_lib/tmp/sc_json_20260319113030_485_consultajsonlf.json';
+const getJsonUrl = () => localStorage.getItem('progestor_json_url') || JSON_URL_DEFAULT;
+
+// finder.php busca automaticamente o arquivo mais recente
+// proxy.php é usado quando o usuário informa a URL manualmente
+const USE_FINDER = !localStorage.getItem('progestor_json_url');
+
+// ── MODAL URL ─────────────────────────────────────────────────
+function openUrlModal() {
+  document.getElementById('urlInput').value = getJsonUrl();
+  document.getElementById('modal-url').style.display = 'flex';
+}
+function closeUrlModal() {
+  document.getElementById('modal-url').style.display = 'none';
+}
+function saveUrl() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+  localStorage.setItem('progestor_json_url', url);
+  closeUrlModal();
+  stopAutoRefresh();
+  loadData();
+}
+function clearSavedUrl() {
+  localStorage.removeItem('progestor_json_url');
+  stopAutoRefresh();
+  loadData();
+}
+
+// ── TIPOS PERMITIDOS ──────────────────────────────────────────
+// Mapeamento: tipo → classe de badge
+const TIPO_BADGE = {
+  'NOVO'                          : 'b-novo',
+  'REFINANCIAMENTO'               : 'b-refin',
+  'REFIN-PORTABILIDADE'           : 'b-rp',
+  'PORTABILIDADE'                 : 'b-port',
+  'CARTÃO C/SAQUE'                : 'b-cart',
+  'COMPRA DE DIVIDA'              : 'b-cd',
+  'COMPRA INTERNA'                : 'b-ci',
+  'CARTÃO EMISSÃO PLASTICO'       : 'b-ep',
+  'CARTAO BENEFICIO'              : 'b-cb',
+  'CARTÃO BENEFICIO C/SAQUE'      : 'b-cbs',
+  'COMPRA INTERNA C/AJUSTE'       : 'b-cia',
+  'ABERTURA DE CONTA CORRENTE'    : 'b-ac',
+};
+
+// ── FILIAIS ───────────────────────────────────────────────────
+const FILIAIS = {
+  '377': 'CONSORCIO',
+  '366': 'ERBANK',
+  '379': 'EXTERNO [ALIPIO LIMA]',
+  '279': 'FEIRA DE SANTANA',
+  '365': 'FGTS [Externo]',
+  '348': 'GOVERNOS E PREFEITURAS',
+  '303': 'INSS',
+  '358': 'JF SERVICOS',
+  '281': 'LF & CREDSAMPAIO',
+  '315': 'MATRIZ',
+  '362': 'MEI / PREST. SERVI',
+  '372': 'MF SERVICOS',
+  '373': 'SIAPE',
+};
+// Filiais ordenadas alfabeticamente por nome
+const FILIAIS_ORDER = Object.entries(FILIAIS).sort((a,b)=>a[1].localeCompare(b[1]));
+const filialNome = codigo => FILIAIS[String(codigo)] || String(codigo);
+
+// ── CANAIS DE VENDA ───────────────────────────────────────────
+const CANAIS = {
+  '27': 'URA ATENDE',
+  '28': 'ATIVO',
+  '29': 'SMS',
+  '30': 'DISPARADOR WHATSAPP',
+  '31': 'CALL CENTER MANUAL',
+  '32': 'INDICAÇÃO CLIENTE',
+  '34': 'LEAD TRÁFEGO PAGO',
+  '65': 'FACEBOOK | INSTAGRAM',
+  '78': 'POS-VENDA',
+  '79': 'INDICACAO FABRICIO',
+  '81': 'URA WHATSAPP',
+  '82': 'DISP. WHATSAPP RECEPTIVO',
+  '83': 'INDICAÇÃO ESRON MENEZES',
+  '84': 'DISCADORA',
+  '86': 'URA VOIP',
+  '87': 'ESTAGIÁRIO(A)',
+  '107': 'DISP WHATSAPP INTELIGENTE',
+};
+const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
+
+// ── ESTADO ────────────────────────────────────────────────────
+let ALL=[], FILTERED=[], PAGE=0, MESES_SEL=[], FILS_SEL=[];
+const PER=20;
+let CHARTS={};
+let METRIC='val';
+
+function setMetric(m) {
+  METRIC = m;
+  $('btnMetricVal').className = m === 'val' ? 'btn' : 'btn-ghost';
+  $('btnMetricVal').style.border = m === 'val' ? '' : 'none';
+  $('btnMetricLiq').className = m === 'liq' ? 'btn' : 'btn-ghost';
+  $('btnMetricLiq').style.border = m === 'liq' ? '' : 'none';
+  renderCharts();
+}
+
+const COLORS=['#f7cb45','#4cba7a','#3e4344','#e05c4b','#d1c9ca','#fbd96a','#7dd4a0','#a0a8aa','#f08070','#b8b2b3','#ffd85a','#6b8f6e'];
+const MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+// ── UTILS ─────────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+const val=r=>parseFloat(r['Valor Liberado']||0);
+const com=r=>parseFloat(r['Comissao Loja']||0);
+// comissão total em R$: percentual aplicado sobre base + bônus absolutos
+const comTotal=r=>(r['Base Comissao']||0)*com(r)/100+(r['Bonus1']||0)+(r['Bonus2']||0);
+const fmt=n=>'R$ '+parseFloat(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtK=n=>'R$ '+parseFloat(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const getMes=d=>{if(!d)return null;const p=d.split('-');return p[0]+'-'+p[1]};
+const fmtData=d=>d?d.split('-').reverse().join('/'):'—';
+
+// ── CARGA AUTOMÁTICA ──────────────────────────────────────────
+async function loadData() {
+  show('loader'); hide('app'); hide('error-box');
+  $('status-txt').textContent = 'carregando';
+
+  const manualUrl = localStorage.getItem('progestor_json_url');
+
+  // 1. URL manual salva → proxy.php
+  if (manualUrl) {
+    $('loader-msg').textContent = 'carregando via URL manual...';
+    try {
+      const data = await fetchJSON('proxy.php?url=' + encodeURIComponent(manualUrl));
+      initData(data); return;
+    } catch(e) {
+      console.warn('proxy.php falhou:', e.message);
+    }
+
+    // 2. Tenta direto (sem proxy) — funciona se CORS liberado
+    $('loader-msg').textContent = 'tentando acesso direto...';
+    try {
+      const data = await fetchJSON(manualUrl, 15000);
+      initData(data); return;
+    } catch(e) {
+      console.warn('direto falhou:', e.message);
+    }
+  }
+
+  // 3. trigger.php (com timeout curto — se demorar é porque falhou)
+  $('loader-msg').textContent = 'buscando dados automáticos...';
+  try {
+    const data = await fetchJSON('trigger.php?_t=' + Date.now(), 20000);
+    initData(data); return;
+  } catch(e) {
+    console.warn('trigger.php falhou:', e.message);
+  }
+
+  // 4. Nenhum funcionou — mostra erro com instrução clara
+  hide('loader');
+  show('error-box');
+  $('status-txt').textContent = 'erro';
+}
+
+async function fetchJSON(url, timeout=10000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeout);
+  const res = await fetch(url, {cache:'no-cache', signal:ctrl.signal});
+  clearTimeout(timer);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (!Array.isArray(data) || !data.length) throw new Error('vazio');
+  return data;
+}
+
+function reloadData(){ stopAutoRefresh(); loadData(); }
+
+// ── INIT ──────────────────────────────────────────────────────
+function initData(data) {
+  ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0),'Bonus1':parseFloat(r['R$ Bonus Loja 1']||0),'Bonus2':parseFloat(r['R$ Bonus Loja 2']||0)}));
+  hide('loader'); hide('error-box'); show('app');
+  $('status-txt').textContent=ALL.length+' registros';if($('sidebar-total'))$('sidebar-total').textContent=ALL.length.toLocaleString('pt-BR');
+  $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
+  buildFilters();
+  buildTvFilSelect();
+  rebuildMobFilters();
+  // CSS cuida do show/hide via media queries — não forçar via JS para evitar conflito
+  applyFilter();
+  startAutoRefresh();
+}
+
+function show(id){
+  const el=$(id);if(!el)return;
+  if(id==='app') el.style.display='block'; // .page interno já é grid
+  else el.style.display='block';
+}
+function hide(id){const el=$(id);if(el)el.style.display='none';}
+
+// ── FILTROS ───────────────────────────────────────────────────
+function buildFilters(){
+  const fillSelect=(id,arr,allLabel='Todos')=>{
+    const el=$(id),cur=el.value;
+    el.innerHTML=`<option value="">${allLabel}</option>`;
+    arr.forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o)});
+  };
+  // Meses — une Data da Liberação + Data Comissao Loja para cobrir ambos os KPIs
+  const mesesLib = ALL.map(r=>getMes(r['Data da Liberação'])).filter(Boolean);
+  const mesesCom = ALL.map(r=>getMes(r['Data Comissao Loja'])).filter(Boolean);
+  const meses = [...new Set([...mesesLib, ...mesesCom])].sort();
+  // MÊS — dropdown multi
+  const elMes=$('fMes'), curM=elMes.value;
+  elMes.innerHTML='<option value="">Todos</option>';
+  meses.forEach(m=>{const[y,mo]=m.split('-');const o=document.createElement('option');o.value=m;o.textContent=MES[parseInt(mo)-1]+'/'+y.slice(2);if(m===curM)o.selected=true;elMes.appendChild(o)});
+  // Filtra só os tipos permitidos
+  const tiposPermitidos=Object.keys(TIPO_BADGE);
+  const tiposPresentes=[...new Set(ALL.map(r=>r.Tipo))].filter(t=>tiposPermitidos.includes(t)).sort();
+  fillSelect('fTipo', tiposPresentes);
+  fillSelect('fBco',[...new Set(ALL.map(r=>r.BCO))].sort());
+  fillSelect('fParc',[...new Set(ALL.map(r=>r.Parceiro))].sort());
+  // Filial — valor é o código, label é o nome
+  // Ordena filiais alfabeticamente pelo nome mapeado
+  const rawFilCodes=[...new Set(ALL.map(r=>String(r.Filial||'')).filter(Boolean))];
+  const filCodes=rawFilCodes.sort((a,b)=>(FILIAIS[a]||a).localeCompare(FILIAIS[b]||b));
+  const elFil=$('fFil');
+  const curFils=[...elFil.selectedOptions].map(o=>o.value);
+  elFil.innerHTML='';
+  filCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=filialNome(cod);if(curFils.includes(cod))o.selected=true;elFil.appendChild(o)});
+  buildDropdown('fFil', filCodes.map(c=>({val:c,label:filialNome(c)})), curFils, 'Todas', 'Todas as filiais');
+  // Canal de venda
+  const canalCodes=[...new Set(ALL.map(r=>String(r.Canaldevenda||'')).filter(Boolean))];
+  // Ordena canais alfabeticamente pelo nome
+  canalCodes.sort((a,b)=>(CANAIS[a]||a).localeCompare(CANAIS[b]||b));
+  const elCanal=$('fCanal'),curCanal=elCanal.value;
+  elCanal.innerHTML='<option value="">Todos</option>';
+  canalCodes.forEach(cod=>{const o=document.createElement('option');o.value=cod;o.textContent=canalNome(cod);if(cod===curCanal)o.selected=true;elCanal.appendChild(o)});
+}
+
+function applyFilter(){
+  const mes=$('fMes').value,tipo=$('fTipo').value,bco=$('fBco').value,parc=$('fParc').value,canal=$('fCanal').value,srch=$('srch').value.toLowerCase().trim();
+  MESES_SEL=mes?[mes]:[];
+  FILS_SEL=[...($('fFil').selectedOptions||[])].map(o=>o.value).filter(Boolean);
+  const meses=MESES_SEL;
+  const fils=FILS_SEL;
+  const fDe=$('fDe').value, fAte=$('fAte').value;
+
+  // quando seleciona mês, limpa período e vice-versa
+  const baseFilter=r=>{
+    if(tipo&&r.Tipo!==tipo)return false;
+    if(bco&&r.BCO!==bco)return false;
+    if(parc&&r.Parceiro!==parc)return false;
+    if(fils.length&&!fils.includes(String(r.Filial||'')))return false;
+    if(canal&&String(r.Canaldevenda||'')!==canal)return false;
+    if(srch&&!(r.Nome||'').toLowerCase().includes(srch)&&!(r.Contrato||'').toLowerCase().includes(srch)&&!(r.CPF||'').includes(srch))return false;
+    return true;
+  };
+
+  FILTERED=ALL.filter(r=>{
+    if(meses.length){
+      const mesLib = getMes(r['Data da Liberação'])  || '';
+      const mesCom = getMes(r['Data Comissao Loja']) || '';
+      if(!meses.includes(mesLib) && !meses.includes(mesCom)) return false;
+    }
+    if(fDe||fAte){
+      const lib=(r['Data da Liberação']||'').slice(0,10);
+      const com=(r['Data Comissao Loja']||'').slice(0,10);
+      // mesma lógica do filtro de mês: passa se qualquer data está no período
+      const libOk = lib && (!fDe||lib>=fDe) && (!fAte||lib<=fAte);
+      const comOk = com && (!fDe||com>=fDe) && (!fAte||com<=fAte);
+      if(!libOk && !comOk) return false;
+    }
+    return baseFilter(r);
+  });
+
+  PAGE=0; render();
+}
+
+function clearFilters(){
+  ['fTipo','fBco','fParc','fCanal'].forEach(id=>$(id).value='');
+  $('fMes').value='';
+  // Limpar filial
+  [...$('fFil').options].forEach(o=>o.selected=false);
+  const filPanel=$('fFil-panel');
+  if(filPanel){
+    filPanel.querySelectorAll('input[type=checkbox]').forEach(c=>{c.checked=false;});
+    filPanel.querySelectorAll('.sb-opt').forEach(o=>o.classList.remove('sel'));
+  }
+  const filLbl=$('fFil-label');
+  if(filLbl)filLbl.textContent='Todas';
+  $('fDe').value='';$('fAte').value='';$('srch').value='';
+  applyFilter();
+}
+function clearMes(){
+  [...$('fMes').options].forEach(o=>o.selected=false);
+  if($('fMes-pills'))$('fMes-pills').querySelectorAll('.mes-pill').forEach(p=>p.classList.remove('on'));
+  if($('fMes-clear'))$('fMes-clear').style.display='none';
+  MESES_SEL=[];
+}
+['fMes','fTipo','fBco','fParc','fCanal'].forEach(id=>{const el=$(id);if(el)el.onchange=applyFilter});
+const srchEl=$('srch');if(srchEl)srchEl.oninput=applyFilter;
+
+// ── RENDER ────────────────────────────────────────────────────
+function render(){renderKpis();renderCharts();renderCorretores();renderTabela()}
+
+function renderKpis(){
+  const mes=MESES_SEL.length?MESES_SEL[0]:'';
+  const meses=mes?[mes]:[];
+  const tipo=$('fTipo').value, bco=$('fBco').value, parc=$('fParc').value;
+
+  // Produção: contratos cuja Data da Liberação está nos meses filtrados
+  const prodRows = meses.length
+    ? FILTERED.filter(r => meses.includes(getMes(r['Data da Liberação'])||''))
+    : FILTERED;
+  const tot  = prodRows.length;
+  const sumV = prodRows.reduce((a,r)=>a+val(r), 0);
+  const tick = tot ? sumV/tot : 0;
+
+  // Comissão Loja: contratos cuja Data Comissao Loja está nos meses filtrados
+  const sumC = FILTERED.filter(r => {
+    if (meses.length && !meses.includes(getMes(r['Data Comissao Loja'])||'')) return false;
+    return true;
+  }).reduce((a,r) => a + comTotal(r), 0);
+
+  $('kTot').textContent  = tot.toLocaleString('pt-BR');
+  $('kTotS').textContent = 'de ' + ALL.length + ' totais';
+  $('kVal').textContent  = fmtK(sumV);
+  $('kValS').textContent = 'valor total liberado';
+  // Desconto Loja: mesmo filtro da comissão
+  const sumD = FILTERED.filter(r => {
+    if (meses.length && !meses.includes(getMes(r['Data Comissao Loja'])||'')) return false;
+    return true;
+  }).reduce((a,r) => a + (r['Desconto Loja']||0), 0);
+
+  const sumL = sumC - sumD;
+
+  $('kCom').textContent  = fmtK(sumC);
+  $('kComS').textContent = 'por Data Comissão Loja';
+  $('kLiq').textContent  = fmtK(sumL);
+  $('kLiqS').textContent = sumD>0 ? '− '+fmtK(sumD)+' descontos' : 'sem descontos';
+  const comRows = FILTERED.filter(r => !meses.length || meses.includes(getMes(r['Data Comissao Loja'])||''));
+  const tickCom = comRows.length ? sumC / comRows.length : 0;
+  $('kTick').textContent  = fmtK(tickCom);
+  $('kTickS').textContent = 'ticket médio de comissão';
+}
+
+function groupBy(arr,key,valFn){const m={};arr.forEach(r=>{const k=r[key]||'—';m[k]=(m[k]||0)+valFn(r)});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
+
+function mkChart(id,type,labels,data,colors,opts={}){
+  if(CHARTS[id])CHARTS[id].destroy();
+  const ctx=$(id).getContext('2d');
+  CHARTS[id]=new Chart(ctx,{
+    type,
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,borderRadius:type==='bar'?4:0,...(opts.ds||{})}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},...(opts.plugins||{})},
+      scales:opts.scales||{},
+      onClick:(e,els)=>{
+        if(!els.length)return;
+        const label=CHARTS[id].data.labels[els[0].index];
+        if(opts.onClickLabel) opts.onClickLabel(label);
+      },
+      onHover:(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default';},
+      ...( ({onClick:_,onHover:__,...rest})=>rest )(opts.extra||{})
+    }
+  });
+}
+
+function makeLegend(el,labels,colors){el.innerHTML=labels.map((l,i)=>`<span><span class="legend-dot" style="background:${colors[i%colors.length]}"></span>${l.slice(0,22)}</span>`).join('')}
+
+// Aplica filtro ao clicar num gráfico, com toggle (clica 2x para remover)
+function applyChartFilter(field, value){
+  const el=$(field);
+  if(!el)return;
+  if(el.value===value){el.value='';} // toggle off
+  else{el.value=value;}
+  applyFilter();
+  setTimeout(renderCharts,50);
+}
+
+// Aplica filtro de mês ao clicar no gráfico de barras
+function applyChartMes(label){
+  const el=$('fMes');
+  if(!el)return;
+  // Converter label "Jan/24" → "2024-01"
+  const parts=label.split('/');
+  const mo=String(MES.indexOf(parts[0])+1).padStart(2,'0');
+  const yr='20'+parts[1];
+  const val=yr+'-'+mo;
+  if(el.value===val){el.value='';}
+  else{el.value=val;}
+  applyFilter();
+  setTimeout(renderCharts,50);
+}
+
+// Aplica filtro de filial ao clicar — precisa mapear nome→código
+function applyChartFilial(nome){
+  const el=$('fFil');
+  if(!el)return;
+  const entry=Object.entries(FILIAIS).find(([,n])=>n===nome);
+  if(!entry)return;
+  const cod=entry[0];
+  // toggle: se já selecionado, deseleciona
+  const opt=[...el.options].find(o=>o.value===cod);
+  if(opt){opt.selected=!opt.selected;}
+  // Sync dropdown de filiais
+  const panel=$('fFil-panel');
+  if(panel){
+    const cb=panel.querySelector(`input[value="${cod}"]`);
+    if(cb){cb.checked=opt?opt.selected:false;cb.closest('.sb-opt').classList.toggle('sel',cb.checked);}
+  }
+  FILS_SEL=[...el.selectedOptions].map(o=>o.value);
+  applyFilter();
+  setTimeout(renderCharts,50);
+}
+
+// Aplica filtro de canal ao clicar — mapeia nome→código
+function applyChartCanal(nome){
+  const el=$('fCanal');
+  if(!el)return;
+  const entry=Object.entries(CANAIS).find(([,n])=>n===nome);
+  if(!entry)return;
+  el.value=el.value===entry[0]?'':entry[0];
+  applyFilter();
+  setTimeout(renderCharts,50);
+}
+
+function renderCharts(){
+  const metricFn = METRIC === 'val' ? val : r => comTotal(r) - parseFloat(r['Desconto Loja']||0);
+
+  const byTipo=groupBy(FILTERED,'Tipo',metricFn).slice(0,12);
+  const byBco=groupBy(FILTERED,'BCO',metricFn).slice(0,8);
+  const byParc=groupBy(FILTERED,'Parceiro',metricFn).slice(0,6);
+  const mesMap={};FILTERED.forEach(r=>{const k=getMes(r['Data da Liberação']);if(k)mesMap[k]=(mesMap[k]||0)+1});
+  const mesArr=Object.entries(mesMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  const mesLabels=mesArr.map(([k])=>{const[y,mo]=k.split('-');return MES[parseInt(mo)-1]+'/'+y.slice(2)});
+  const barScales={x:{grid:{color:'transparent'},ticks:{color:'#6b7080',font:{size:10},maxRotation:45}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#6b7080',font:{size:10},callback:n=>Math.round(n)}}};
+
+  mkChart('cTipo','doughnut',byTipo.map(x=>x[0]),byTipo.map(x=>x[1]),COLORS.slice(0,byTipo.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartFilter('fTipo',v)});
+  makeLegend($('lgTipo'),byTipo.map(x=>x[0]),COLORS);
+
+  mkChart('cBco','doughnut',byBco.map(x=>x[0]),byBco.map(x=>x[1]),COLORS.slice(2,2+byBco.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartFilter('fBco',v)});
+  makeLegend($('lgBco'),byBco.map(x=>x[0]),COLORS.slice(2));
+
+  mkChart('cMes','bar',mesLabels,mesArr.map(x=>x[1]),'#f7cb45',{ds:{backgroundColor:'rgba(247,203,69,.8)',borderRadius:4,hoverBackgroundColor:'#f7cb45'},scales:barScales,onClickLabel:v=>applyChartMes(v)});
+
+  mkChart('cParc','doughnut',byParc.map(x=>x[0]),byParc.map(x=>x[1]),COLORS.slice(4,4+byParc.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartFilter('fParc',v)});
+  makeLegend($('lgParc'),byParc.map(x=>x[0]),COLORS.slice(4));
+
+  // Filiais
+  const byFilRaw=groupBy(FILTERED,'Filial',metricFn).slice(0,10);
+  const byFil=byFilRaw.map(([cod,v])=>[filialNome(cod),v]);
+  mkChart('cFil','doughnut',byFil.map(x=>x[0]),byFil.map(x=>x[1]),COLORS.slice(6,6+byFil.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartFilial(v)});
+  makeLegend($('lgFil'),byFil.map(x=>x[0]),COLORS.slice(6));
+
+  // Canais de venda
+  const byCanalRaw=groupBy(FILTERED,'Canaldevenda',metricFn).slice(0,10);
+  const byCanal=byCanalRaw.map(([cod,v])=>[canalNome(cod),v]);
+  mkChart('cCanal','doughnut',byCanal.map(x=>x[0]),byCanal.map(x=>x[1]),COLORS.slice(8,8+byCanal.length),{extra:{cutout:'62%'},onClickLabel:v=>applyChartCanal(v)});
+  makeLegend($('lgCanal'),byCanal.map(x=>x[0]),COLORS.slice(8));
+}
+
+function renderCorretores(){
+  const m={};
+  FILTERED.forEach(r=>{
+    const k=(r.Corretor||'—').trim();
+    if(!m[k])m[k]={n:0,v:0,c:0,d:0};
+    m[k].n++;
+    m[k].v+=val(r);
+    m[k].c+=comTotal(r);
+    m[k].d+=(r['Desconto Loja']||0);
+  });
+  $('tbCorr').innerHTML=Object.entries(m).sort((a,b)=>(b[1].c-b[1].d)-(a[1].c-a[1].d)).map(([nome,d],i)=>{
+    const liq=d.c-d.d;
+    return `<tr>
+      <td style="color:var(--t3);font-family:var(--mono);font-size:11px">${i+1}</td>
+      <td style="font-weight:600">${nome}</td>
+      <td style="font-family:var(--mono);text-align:center">${d.n}</td>
+      <td style="font-family:var(--mono);text-align:right">${fmt(d.v)}</td>
+      <td style="font-family:var(--mono);text-align:right;color:#4ade80">${fmt(d.c)}</td>
+      <td style="font-family:var(--mono);text-align:right;color:var(--red)">${d.d>0?'−'+fmt(d.d):'—'}</td>
+      <td style="font-family:var(--mono);text-align:right;color:#22d3ee;font-weight:600">${fmt(liq)}</td>
+      <td style="font-family:var(--mono);text-align:right;color:var(--t2)">${fmt(d.v/d.n)}</td>
+    </tr>`;
+  }).join('');
+}
+
+let VER_TUDO = false;
+function toggleVerTudo(){
+  VER_TUDO=!VER_TUDO;
+  $('bVerTudo').textContent=VER_TUDO?'Paginar':'Ver tudo';
+  $('bVerTudo').style.background=VER_TUDO?'var(--accent2)':'';
+  $('bVerTudo').style.color=VER_TUDO?'#000':'';
+  $('pagBar').style.display=VER_TUDO?'none':'flex';
+  PAGE=0; renderTabela();
+}
+
+function stCom(s){
+  if(!s) return '—';
+  if(s==='RECEBIDA') return '<span style="color:var(--green);font-size:10px;font-weight:600">✓ REC</span>';
+  if(s==='PENDENTE') return '<span style="color:var(--accent4);font-size:10px;font-weight:600">⏳ PEN</span>';
+  return `<span style="font-size:10px">${s}</span>`;
+}
+
+function renderTabela(){
+  const pages=Math.max(1,Math.ceil(FILTERED.length/PER));if(PAGE>=pages)PAGE=0;
+  const slice=VER_TUDO ? FILTERED : FILTERED.slice(PAGE*PER,(PAGE+1)*PER);
+  $('tblCount').textContent=FILTERED.length+' registros';
+  const baseC=r=>parseFloat(r['Base Comissao']||0);
+  $('tbContr').innerHTML=slice.map(r=>{
+    const comR=comTotal(r);
+    return `<tr>
+    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;font-weight:500;white-space:nowrap">${r.Nome||'—'}</td>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.CPF||'—'}</td>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.Contrato||'—'}</td>
+    <td style="font-size:11px;white-space:nowrap">${r.BCO||'—'}</td>
+    <td><span class="badge ${TIPO_BADGE[(r.Tipo||'').trim()]||'b-ac'}">${(r.Tipo||'—').trim()}</span></td>
+    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--muted);white-space:nowrap">${r.Produto||'—'}</td>
+    <td style="font-family:var(--mono);text-align:center">${r['QuantidadedePrestação']||'—'}</td>
+    <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(val(r))}</td>
+    <td style="font-family:var(--mono);text-align:right">${com(r).toFixed(2)}%</td>
+    <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#4ade80">${comR>0?fmt(comR):'—'}</td>
+    <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#22d3ee;font-weight:600">${(()=>{const d=parseFloat(r['Desconto Loja']||0);const l=comR-d;return comR>0?fmt(l):'—'})()}</td>
+    <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
+    <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data Comissao Loja'])}</td>
+    <td style="text-align:center">${stCom(r['Status Comissao Loja'])}</td>
+    <td style="font-size:11px;white-space:nowrap">${canalNome(r.Canaldevenda)||'—'}</td>
+    <td style="font-size:11px;white-space:nowrap">${r.Parceiro||'—'}</td>
+    <td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(r.Corretor||'—').trim()}</td>
+    <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">${filialNome(r.Filial)||'—'}</td>
+  </tr>`;}).join('');
+  if(!VER_TUDO){
+    $('pInfo').textContent=`Pág. ${PAGE+1} de ${pages} — ${FILTERED.length} registros`;
+    $('bPrev').disabled=PAGE===0;$('bNext').disabled=PAGE>=pages-1;
+  }
+}
+
+function changePage(d){PAGE+=d;renderTabela()}
+// ── MÊS PILLS ────────────────────────────────────────────────
+function buildMesPills(meses, selected){
+  const container=$('fMes-pills');
+  if(!container)return;
+  container.innerHTML='';
+  meses.forEach(m=>{
+    const [y,mo]=m.split('-');
+    const label=MES[parseInt(mo)-1]+'/'+y.slice(2);
+    const pill=document.createElement('span');
+    pill.className='mes-pill'+(selected.includes(m)?' on':'');
+    pill.textContent=label;
+    pill.dataset.val=m;
+    pill.onclick=()=>{
+      pill.classList.toggle('on');
+      // sync hidden select
+      [...$('fMes').options].forEach(o=>{
+        if(o.value===m) o.selected=pill.classList.contains('on');
+      });
+      // mostrar/esconder botão limpar
+      const hasAny=!!container.querySelector('.mes-pill.on');
+      if($('fMes-clear'))$('fMes-clear').style.display=hasAny?'':'none';
+      MESES_SEL=[...($('fMes').selectedOptions||[])].map(o=>o.value).filter(Boolean);
+      applyFilter();
+    };
+    container.appendChild(pill);
+  });
+  // mostrar botão limpar se há seleção
+  if($('fMes-clear'))$('fMes-clear').style.display=selected.length?'':'none';
+}
+
+// ── DROPDOWNS GENÉRICOS (Mês + Filial) ───────────────────────
+function buildDropdown(id, items, selected, emptyLabel, allLabel){
+  const panel=$(id+'-panel');
+  const sel=$(id);
+  const lbl=$(id+'-label');
+  if(!panel)return;
+  panel.innerHTML='';
+  items.forEach(({val,label})=>{
+    const div=document.createElement('label');
+    div.className='sb-opt'+(selected.includes(val)?' sel':'');
+    const cb=document.createElement('input');
+    cb.type='checkbox'; cb.value=val; cb.checked=selected.includes(val);
+    cb.addEventListener('change',()=>{
+      div.classList.toggle('sel',cb.checked);
+      syncDrop(id);
+      applyFilter();
+    });
+    div.appendChild(cb);
+    div.appendChild(document.createTextNode(' '+label));
+    panel.appendChild(div);
+  });
+  updateDropLabel(id, emptyLabel, allLabel);
+}
+
+function syncDrop(id){
+  const panel=$(id+'-panel');
+  const sel=$(id);
+  if(!panel||!sel)return;
+  const checks=[...panel.querySelectorAll('input[type=checkbox]')];
+  [...sel.options].forEach(o=>{
+    const cb=checks.find(c=>c.value===o.value);
+    o.selected=cb?cb.checked:false;
+  });
+}
+
+function updateDropLabel(id, emptyLabel, allLabel){
+  const sel=$(id);
+  const lbl=$(id+'-label');
+  if(!sel||!lbl)return;
+  const chosen=[...sel.selectedOptions].map(o=>o.textContent);
+  if(chosen.length===0) lbl.textContent=emptyLabel||'Todos';
+  else if(chosen.length===1) lbl.textContent=chosen[0].slice(0,20);
+  else lbl.textContent=chosen.length+' selecionados';
+}
+
+function toggleDrop(id,e){
+  e.stopPropagation();
+  const panel=$(id+'-panel');
+  const btn=$(id+'-btn');
+  const isOpen=panel.classList.contains('open');
+  // fecha todos
+  document.querySelectorAll('.sb-drop-panel.open').forEach(p=>p.classList.remove('open'));
+  document.querySelectorAll('.sb-drop-btn.open').forEach(b=>b.classList.remove('open'));
+  if(!isOpen){panel.classList.add('open');btn.classList.add('open');}
+}
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.sb-drop-wrap')){
+    document.querySelectorAll('.sb-drop-panel.open').forEach(p=>p.classList.remove('open'));
+    document.querySelectorAll('.sb-drop-btn.open').forEach(b=>b.classList.remove('open'));
+  }
+});
+
+function switchTab(id,btn){
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  $('p-'+id).classList.add('on');
+
+  // Sync bottom nav mobile
+  document.querySelectorAll('.mob-nav-btn').forEach(b=>b.classList.remove('on'));
+  const mobBtn=$('mob-'+id);
+  if(mobBtn) mobBtn.classList.add('on');
+
+  const isFilial = id==='filial';
+  const sbCtrl=$('sb-filial-controls');
+  if(sbCtrl) sbCtrl.style.display=isFilial?'block':'none';
+  document.querySelectorAll('.filter-bar,.kpi-grid').forEach(el=>{
+    el.style.display=isFilial?'none':'';
+  });
+  // gaveta: seção correta gerenciada pelo openMobDrawer()
+
+  if(id==='visao') setTimeout(renderCharts,50);
+  if(isFilial){
+    if(TV_FIL) renderTv();
+    else{
+      const empty=$('tv-empty');
+      const tc=$('tv-content');
+      if(empty)empty.style.display='flex';
+      if(tc)tc.innerHTML='';
+      // No mobile, mostrar botão de escolha e abrir gaveta automaticamente
+      const isMob = window.innerWidth <= 1200;
+      const emptyBtn=$('tv-empty-btn');
+      if(emptyBtn) emptyBtn.style.display=isMob?'block':'none';
+      if(isMob) setTimeout(()=>openMobDrawer(),400);
+    }
+  }
+}
+
+// ── AUTO-REFRESH ──────────────────────────────────────────────
+const REFRESH_INTERVAL=60;
+let countdown=REFRESH_INTERVAL, countTimer=null, refreshTimer=null;
+
+function updateCountdown(){
+  if($('countdown')) $('countdown').textContent=countdown+'s';
+  if(countdown<=0){ autoRefresh(); return; }
+  countdown--;
+  countTimer=setTimeout(updateCountdown,1000);
+}
+
+function startAutoRefresh(){
+  stopAutoRefresh();
+  countdown=REFRESH_INTERVAL;
+  updateCountdown();
+}
+
+function stopAutoRefresh(){
+  clearTimeout(countTimer);
+  clearTimeout(refreshTimer);
+}
+
+async function autoRefresh(){
+  try {
+    const manualUrl = localStorage.getItem('progestor_json_url');
+    const endpoint = manualUrl
+      ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
+      : 'trigger.php?_t=' + Date.now();
+    const data = await fetchJSON(endpoint, manualUrl ? 10000 : 20000);
+    ALL=data.map(r=>({...r,'Valor Liberado':parseFloat(r['Valor Liberado']||0),'Base Comissao':parseFloat(r['Base Comissao']||0),'Comissao Loja':parseFloat(r['Comissao Loja']||0),'Desconto Loja':parseFloat(r['Desconto Loja']||0),'Bonus1':parseFloat(r['R$ Bonus Loja 1']||0),'Bonus2':parseFloat(r['R$ Bonus Loja 2']||0)}));
+    $('ts').textContent='atualizado '+new Date().toLocaleTimeString('pt-BR');
+    $('status-txt').textContent=ALL.length+' registros';
+    if($('sidebar-total'))$('sidebar-total').textContent=ALL.length.toLocaleString('pt-BR');
+    buildFilters(); applyFilter();
+  } catch(e){ $('status-txt').textContent='falha ao atualizar'; }
+  countdown=REFRESH_INTERVAL;
+  updateCountdown();
+}
+
+// ── MODO TV FILIAL ───────────────────────────────────────────
+let TV_FIL = '', TV_PERIODO = 'mes', tvClockTimer = null, tvRefreshTimer = null;
+
+function buildTvFilSelect(){
+  const el = $('tvFil'); if(!el) return;
+  const cur = el.value;
+  el.innerHTML = '<option value="">— escolha —</option>';
+  FILIAIS_ORDER.forEach(([cod, nome]) => {
+    if(!ALL.some(r => String(r.Filial) === cod)) return;
+    const o = document.createElement('option');
+    o.value = cod; o.textContent = nome;
+    if(cod === cur) o.selected = true;
+    el.appendChild(o);
+  });
+  // Sync mobile select
+  const mob=$('mob-tvFil');
+  if(mob){
+    mob.innerHTML='<option value="">— escolha —</option>';
+    [...el.options].slice(1).forEach(o=>{
+      const c=document.createElement('option');
+      c.value=o.value;c.textContent=o.textContent;
+      if(o.selected)c.selected=true;
+      mob.appendChild(c);
+    });
+  }
+}
+
+function onTvFilChange(){
+  TV_FIL = $('tvFil').value;
+  const wrap = $('tv-periodo-wrap');
+  const fsBtn = $('tv-fullscreen-btn');
+  if(wrap) wrap.style.display = TV_FIL ? 'block' : 'none';
+  if(fsBtn) fsBtn.style.display = TV_FIL ? 'block' : 'none';
+  const empty = $('tv-empty');
+  if(!TV_FIL){
+    if(empty) empty.style.display='flex';
+    const tc=$('tv-content'); if(tc) tc.innerHTML='';
+    return;
+  }
+  if(empty) empty.style.display='none';
+  TV_PERIODO = $('tvPeriodo') ? $('tvPeriodo').value : 'mes';
+  renderTv();
+}
+function switchTvFilial(){ onTvFilChange(); }
+
+function getTvData(){
+  const now = new Date();
+  let rows = ALL.filter(r => String(r.Filial) === TV_FIL);
+  if(TV_PERIODO === 'mes'){
+    const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    rows = rows.filter(r => getMes(r['Data da Liberação']) === ym || getMes(r['Data Comissao Loja']) === ym);
+  } else if(TV_PERIODO === 'hoje'){
+    const hoje = now.toISOString().slice(0,10);
+    rows = rows.filter(r => (r['Data da Liberação']||'').slice(0,10) === hoje);
+  } else {
+    const dias = parseInt(TV_PERIODO);
+    const limite = new Date(now - dias*86400000).toISOString().slice(0,10);
+    rows = rows.filter(r => (r['Data da Liberação']||'') >= limite);
+  }
+  return rows;
+}
+
+function getPeriodoLabel(){
+  const p = $('tvPeriodo') ? $('tvPeriodo').value : TV_PERIODO;
+  const now = new Date();
+  if(p === 'mes') return MES[now.getMonth()] + '/' + String(now.getFullYear()).slice(2);
+  if(p === 'hoje') return 'Hoje';
+  if(p === '7') return 'Últimos 7 dias';
+  return 'Últimos 30 dias';
+}
+
+function renderTv(){
+  TV_FIL = $('tvFil') ? $('tvFil').value : TV_FIL;
+  TV_PERIODO = $('tvPeriodo') ? $('tvPeriodo').value : TV_PERIODO;
+  if(!TV_FIL) return;
+
+  const rows = getTvData();
+  const filNome = FILIAIS[TV_FIL] || TV_FIL;
+
+  // KPIs
+  const nContratos = rows.length;
+  const sumV = rows.reduce((a,r)=>a+val(r),0);
+  const sumC = rows.reduce((a,r)=>a+comTotal(r),0);
+  const sumD = rows.reduce((a,r)=>a+(r['Desconto Loja']||0),0);
+  const sumL = sumC - sumD;
+
+  // Ranking corretores
+  const corrMap = {};
+  rows.forEach(r => {
+    const k = (r.Corretor||'—').trim();
+    if(!corrMap[k]) corrMap[k] = {n:0,v:0,c:0,d:0};
+    corrMap[k].n++;
+    corrMap[k].v += val(r);
+    corrMap[k].c += comTotal(r);
+    corrMap[k].d += (r['Desconto Loja']||0);
+  });
+  const ranking = Object.entries(corrMap).sort((a,b)=>(b[1].c-b[1].d)-(a[1].c-a[1].d)).slice(0,8);
+
+  // Últimos contratos
+  const ultimos = [...rows].sort((a,b)=>(b['Data da Liberação']||'').localeCompare(a['Data da Liberação']||'')).slice(0,6);
+
+  const medals = ['🥇','🥈','🥉'];
+  const medalClass = ['gold','silver','bronze'];
+
+  const html = `
+  <div class="tv-wrap">
+    <div class="tv-header">
+      <div class="tv-brand">
+        <div class="tv-brand-logo">LF</div>
+        <div>
+          <div class="tv-brand-name">LF Promotora</div>
+          <div class="tv-brand-filial">${filNome}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:2rem">
+        <div class="tv-ticker">
+          <div class="tv-live-dot"></div>
+          <span style="color:var(--green)">AO VIVO</span>
+          <div class="tv-ticker-bar"><div class="tv-ticker-fill" id="tv-progress" style="width:100%"></div></div>
+        </div>
+        <div class="tv-meta">
+          <div class="tv-meta-periodo">${getPeriodoLabel()}</div>
+          <div class="tv-meta-time" id="tv-clock">--:--:--</div>
+          <div class="tv-meta-date" id="tv-date">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tv-body">
+      <!-- KPIs -->
+      <div class="tv-kpis">
+        <div class="tv-kpi">
+          <div class="tv-kpi-label">Valor liberado</div>
+          <div class="tv-kpi-val">${fmt(sumV)}</div>
+          <div class="tv-kpi-sub">${nContratos.toLocaleString('pt-BR')} contrato${nContratos!==1?'s':''}</div>
+          <div class="tv-kpi-icon">💰</div>
+        </div>
+        <div class="tv-kpi">
+          <div class="tv-kpi-label">Comissão loja</div>
+          <div class="tv-kpi-val">${fmt(sumC)}</div>
+          <div class="tv-kpi-sub">por Data Comissão</div>
+          <div class="tv-kpi-icon">🏦</div>
+        </div>
+        <div class="tv-kpi" style="grid-column:span 1;border-color:rgba(34,211,238,.2)">
+          <div class="tv-kpi-label">Líquido loja</div>
+          <div class="tv-kpi-val" style="font-size:3.2rem">${fmt(sumL)}</div>
+          <div class="tv-kpi-sub">${sumD>0?'− '+fmt(sumD)+' descontos':'sem descontos'}</div>
+          <div class="tv-kpi-icon">✅</div>
+        </div>
+      </div>
+
+      <!-- Ranking + Últimos -->
+      <div class="tv-bottom">
+        <!-- Ranking -->
+        <div class="tv-card">
+          <div class="tv-card-header">
+            <div class="tv-card-title">Ranking de corretores</div>
+            <span style="font-size:10px;font-family:var(--mono);color:var(--t3)">${ranking.length} corretores</span>
+          </div>
+          ${ranking.map(([nome,d],i) => `
+          <div class="tv-rank-item">
+            <div class="tv-rank-num ${i<3?medalClass[i]:''}">${i<3?medals[i]:i+1}</div>
+            <div class="tv-rank-name">${nome}</div>
+            <div class="tv-rank-vals">
+              <div class="tv-rank-com" style="color:#22d3ee">${fmt(d.c-d.d)}</div>
+              <div class="tv-rank-liq">com. ${fmt(d.c)}</div>
+              <div class="tv-rank-n">${d.n} contrato${d.n!==1?'s':''}</div>
+            </div>
+          </div>`).join('')}
+        </div>
+
+        <!-- Últimos contratos -->
+        <div class="tv-card">
+          <div class="tv-card-header">
+            <div class="tv-card-title">Últimos contratos</div>
+            <span style="font-size:10px;font-family:var(--mono);color:var(--t3)">${rows.length} no período</span>
+          </div>
+          ${ultimos.map(r => `
+          <div class="tv-contract-item">
+            <div style="flex:1;min-width:0">
+              <div class="tv-contract-nome">${r.Nome||'—'}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                <span class="badge ${TIPO_BADGE[(r.Tipo||'').trim()]||'b-ac'}" style="font-size:9px">${(r.Tipo||'—').trim()}</span>
+                <span class="tv-contract-data">${r.Corretor?r.Corretor.trim():''}</span>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;min-width:120px">
+              <div style="font-size:14px;font-weight:700;color:var(--y);font-family:var(--mono)">${fmt(val(r))}</div>
+              <div class="tv-contract-data">${fmtData(r['Data da Liberação'])}</div>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const empty=$('tv-empty');
+  if(empty) empty.style.display='none';
+  const tvContent=$('tv-content');
+  if(tvContent) tvContent.innerHTML=html;
+  const inner=$('tv-inner');
+  if(inner) inner.innerHTML=html;
+
+  // Relógio
+  updateTvClock();
+  startTvProgress();
+}
+
+function updateTvClock(){
+  clearTimeout(tvClockTimer);
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const timeStr = pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+  const dateStr = now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+  // atualiza em ambos os contextos (inline e modal)
+  document.querySelectorAll('#tv-clock').forEach(el=>el.textContent=timeStr);
+  document.querySelectorAll('#tv-date').forEach(el=>el.textContent=dateStr);
+  tvClockTimer = setTimeout(updateTvClock, 1000);
+}
+
+let tvProgressVal = 100;
+function startTvProgress(){
+  clearInterval(tvRefreshTimer);
+  tvProgressVal = 100;
+  tvRefreshTimer = setInterval(()=>{
+    tvProgressVal -= (100/60);
+    if(tvProgressVal <= 0){
+      tvProgressVal = 100;
+      renderTv(); // auto-refresh a cada 60s
+    }
+    document.querySelectorAll('#tv-progress').forEach(el=>el.style.width=tvProgressVal+'%');
+  }, 1000);
+}
+
+function openTvMode(){
+  if(!TV_FIL){ return; }
+  const modal = $('tv-modal');
+  modal.style.display = 'block';
+  renderTv();
+  // Botão fechar
+  if(!$('tv-close-btn')){
+    const btn = document.createElement('button');
+    btn.id = 'tv-close-btn';
+    btn.className = 'tv-close';
+    btn.textContent = '✕ Sair';
+    btn.onclick = closeTvMode;
+    document.body.appendChild(btn);
+  }
+  $('tv-close-btn').style.display = 'block';
+  // Tela cheia
+  if(modal.requestFullscreen) modal.requestFullscreen().catch(()=>{});
+}
+
+function closeTvMode(){
+  const modal = $('tv-modal');
+  modal.style.display = 'none';
+  if($('tv-close-btn')) $('tv-close-btn').style.display = 'none';
+  clearInterval(tvRefreshTimer);
+  if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+}
+
+// ── MOBILE GAVETA + BOTTOM NAV ───────────────────────────────
+function getActiveTab(){
+  const p=document.querySelector('.panel.on');
+  return p?p.id.replace('p-',''):'visao';
+}
+
+function openMobDrawer(){
+  const drawer=$('mob-drawer');
+  const overlay=$('mob-overlay');
+  if(!drawer||!overlay)return;
+
+  const isFilial=(getActiveTab()==='filial');
+
+  // Mostrar seção correta
+  const filtros=$('mob-drawer-content');
+  const filCtrl=$('mob-filial-controls');
+  if(filtros) filtros.style.display=isFilial?'none':'block';
+  if(filCtrl) filCtrl.style.display=isFilial?'block':'none';
+
+  if(isFilial){
+    // Popular select de filiais direto do ALL
+    const sel=$('mob-tvFil');
+    if(sel){
+      sel.innerHTML='<option value="">— escolha uma filial —</option>';
+      const codsPresentes=[...new Set(ALL.map(r=>String(r.Filial||'')).filter(Boolean))];
+      FILIAIS_ORDER.forEach(([cod,nome])=>{
+        if(!codsPresentes.includes(cod))return;
+        const o=document.createElement('option');
+        o.value=cod; o.textContent=nome;
+        if(cod===TV_FIL)o.selected=true;
+        sel.appendChild(o);
+      });
+    }
+    const per=$('mob-tvPeriodo');
+    if(per) per.value=TV_PERIODO||'mes';
+  } else {
+    syncMobFilters();
+  }
+
+  overlay.style.display='block';
+  requestAnimationFrame(()=>drawer.classList.add('open'));
+}
+
+function mobAplicarFilial(){
+  const sel=$('mob-tvFil');
+  const per=$('mob-tvPeriodo');
+  TV_FIL = sel?sel.value:'';
+  TV_PERIODO = per?per.value:'mes';
+  if(!TV_FIL){ sel.focus(); return; }
+  const mainFil=$('tvFil');
+  const mainPer=$('tvPeriodo');
+  if(mainFil)mainFil.value=TV_FIL;
+  if(mainPer)mainPer.value=TV_PERIODO;
+  closeMobDrawer();
+  const empty=$('tv-empty');
+  if(empty)empty.style.display='none';
+  renderTv();
+}
+
+function closeMobDrawer(){
+  const d=$('mob-drawer');
+  const o=$('mob-overlay');
+  if(d) d.classList.remove('open');
+  if(o) o.style.display='none';
+}
+// Swipe para fechar gaveta
+document.addEventListener('DOMContentLoaded',()=>{
+  const drawer=$('mob-drawer');
+  if(!drawer)return;
+  let startY=0;
+  drawer.addEventListener('touchstart',e=>{startY=e.touches[0].clientY},{passive:true});
+  drawer.addEventListener('touchend',e=>{
+    if(e.changedTouches[0].clientY - startY > 60) closeMobDrawer();
+  },{passive:true});
+});
+
+function syncMobFilters(){
+  // Sincroniza selects da gaveta com os principais
+  ['fMes','fTipo','fBco','fParc'].forEach(id=>{
+    const mob=$('mob-'+id), main=$(id);
+    if(!mob||!main)return;
+    // Popular opções se vazias
+    if(mob.options.length<=1 && main.options.length>1){
+      [...main.options].forEach(o=>{
+        const c=document.createElement('option');
+        c.value=o.value; c.textContent=o.textContent;
+        mob.appendChild(c);
+      });
+    }
+    mob.value=main.value;
+  });
+  const mobSrch=$('mob-srch');
+  if(mobSrch) mobSrch.value=$('srch').value;
+}
+
+
+
+// Rebuild gaveta ao carregar dados
+function rebuildMobFilters(){
+  ['fMes','fTipo','fBco','fParc'].forEach(id=>{
+    const mob=$('mob-'+id), main=$(id);
+    if(!mob||!main)return;
+    mob.innerHTML='';
+    [...main.options].forEach(o=>{
+      const c=document.createElement('option');
+      c.value=o.value; c.textContent=o.textContent;
+      if(o.selected)c.selected=true;
+      mob.appendChild(c);
+    });
+  });
+}
+
+// ── START ─────────────────────────────────────────────────────
+loadData();
+</script>
