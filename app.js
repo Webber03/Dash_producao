@@ -542,8 +542,6 @@ function renderCorretores(){
       <td style="font-weight:600">${nome}</td>
       <td style="font-family:var(--mono);text-align:center">${d.n}</td>
       <td style="font-family:var(--mono);text-align:right">${fmt(d.v)}</td>
-      <td style="font-family:var(--mono);text-align:right;color:#4ade80">${fmt(d.c)}</td>
-      <td style="font-family:var(--mono);text-align:right;color:var(--red)">${d.d>0?'−'+fmt(d.d):'—'}</td>
       <td style="font-family:var(--mono);text-align:right;color:#22d3ee;font-weight:600">${fmt(liq)}</td>
       <td style="font-family:var(--mono);text-align:right;color:var(--t2)">${fmt(d.v/d.n)}</td>
     </tr>`;
