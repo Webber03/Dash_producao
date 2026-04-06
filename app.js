@@ -412,7 +412,7 @@ function mkChart(id,type,labels,data,colors,opts={}){
                 const v = Number((Array.isArray(c.dataset?.data) ? c.dataset.data[idx] : data[idx]) || 0);
                 const t = totalForTooltip();
                 const p = t ? (v / t) * 100 : 0;
-                return `${c.label}: ${fmt(v)} (${p.toFixed(1)}%)`;
+                return `${fmt(v)} (${p.toFixed(1)}%)`;
               }
             }
           }
