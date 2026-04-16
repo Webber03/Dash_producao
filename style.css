@@ -1281,7 +1281,6 @@ tbody tr:hover td {
 .tv-brand-logo {
   width: 36px;
   height: 36px;
-  background: var(--y);
   border-radius: 8px;
   display: flex;
   align-items: center;
