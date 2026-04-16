@@ -1112,7 +1112,7 @@ function renderTv(){
     ${bannerHtml}
     <div class="tv-header">
       <div class="tv-brand">
-        <div class="tv-brand-logo">LF</div>
+        <div class="tv-brand-logo"><img src="assetsimg/IMG_0457.png" alt="Logo" style="width:100%;height:100%;border-radius:8px;object-fit:cover;"></div>
         <div>
           <div class="tv-brand-name">LF Promotora</div>
           <div class="tv-brand-filial">${filNome}</div>
