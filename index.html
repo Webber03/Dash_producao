@@ -8,6 +8,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="assetsimg/IMG_0457.png">
   <link rel="apple-touch-icon" href="assetsimg/IMG_0457.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,9 +23,9 @@
   </div>
   <div class="topbar-right">
     <div class="chip"><div class="live"></div><span id="status-txt">iniciando</span></div>
-    <div class="chip chip-y">↻ <span id="countdown">60s</span></div>
+    <div class="chip chip-y"><i class="ph ph-arrows-clockwise"></i> <span id="countdown">60s</span></div>
     <span id="ts" style="font-size:11px;color:var(--t3);font-family:var(--mono)">—</span>
-    <button class="btn-link" onclick="openUrlModal()">⚙ URL</button>
+    <button class="btn-link" onclick="openUrlModal()"><i class="ph ph-gear"></i> URL</button>
     <button class="btn" onclick="reloadData()">Atualizar</button>
   </div>
 </div>
@@ -39,10 +40,10 @@
 <div id="error-box">
   <h2>Não foi possível carregar os dados</h2>
   <p>O sistema tentou carregar automaticamente mas falhou.<br><br>
-  <strong style="color:var(--t1)">Solução:</strong> Clique em <strong style="color:var(--y)">⚙ URL</strong> na barra superior, cole o link do JSON gerado pelo Progestor e clique em Salvar.</p>
+  <strong style="color:var(--t1)">Solução:</strong> Clique em <strong style="color:var(--y)"><i class="ph ph-gear"></i> URL</strong> na barra superior, cole o link do JSON gerado pelo Progestor e clique em Salvar.</p>
   <div style="display:flex;gap:8px;justify-content:center;margin-top:1rem">
-    <button class="btn" onclick="openUrlModal()">⚙ Configurar URL</button>
-    <button class="btn-ghost" onclick="reloadData()">↻ Tentar novamente</button>
+    <button class="btn" onclick="openUrlModal()"><i class="ph ph-gear"></i> Configurar URL</button>
+    <button class="btn-ghost" onclick="reloadData()"><i class="ph ph-arrows-clockwise"></i> Tentar novamente</button>
   </div>
 </div>
 
@@ -63,22 +64,22 @@
 <nav class="mob-nav" id="mob-nav">
   <div class="mob-nav-inner">
     <button class="mob-nav-btn on" onclick="switchTab('visao',this);closeMobDrawer()" id="mob-visao">
-      <span class="mob-icon">◈</span>Visão
+      <span class="mob-icon"><i class="ph ph-squares-four"></i></span>Visão
     </button>
     <button class="mob-nav-btn" onclick="switchTab('corretores',this);closeMobDrawer()" id="mob-corretores">
-      <span class="mob-icon">◎</span>Corretores
+      <span class="mob-icon"><i class="ph ph-users"></i></span>Corretores
     </button>
     <button class="mob-nav-btn" onclick="switchTab('filial',this);closeMobDrawer()" id="mob-filial">
-      <span class="mob-icon">◉</span>Filial
+      <span class="mob-icon"><i class="ph ph-buildings"></i></span>Filial
     </button>
     <button class="mob-nav-btn" onclick="switchTab('tabela',this);closeMobDrawer()" id="mob-tabela">
-      <span class="mob-icon">≡</span>Contratos
+      <span class="mob-icon"><i class="ph ph-file-text"></i></span>Contratos
     </button>
   </div>
 </nav>
 
 <!-- BOTÃO FILTROS FLUTUANTE -->
-<button class="mob-filter-btn" id="mob-filter-btn" onclick="openMobDrawer()">⚙</button>
+<button class="mob-filter-btn" id="mob-filter-btn" onclick="openMobDrawer()"><i class="ph ph-sliders"></i></button>
 
 <!-- GAVETA DE FILTROS -->
 <div class="mob-drawer-overlay" id="mob-overlay" onclick="closeMobDrawer()"></div>
@@ -158,16 +159,16 @@
   <aside class="sidebar">
     <div class="sidebar-section">
       <button class="nav-item on" onclick="switchTab('visao',this)" id="nav-visao">
-        <span class="nav-icon">◈</span> Visão Geral
+        <span class="nav-icon"><i class="ph ph-squares-four"></i></span> Visão Geral
       </button>
       <button class="nav-item" onclick="switchTab('corretores',this)" id="nav-corretores">
-        <span class="nav-icon">◎</span> Corretores
+        <span class="nav-icon"><i class="ph ph-users"></i></span> Corretores
       </button>
       <button class="nav-item" onclick="switchTab('filial',this)" id="nav-filial">
-        <span class="nav-icon">◉</span> Filial
+        <span class="nav-icon"><i class="ph ph-buildings"></i></span> Filial
       </button>
       <button class="nav-item" onclick="switchTab('tabela',this)" id="nav-tabela">
-        <span class="nav-icon">≡</span> Contratos
+        <span class="nav-icon"><i class="ph ph-file-text"></i></span> Contratos
       </button>
     </div>
 
@@ -257,7 +258,7 @@
 
           <!-- Alertas -->
           <div class="fgroup" style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
-            <span style="font-size:11px;color:var(--t2);font-weight:500">🔔 Alertas sonoros</span>
+            <span style="font-size:11px;color:var(--t2);font-weight:500"><i class="ph ph-bell" style="font-size:14px;vertical-align:middle;margin-right:4px;"></i> Alertas sonoros</span>
             <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
               <input type="checkbox" id="tvAlertToggle" checked onchange="setTvAlertSoundEnabled(this.checked)"
                 style="opacity:0;width:0;height:0;position:absolute">
@@ -275,7 +276,7 @@
           </div>
 
           <button id="tv-fullscreen-btn" onclick="openTvMode()" style="display:none;background:rgba(247,203,69,.12);border:1px solid rgba(247,203,69,.3);color:var(--y);font-family:var(--font);font-size:11px;padding:7px 12px;border-radius:var(--r);cursor:pointer;transition:all .15s;font-weight:600">
-            ⛶ Tela cheia
+            <i class="ph ph-corners-out" style="vertical-align:middle;margin-right:4px;font-size:14px"></i> Tela cheia
           </button>
         </div>
       </div>
@@ -330,31 +331,31 @@
     <!-- KPIs -->
     <div class="kpi-grid">
       <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Contratos</span><div class="kpi-icon-wrap">📋</div></div>
+        <div class="kpi-header"><span class="kpi-label">Contratos</span><div class="kpi-icon-wrap"><i class="ph ph-files"></i></div></div>
         <div class="kpi-val" id="kTot">—</div>
         <div class="kpi-sub" id="kTotS">—</div>
         <div class="kpi-bar"></div>
       </div>
       <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Valor liberado</span><div class="kpi-icon-wrap">💰</div></div>
+        <div class="kpi-header"><span class="kpi-label">Valor liberado</span><div class="kpi-icon-wrap"><i class="ph ph-currency-circle-dollar"></i></div></div>
         <div class="kpi-val" id="kVal">—</div>
         <div class="kpi-sub" id="kValS">—</div>
         <div class="kpi-bar"></div>
       </div>
       <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Comissão loja</span><div class="kpi-icon-wrap">🏦</div></div>
+        <div class="kpi-header"><span class="kpi-label">Comissão loja</span><div class="kpi-icon-wrap"><i class="ph ph-bank"></i></div></div>
         <div class="kpi-val" id="kCom">—</div>
         <div class="kpi-sub" id="kComS">—</div>
         <div class="kpi-bar"></div>
       </div>
       <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Líquido loja</span><div class="kpi-icon-wrap">✅</div></div>
+        <div class="kpi-header"><span class="kpi-label">Líquido loja</span><div class="kpi-icon-wrap"><i class="ph ph-check-circle"></i></div></div>
         <div class="kpi-val" id="kLiq">—</div>
         <div class="kpi-sub" id="kLiqS">—</div>
         <div class="kpi-bar"></div>
       </div>
       <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Ticket comissão</span><div class="kpi-icon-wrap">🎯</div></div>
+        <div class="kpi-header"><span class="kpi-label">Ticket comissão</span><div class="kpi-icon-wrap"><i class="ph ph-target"></i></div></div>
         <div class="kpi-val" id="kTick">—</div>
         <div class="kpi-sub" id="kTickS">—</div>
         <div class="kpi-bar"></div>
@@ -428,7 +429,7 @@
   <!-- PAINEL FILIAL TV -->
   <div id="p-filial" class="panel">
     <div id="tv-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1rem;color:var(--t3)">
-      <span style="font-size:3rem;opacity:.3">◉</span>
+      <span style="font-size:3rem;opacity:.3"><i class="ph ph-buildings"></i></span>
       <span style="font-family:var(--mono);font-size:12px" id="tv-empty-msg">Selecione uma filial</span>
       <button onclick="openMobDrawer()" style="display:none;background:var(--y);border:none;color:#000;font-family:var(--font);font-size:12px;font-weight:600;padding:0 16px;height:36px;border-radius:var(--r);cursor:pointer" id="tv-empty-btn">Escolher filial</button>
     </div>
