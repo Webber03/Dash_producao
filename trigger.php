@@ -13,8 +13,8 @@ header('Pragma: no-cache');
 ini_set('memory_limit', '256M');
 set_time_limit(60);
 
-$PRODUCAO_URL = 'https://novo.progestor21.com.br/sistema/producao';
-$BASE_URL     = 'https://novo.progestor21.com.br';
+$PRODUCAO_URL = 'https://sistemanovo.progestor21.com.br/sistema/producao';
+$BASE_URL     = 'https://sistemanovo.progestor21.com.br';
 $CACHE_FILE   = __DIR__ . '/trigger_cache.json';
 $CACHE_URL    = __DIR__ . '/trigger_last_url.txt';
 $CACHE_TTL    = 55; // segundos
