@@ -530,14 +530,52 @@ function renderCharts() {
 
 function renderCorretores() {
   const m = {};
+  const mes = MESES_SEL.length ? MESES_SEL[0] : '';
+  const meses = mes ? [mes] : [];
+  const fDe = $('fDe').value, fAte = $('fAte').value;
+
+  const isProdInPeriod = r => {
+    if (meses.length) {
+      const mesLib = getMes(r['Data da Liberação']) || '';
+      if (!meses.includes(mesLib)) return false;
+    }
+    if (fDe || fAte) {
+      const lib = (r['Data da Liberação'] || '').slice(0, 10);
+      if (!lib || (fDe && lib < fDe) || (fAte && lib > fAte)) return false;
+    }
+    return true;
+  };
+
+  const isComInPeriod = r => {
+    if (meses.length) {
+      const mesCom = getMes(r['Data Comissao Loja']) || '';
+      if (!meses.includes(mesCom)) return false;
+    }
+    if (fDe || fAte) {
+      const com = (r['Data Comissao Loja'] || '').slice(0, 10);
+      if (!com || (fDe && com < fDe) || (fAte && com > fAte)) return false;
+    }
+    return true;
+  };
+
   FILTERED.forEach(r => {
     const k = (r.Corretor || '—').trim();
+    const prodOk = isProdInPeriod(r);
+    const comOk = isComInPeriod(r);
+
+    if (!prodOk && !comOk) return;
+
     if (!m[k]) m[k] = { n: 0, v: 0, c: 0, d: 0 };
-    m[k].n++;
-    m[k].v += val(r);
-    m[k].c += comTotal(r);
-    m[k].d += (r['Desconto Loja'] || 0);
+    if (prodOk) {
+      m[k].n++;
+      m[k].v += val(r);
+    }
+    if (comOk) {
+      m[k].c += comTotal(r);
+      m[k].d += (r['Desconto Loja'] || 0);
+    }
   });
+
   $('tbCorr').innerHTML = Object.entries(m).sort((a, b) => (b[1].c - b[1].d) - (a[1].c - a[1].d)).map(([nome, d], i) => {
     const liq = d.c - d.d;
     return `<tr>
@@ -546,7 +584,7 @@ function renderCorretores() {
       <td style="font-family:var(--mono);text-align:center">${d.n}</td>
       <td style="font-family:var(--mono);text-align:right">${fmt(d.v)}</td>
       <td style="font-family:var(--mono);text-align:right;color:#22d3ee;font-weight:600">${fmt(liq)}</td>
-      <td style="font-family:var(--mono);text-align:right;color:var(--t2)">${fmt(d.v / d.n)}</td>
+      <td style="font-family:var(--mono);text-align:right;color:var(--t2)">${d.n > 0 ? fmt(d.v / d.n) : '—'}</td>
     </tr>`;
   }).join('');
 }
@@ -1053,23 +1091,74 @@ function renderTv() {
 
   const rows = getTvData();
   const filNome = FILIAIS[TV_FIL] || TV_FIL;
+  const now = new Date();
+
+  const isTvProdOk = r => {
+    if (TV_PERIODO === 'mes') {
+      const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      return getMes(r['Data da Liberação']) === ym;
+    } else if (TV_PERIODO === 'hoje') {
+      const hoje = now.toISOString().slice(0, 10);
+      return (r['Data da Liberação'] || '').slice(0, 10) === hoje;
+    } else if (TV_PERIODO === 'custom') {
+      const de = $('tvDe') ? $('tvDe').value : '';
+      const ate = $('tvAte') ? $('tvAte').value : '';
+      const lib = (r['Data da Liberação'] || '').slice(0, 10);
+      return !!lib && (!de || lib >= de) && (!ate || lib <= ate);
+    } else {
+      const dias = parseInt(TV_PERIODO);
+      const limite = new Date(now - dias * 86400000).toISOString().slice(0, 10);
+      return (r['Data da Liberação'] || '') >= limite;
+    }
+  };
+
+  const isTvComOk = r => {
+    if (TV_PERIODO === 'mes') {
+      const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      return getMes(r['Data Comissao Loja']) === ym;
+    } else if (TV_PERIODO === 'hoje') {
+      const hoje = now.toISOString().slice(0, 10);
+      return (r['Data Comissao Loja'] || '').slice(0, 10) === hoje;
+    } else if (TV_PERIODO === 'custom') {
+      const de = $('tvDe') ? $('tvDe').value : '';
+      const ate = $('tvAte') ? $('tvAte').value : '';
+      const com = (r['Data Comissao Loja'] || '').slice(0, 10);
+      return !!com && (!de || com >= de) && (!ate || com <= ate);
+    } else {
+      const dias = parseInt(TV_PERIODO);
+      const limite = new Date(now - dias * 86400000).toISOString().slice(0, 10);
+      return (r['Data Comissao Loja'] || '') >= limite;
+    }
+  };
 
   // KPIs
-  const nContratos = rows.length;
-  const sumV = rows.reduce((a, r) => a + val(r), 0);
-  const sumC = rows.reduce((a, r) => a + comTotal(r), 0);
-  const sumD = rows.reduce((a, r) => a + (r['Desconto Loja'] || 0), 0);
+  const prodRows = rows.filter(isTvProdOk);
+  const nContratos = prodRows.length;
+  const sumV = prodRows.reduce((a, r) => a + val(r), 0);
+
+  const comRows = rows.filter(isTvComOk);
+  const sumC = comRows.reduce((a, r) => a + comTotal(r), 0);
+  const sumD = comRows.reduce((a, r) => a + (r['Desconto Loja'] || 0), 0);
   const sumL = sumC - sumD;
 
   // Ranking corretores
   const corrMap = {};
   rows.forEach(r => {
     const k = (r.Corretor || '—').trim();
+    const prodOk = isTvProdOk(r);
+    const comOk = isTvComOk(r);
+
+    if (!prodOk && !comOk) return;
+
     if (!corrMap[k]) corrMap[k] = { n: 0, v: 0, c: 0, d: 0 };
-    corrMap[k].n++;
-    corrMap[k].v += val(r);
-    corrMap[k].c += comTotal(r);
-    corrMap[k].d += (r['Desconto Loja'] || 0);
+    if (prodOk) {
+      corrMap[k].n++;
+      corrMap[k].v += val(r);
+    }
+    if (comOk) {
+      corrMap[k].c += comTotal(r);
+      corrMap[k].d += (r['Desconto Loja'] || 0);
+    }
   });
   const ranking = Object.entries(corrMap).sort((a, b) => (b[1].c - b[1].d) - (a[1].c - a[1].d)).slice(0, 8);
 
