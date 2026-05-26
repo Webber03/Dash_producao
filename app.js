@@ -1177,7 +1177,7 @@ function renderTv() {
         <div class="tv-kpi" style="border-color:rgba(34,211,238,.2)">
           <div class="tv-kpi-label">Líquido loja</div>
           <div class="tv-kpi-val" style="font-size:3rem">${fmt(sumL)}</div>
-          <div class="tv-kpi-sub">${sumD > 0 ? '− ' + fmt(sumD) + ' descontos' : 'sem descontos'}</div>
+          <div class="tv-kpi-sub">&nbsp;</div>
           <div class="tv-kpi-icon"><i class="ph ph-check-circle"></i></div>
         </div>
       </div>
@@ -1196,7 +1196,7 @@ function renderTv() {
             <div class="tv-rank-name">${nome}</div>
             <div class="tv-rank-vals">
               <div class="tv-rank-com" style="color:#22d3ee">${fmt(d.c - d.d)}</div>
-              <div class="tv-rank-liq">com. ${fmt(d.c)}</div>
+              <div class="tv-rank-liq">lib. ${fmt(d.v)}</div>
               <div class="tv-rank-n">${d.n} contrato${d.n !== 1 ? 's' : ''}</div>
             </div>
           </div>`).join('')}
