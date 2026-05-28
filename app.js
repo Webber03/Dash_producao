@@ -64,6 +64,7 @@ const FILIAIS = {
   '468': 'CONSIGNADO CLT',
   '469': 'EQUIPE JACI E TAIANE',
   '470': 'APL SERVICOS',
+  '472': 'CARTOES',
 };
 // Filiais ordenadas alfabeticamente por nome
 const FILIAIS_ORDER = Object.entries(FILIAIS).sort((a, b) => a[1].localeCompare(b[1]));
@@ -72,7 +73,7 @@ const filialNome = codigo => FILIAIS[String(codigo)] || String(codigo);
 // ── CANAIS DE VENDA ───────────────────────────────────────────
 const CANAIS = {
   '27': 'URA ATENDE',
-  '28': 'ATIVO',
+  '28': 'ATIVÃO',
   '29': 'SMS',
   '30': 'DISPARADOR WHATSAPP',
   '31': 'CALL CENTER MANUAL',
@@ -496,10 +497,40 @@ function applyChartCanal(nome) {
 function renderCharts() {
   const metricFn = METRIC === 'val' ? val : r => comTotal(r) - parseFloat(r['Desconto Loja'] || 0);
 
-  const byTipo = groupBy(FILTERED, 'Tipo', metricFn).slice(0, 12);
-  const byBco = groupBy(FILTERED, 'BCO', metricFn).slice(0, 8);
-  const byParc = groupBy(FILTERED, 'Parceiro', metricFn).slice(0, 6);
-  const mesMap = {}; FILTERED.forEach(r => { const k = getMes(r['Data da Liberação']); if (k) mesMap[k] = (mesMap[k] || 0) + 1 });
+  const mes = MESES_SEL.length ? MESES_SEL[0] : '';
+  const meses = mes ? [mes] : [];
+  const fDe = $('fDe').value, fAte = $('fAte').value;
+
+  const isProdInPeriod = r => {
+    if (meses.length) {
+      const mesLib = getMes(r['Data da Liberação']) || '';
+      if (!meses.includes(mesLib)) return false;
+    }
+    if (fDe || fAte) {
+      const lib = (r['Data da Liberação'] || '').slice(0, 10);
+      if (!lib || (fDe && lib < fDe) || (fAte && lib > fAte)) return false;
+    }
+    return true;
+  };
+
+  const isComInPeriod = r => {
+    if (meses.length) {
+      const mesCom = getMes(r['Data Comissao Loja']) || '';
+      if (!meses.includes(mesCom)) return false;
+    }
+    if (fDe || fAte) {
+      const com = (r['Data Comissao Loja'] || '').slice(0, 10);
+      if (!com || (fDe && com < fDe) || (fAte && com > fAte)) return false;
+    }
+    return true;
+  };
+
+  const chartRows = FILTERED.filter(METRIC === 'val' ? isProdInPeriod : isComInPeriod);
+
+  const byTipo = groupBy(chartRows, 'Tipo', metricFn).slice(0, 12);
+  const byBco = groupBy(chartRows, 'BCO', metricFn).slice(0, 8);
+  const byParc = groupBy(chartRows, 'Parceiro', metricFn).slice(0, 6);
+  const mesMap = {}; chartRows.forEach(r => { const k = getMes(METRIC === 'val' ? r['Data da Liberação'] : r['Data Comissao Loja']); if (k) mesMap[k] = (mesMap[k] || 0) + 1 });
   const mesArr = Object.entries(mesMap).sort((a, b) => a[0].localeCompare(b[0]));
   const mesLabels = mesArr.map(([k]) => { const [y, mo] = k.split('-'); return MES[parseInt(mo) - 1] + '/' + y.slice(2) });
   const barScales = { x: { grid: { color: 'transparent' }, ticks: { color: '#6b7080', font: { size: 10 }, maxRotation: 45 } }, y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#6b7080', font: { size: 10 }, callback: n => Math.round(n) } } };
