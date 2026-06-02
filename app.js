@@ -171,7 +171,7 @@ async function loadData() {
     // 3. trigger.php (com timeout curto — se demorar é porque falhou)
     if ($('loader-msg')) $('loader-msg').textContent = 'buscando dados automáticos...';
     try {
-      const data = await fetchJSON('trigger.php?_t=' + Date.now(), 20000);
+      const data = await fetchJSON('trigger.php?_t=' + Date.now(), 85000);
       initData(data); return;
     } catch (e) {
       console.warn('trigger.php falhou:', e.message);
@@ -866,7 +866,7 @@ async function autoRefresh() {
     const endpoint = manualUrl
       ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
       : 'trigger.php?_t=' + Date.now();
-    const data = await fetchJSON(endpoint, manualUrl ? 10000 : 20000);
+    const data = await fetchJSON(endpoint, manualUrl ? 10000 : 85000);
     ALL = data.map(r => ({ ...r, 'Valor Liberado': toNumber(r['Valor Liberado']), 'Base Comissao': toNumber(r['Base Comissao']), 'Comissao Loja': toNumber(r['Comissao Loja']), 'Desconto Loja': toNumber(r['Desconto Loja']), 'Bonus1': toNumber(r['R$ Bonus Loja 1']), 'Bonus2': toNumber(r['R$ Bonus Loja 2']) }));
     $('ts').textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-BR');
     $('status-txt').textContent = ALL.length + ' registros';
@@ -1427,7 +1427,7 @@ async function autoRefreshTv() {
     const endpoint = manualUrl
       ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
       : 'trigger.php?_t=' + Date.now();
-    const data = await fetchJSON(endpoint, manualUrl ? 10000 : 20000);
+    const data = await fetchJSON(endpoint, manualUrl ? 10000 : 85000);
     ALL = data.map(r => ({
       ...r,
       'Valor Liberado': toNumber(r['Valor Liberado']),
@@ -1701,7 +1701,7 @@ function startGlobalAlertTimer() {
       const endpoint = manualUrl
         ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
         : 'trigger.php?_t=' + Date.now();
-      const data = await fetchJSON(endpoint, manualUrl ? 10000 : 20000);
+      const data = await fetchJSON(endpoint, manualUrl ? 10000 : 85000);
       const newAll = data.map(r => ({
         ...r,
         'Valor Liberado': toNumber(r['Valor Liberado']),
