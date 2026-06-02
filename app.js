@@ -95,6 +95,7 @@ const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
 
 // ── ESTADO ────────────────────────────────────────────────────
 let ALL = [], FILTERED = [], PAGE = 0, MESES_SEL = [], FILS_SEL = [];
+let PREV_MES = '', PREV_DE = '', PREV_ATE = '';
 const PER = 20;
 let CHARTS = {};
 let METRIC = 'val';
@@ -272,12 +273,29 @@ function buildFilters() {
 }
 
 function applyFilter() {
-  const mes = $('fMes').value, tipo = $('fTipo').value, bco = $('fBco').value, parc = $('fParc').value, canal = $('fCanal').value, srch = $('srch').value.toLowerCase().trim();
+  let mes = $('fMes').value;
+  let fDe = $('fDe').value;
+  let fAte = $('fAte').value;
+
+  // quando seleciona mês, limpa período e vice-versa
+  if (mes !== PREV_MES && mes) {
+    $('fDe').value = '';
+    $('fAte').value = '';
+    fDe = '';
+    fAte = '';
+  } else if ((fDe !== PREV_DE && fDe) || (fAte !== PREV_ATE && fAte)) {
+    $('fMes').value = '';
+    mes = '';
+  }
+  PREV_MES = mes;
+  PREV_DE = fDe;
+  PREV_ATE = fAte;
+
+  const tipo = $('fTipo').value, bco = $('fBco').value, parc = $('fParc').value, canal = $('fCanal').value, srch = $('srch').value.toLowerCase().trim();
   MESES_SEL = mes ? [mes] : [];
   FILS_SEL = [...($('fFil').selectedOptions || [])].map(o => o.value).filter(Boolean);
   const meses = MESES_SEL;
   const fils = FILS_SEL;
-  const fDe = $('fDe').value, fAte = $('fAte').value;
 
   // quando seleciona mês, limpa período e vice-versa
   const baseFilter = r => {
@@ -341,39 +359,55 @@ function renderKpis() {
   const mes = MESES_SEL.length ? MESES_SEL[0] : '';
   const meses = mes ? [mes] : [];
   const tipo = $('fTipo').value, bco = $('fBco').value, parc = $('fParc').value;
+  const fDe = $('fDe').value, fAte = $('fAte').value;
 
-  // Produção: contratos cuja Data da Liberação está nos meses filtrados
-  const prodRows = meses.length
-    ? FILTERED.filter(r => meses.includes(getMes(r['Data da Liberação']) || ''))
-    : FILTERED;
+  const isProdInPeriod = r => {
+    if (meses.length) {
+      const mesLib = getMes(r['Data da Liberação']) || '';
+      if (!meses.includes(mesLib)) return false;
+    }
+    if (fDe || fAte) {
+      const lib = (r['Data da Liberação'] || '').slice(0, 10);
+      if (!lib || (fDe && lib < fDe) || (fAte && lib > fAte)) return false;
+    }
+    return true;
+  };
+
+  const isComInPeriod = r => {
+    if (meses.length) {
+      const mesCom = getMes(r['Data Comissao Loja']) || '';
+      if (!meses.includes(mesCom)) return false;
+    }
+    if (fDe || fAte) {
+      const com = (r['Data Comissao Loja'] || '').slice(0, 10);
+      if (!com || (fDe && com < fDe) || (fAte && com > fAte)) return false;
+    }
+    return true;
+  };
+
+  // Produção: contratos cuja Data da Liberação está nos meses/período filtrados
+  const prodRows = FILTERED.filter(isProdInPeriod);
   const tot = prodRows.length;
   const sumV = prodRows.reduce((a, r) => a + val(r), 0);
   const tick = tot ? sumV / tot : 0;
 
-  // Comissão Loja: contratos cuja Data Comissao Loja está nos meses filtrados
-  const sumC = FILTERED.filter(r => {
-    if (meses.length && !meses.includes(getMes(r['Data Comissao Loja']) || '')) return false;
-    return true;
-  }).reduce((a, r) => a + comTotal(r), 0);
+  // Comissão Loja: contratos cuja Data Comissao Loja está nos meses/período filtrados
+  const comRows = FILTERED.filter(isComInPeriod);
+  const sumC = comRows.reduce((a, r) => a + comTotal(r), 0);
+  const sumD = comRows.reduce((a, r) => a + (r['Desconto Loja'] || 0), 0);
+  const sumL = sumC - sumD;
+  const tickCom = comRows.length ? sumC / comRows.length : 0;
 
   $('kTot').textContent = tot.toLocaleString('pt-BR');
   $('kTotS').textContent = 'de ' + ALL.length + ' totais';
   $('kVal').textContent = fmtK(sumV);
   $('kValS').textContent = 'valor total liberado';
-  // Desconto Loja: mesmo filtro da comissão
-  const sumD = FILTERED.filter(r => {
-    if (meses.length && !meses.includes(getMes(r['Data Comissao Loja']) || '')) return false;
-    return true;
-  }).reduce((a, r) => a + (r['Desconto Loja'] || 0), 0);
-
-  const sumL = sumC - sumD;
 
   $('kCom').textContent = fmtK(sumC);
   $('kComS').textContent = 'por Data Comissão Loja';
   $('kLiq').textContent = fmtK(sumL);
   $('kLiqS').textContent = sumD > 0 ? '− ' + fmtK(sumD) + ' descontos' : 'sem descontos';
-  const comRows = FILTERED.filter(r => !meses.length || meses.includes(getMes(r['Data Comissao Loja']) || ''));
-  const tickCom = comRows.length ? sumC / comRows.length : 0;
+
   $('kTick').textContent = fmtK(tickCom);
   $('kTickS').textContent = 'ticket médio de comissão';
 }
