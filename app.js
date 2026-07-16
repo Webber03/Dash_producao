@@ -60,7 +60,7 @@ const FILIAIS = {
   '315': 'MATRIZ',
   '362': 'MEI / PREST. SERVI',
   '372': 'MF SERVICOS',
-  '373': 'SIAPE',
+  '373': 'EQUIPE PRIME',
   '468': 'CONSIGNADO CLT',
   '469': 'EQUIPE EVOLUTION',
   '470': 'APL SERVICOS',
