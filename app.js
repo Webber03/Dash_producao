@@ -53,16 +53,16 @@ const FILIAIS = {
   '379': 'EXTERNO',
   '279': 'FEIRA DE SANTANA',
   '365': 'FGTS [Externo]',
-  '348': 'EQUIPE PRIME',
+  '348': 'GOVERNOS E PREFEITURAS',
   '303': 'INSS',
-  '358': 'EQUIPE ALPHA',
+  '358': 'JF SERVICOS',
   '281': 'LF & CREDSAMPAIO',
   '315': 'MATRIZ',
   '362': 'MEI / PREST. SERVI',
   '372': 'MF SERVICOS',
-  '373': 'EQUIPE PRIME',
+  '373': 'SIAPE',
   '468': 'CONSIGNADO CLT',
-  '469': 'EQUIPE EVOLUTION',
+  '469': 'EQUIPE JACI E TAIANE',
   '470': 'APL SERVICOS',
   '472': 'CARTOES',
 };
@@ -254,6 +254,7 @@ function buildFilters() {
   fillSelect('fTipo', tiposPresentes);
   fillSelect('fBco', [...new Set(ALL.map(r => r.BCO))].sort());
   fillSelect('fParc', [...new Set(ALL.map(r => r.Parceiro))].sort());
+  fillSelect('fConv', [...new Set(ALL.map(r => String(r.Produto || '').trim()).filter(Boolean))].sort());
   // Filial — valor é o código, label é o nome
   // Ordena filiais alfabeticamente pelo nome mapeado
   const rawFilCodes = [...new Set(ALL.map(r => String(r.Filial || '')).filter(Boolean))];
@@ -291,7 +292,7 @@ function applyFilter() {
   PREV_DE = fDe;
   PREV_ATE = fAte;
 
-  const tipo = $('fTipo').value, bco = $('fBco').value, parc = $('fParc').value, canal = $('fCanal').value, srch = $('srch').value.toLowerCase().trim();
+  const tipo = $('fTipo').value, bco = $('fBco').value, parc = $('fParc').value, conv = $('fConv').value, canal = $('fCanal').value, srch = $('srch').value.toLowerCase().trim();
   MESES_SEL = mes ? [mes] : [];
   FILS_SEL = [...($('fFil').selectedOptions || [])].map(o => o.value).filter(Boolean);
   const meses = MESES_SEL;
@@ -302,6 +303,7 @@ function applyFilter() {
     if (tipo && r.Tipo !== tipo) return false;
     if (bco && r.BCO !== bco) return false;
     if (parc && r.Parceiro !== parc) return false;
+    if (conv && String(r.Produto || '').trim() !== conv) return false;
     if (fils.length && !fils.includes(String(r.Filial || ''))) return false;
     if (canal && String(r.Canaldevenda || '') !== canal) return false;
     if (srch && !(r.Nome || '').toLowerCase().includes(srch) && !(r.Contrato || '').toLowerCase().includes(srch) && !(r.CPF || '').includes(srch)) return false;
@@ -329,7 +331,7 @@ function applyFilter() {
 }
 
 function clearFilters() {
-  ['fTipo', 'fBco', 'fParc', 'fCanal'].forEach(id => $(id).value = '');
+  ['fTipo', 'fBco', 'fParc', 'fCanal', 'fConv'].forEach(id => $(id).value = '');
   $('fMes').value = '';
   // Limpar filial
   [...$('fFil').options].forEach(o => o.selected = false);
@@ -349,7 +351,7 @@ function clearMes() {
   if ($('fMes-clear')) $('fMes-clear').style.display = 'none';
   MESES_SEL = [];
 }
-['fMes', 'fTipo', 'fBco', 'fParc', 'fCanal'].forEach(id => { const el = $(id); if (el) el.onchange = applyFilter });
+['fMes', 'fTipo', 'fBco', 'fParc', 'fCanal', 'fConv'].forEach(id => { const el = $(id); if (el) el.onchange = applyFilter });
 const srchEl = $('srch'); if (srchEl) srchEl.oninput = applyFilter;
 
 // ── RENDER ────────────────────────────────────────────────────
@@ -1654,7 +1656,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function syncMobFilters() {
   // Sincroniza selects da gaveta com os principais
-  ['fMes', 'fTipo', 'fBco', 'fParc'].forEach(id => {
+  ['fMes', 'fTipo', 'fBco', 'fParc', 'fConv'].forEach(id => {
     const mob = $('mob-' + id), main = $(id);
     if (!mob || !main) return;
     // Popular opções se vazias
@@ -1675,7 +1677,7 @@ function syncMobFilters() {
 
 // Rebuild gaveta ao carregar dados
 function rebuildMobFilters() {
-  ['fMes', 'fTipo', 'fBco', 'fParc'].forEach(id => {
+  ['fMes', 'fTipo', 'fBco', 'fParc', 'fConv'].forEach(id => {
     const mob = $('mob-' + id), main = $(id);
     if (!mob || !main) return;
     mob.innerHTML = '';

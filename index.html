@@ -19,7 +19,7 @@
     <div class="brand-logo"><img src="assetsimg/IMG_0457.png" alt="Logo" style="width:100%;height:100%;border-radius:6px;object-fit:cover;"></div>
     <span class="brand-name">LF Promotora</span>
     <div class="brand-sep"></div>
-    <span class="brand-sub">Painel de Contratos - LF</span>
+    <span class="brand-sub">Painel de Contratos</span>
   </div>
   <div class="topbar-right">
     <div class="chip"><div class="live"></div><span id="status-txt">iniciando</span></div>
@@ -105,6 +105,10 @@
       <div class="fgroup">
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Parceiro</label>
         <select onchange="$('fParc').value=this.value;applyFilter()" id="mob-fParc"><option value="">Todos</option></select>
+      </div>
+      <div class="fgroup">
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Convênio</label>
+        <select onchange="$('fConv').value=this.value;applyFilter()" id="mob-fConv"><option value="">Todos</option></select>
       </div>
       <div class="fgroup full">
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Busca</label>
@@ -317,6 +321,10 @@
       <div class="fgroup">
         <label>Parceiro</label>
         <select id="fParc"><option value="">Todos</option></select>
+      </div>
+      <div class="fgroup">
+        <label>Convênio</label>
+        <select id="fConv"><option value="">Todos</option></select>
       </div>
       <div class="fdiv"></div>
       <div class="fgroup">
