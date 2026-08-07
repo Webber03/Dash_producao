@@ -53,16 +53,17 @@ const FILIAIS = {
   '379': 'EXTERNO',
   '279': 'FEIRA DE SANTANA',
   '365': 'FGTS [Externo]',
-  '348': 'GOVERNOS E PREFEITURAS',
+  '348': 'EQUIPE PRIME',
   '303': 'INSS',
-  '358': 'JF SERVICOS',
+  '358': 'EQUIPE ALPHA',
   '281': 'LF & CREDSAMPAIO',
   '315': 'MATRIZ',
   '362': 'MEI / PREST. SERVI',
   '372': 'MF SERVICOS',
   '373': 'SIAPE',
+  '373': 'EQUIPE PRIME',
   '468': 'CONSIGNADO CLT',
-  '469': 'EQUIPE JACI E TAIANE',
+  '469': 'EQUIPE EVOLUTION',
   '470': 'APL SERVICOS',
   '472': 'CARTOES',
 };
@@ -90,6 +91,7 @@ const CANAIS = {
   '87': 'ESTAGIÁRIO(A)',
   '107': 'DISP WHATSAPP INTELIGENTE',
   '108': 'SDR',
+  '112': 'DISP WHATSAPP API'
 };
 const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
 
