@@ -138,6 +138,8 @@ const val = r => toNumber(r['Valor Liberado']);
 const com = r => toNumber(r['Comissao Loja']);
 // comissão total em R$: percentual aplicado sobre base + bônus absolutos
 const comTotal = r => toNumber(r['Base Comissao']) * com(r) / 100 + toNumber(r['Bonus1']) + toNumber(r['Bonus2']);
+// Comissão do consultor extraída do campo "Valorda Comissao"
+const valComCorretor = r => toNumber(r['Valorda Comissao'] || r['Valor da Comissão'] || r['Comissao Corretor'] || 0);
 const fmt = n => 'R$ ' + parseFloat(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtK = n => 'R$ ' + parseFloat(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const getMes = d => { if (!d) return null; const p = d.split('-'); return p[0] + '-' + p[1] };
@@ -449,11 +451,11 @@ const srchEl = $('srch'); if (srchEl) srchEl.oninput = applyFilter;
 
 // ── RENDER ────────────────────────────────────────────────────
 function render() {
+  renderKpis(); // Atualiza sempre os KPIs principais com base em FILTERED
   if (USER_ROLE === 'corretor') {
     renderCorretorDashboard();
     renderTabela();
   } else {
-    renderKpis();
     renderCharts();
     renderCorretores();
     renderTabela();
@@ -512,6 +514,11 @@ function renderKpis() {
   $('kComS').textContent = 'por Data Comissão Loja';
   $('kLiq').textContent = fmtK(sumL);
   $('kLiqS').textContent = sumD > 0 ? '− ' + fmtK(sumD) + ' descontos' : 'sem descontos';
+
+  // Comissão do consultor (Valorda Comissao)
+  const sumComConsultor = prodRows.reduce((a, r) => a + valComCorretor(r), 0);
+  if ($('kComConsultor')) $('kComConsultor').textContent = fmtK(sumComConsultor);
+  if ($('kComConsultorS')) $('kComConsultorS').textContent = 'soma do campo Valorda Comissao';
 
   $('kTick').textContent = fmtK(tickCom);
   $('kTickS').textContent = 'ticket médio de comissão';
@@ -795,6 +802,7 @@ function renderTabela() {
     <td style="font-family:var(--mono);text-align:right">${com(r).toFixed(2)}%</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#4ade80">${comR > 0 ? fmt(comR) : '—'}</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#22d3ee;font-weight:600">${(() => { const d = parseFloat(r['Desconto Loja'] || 0); const l = comR - d; return comR > 0 ? fmt(l) : '—' })()}</td>
+    <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#38bdf8;font-weight:600">${valComCorretor(r) > 0 ? fmt(valComCorretor(r)) : '—'}</td>
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data Comissao Loja'])}</td>
     <td style="text-align:center">${stCom(r['Status Comissao Loja'])}</td>
@@ -1888,7 +1896,7 @@ function getRowsForFilial(dataArr, cod) {
   return rows;
 }
 
-// ── METAS E PAINEL DO CORRETOR (5 NÍVEIS) ──────────────────────
+// ── METAS E PAINEL COMPLETO DO CORRETOR (ESTILO FILIAL) ──────────────────
 function renderCorretorDashboard() {
   if (USER_ROLE !== 'corretor') return;
   
@@ -1896,28 +1904,24 @@ function renderCorretorDashboard() {
     $('corr-welcome-title').textContent = 'Olá, ' + (USER_NAME || 'Corretor') + '!';
   }
   
-  const now = new Date();
-  const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const targetContracts = FILTERED.length ? FILTERED : ALL;
   
-  // Filtra contratos do mês (Data Liberação ou Data Comissão Loja no mês corrente)
-  const thisMonthContracts = FILTERED.filter(r => {
-    const mesLib = getMes(r['Data da Liberação']) || '';
-    const mesCom = getMes(r['Data Comissao Loja']) || '';
-    return mesLib === ym || mesCom === ym;
-  });
+  // 1. Total Liberado Bruto
+  const totalBruto = targetContracts.reduce((a, r) => a + val(r), 0);
   
-  // 1. Produção (Meta) = Líquido Loja gerado
-  const totalProduction = thisMonthContracts.reduce((a, r) => {
+  // 2. Produção Líquida (Base da Meta) = Líquido Loja gerado
+  const totalProduction = targetContracts.reduce((a, r) => {
     const comR = comTotal(r);
     const desc = parseFloat(r['Desconto Loja'] || 0);
     return a + (comR - desc);
   }, 0);
   
-  // 2. Valor Recebido = Valorda Comissao (Ganhos do Corretor)
-  const totalReceived = thisMonthContracts.reduce((a, r) => a + toNumber(r['Valorda Comissao']), 0);
+  // 3. Valor Recebido = Valorda Comissao (Ganhos do Consultor)
+  const totalReceived = targetContracts.reduce((a, r) => a + valComCorretor(r), 0);
   
-  const totalQty = thisMonthContracts.length;
+  const totalQty = targetContracts.length;
   
+  if ($('kCorrBruto')) $('kCorrBruto').textContent = fmt(totalBruto);
   if ($('kCorrProd')) $('kCorrProd').textContent = fmt(totalProduction);
   if ($('kCorrComSec')) $('kCorrComSec').textContent = fmt(totalReceived);
   if ($('kCorrQty')) $('kCorrQty').textContent = totalQty.toLocaleString('pt-BR');
@@ -1973,6 +1977,42 @@ function renderCorretorDashboard() {
   } else {
     if (badge) badge.textContent = 'Meta Máxima Batida! 👑';
     if (msg) msg.innerHTML = `<strong style="color:var(--green)">Extraordinário!</strong> Você atingiu a Meta 5 e superou todos os limites este mês!`;
+  }
+
+  // --- Renderiza Gráficos Pessoais do Corretor ---
+  if ($('cCorrBco') && $('cCorrTipo')) {
+    const byBco = groupBy(targetContracts, 'BCO', val).slice(0, 6);
+    mkChart('cCorrBco', 'doughnut', byBco.map(x => x[0]), byBco.map(x => x[1]), COLORS.slice(0, byBco.length), { extra: { cutout: '60%' } });
+    makeLegend($('lgCorrBco'), byBco.map(x => x[0]), COLORS);
+
+    const byTipo = groupBy(targetContracts, 'Tipo', val).slice(0, 6);
+    mkChart('cCorrTipo', 'doughnut', byTipo.map(x => x[0]), byTipo.map(x => x[1]), COLORS.slice(3, 3 + byTipo.length), { extra: { cutout: '60%' } });
+    makeLegend($('lgCorrTipo'), byTipo.map(x => x[0]), COLORS.slice(3));
+  }
+
+  // --- Renderiza Tabela de Propostas Recentes ---
+  if ($('tbCorrRecent')) {
+    const recent = [...targetContracts].slice(0, 8);
+    if (!recent.length) {
+      $('tbCorrRecent').innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--t3); padding:1rem;">Nenhuma proposta encontrada.</td></tr>';
+    } else {
+      $('tbCorrRecent').innerHTML = recent.map(r => {
+        const comR = comTotal(r);
+        const desc = parseFloat(r['Desconto Loja'] || 0);
+        const liq = comR - desc;
+        return `<tr>
+          <td style="font-weight:500">${r.Nome || '—'}</td>
+          <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.CPF || '—'}</td>
+          <td style="font-family:var(--mono);font-size:10px">${r.Contrato || '—'}</td>
+          <td style="font-size:11px">${r.BCO || '—'}</td>
+          <td><span class="badge ${TIPO_BADGE[(r.Tipo || '').trim()] || 'b-ac'}">${(r.Tipo || '—').trim()}</span></td>
+          <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(val(r))}</td>
+          <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#22d3ee">${fmt(liq)}</td>
+          <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#38bdf8;font-weight:600">${fmt(valComCorretor(r))}</td>
+          <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
+        </tr>`;
+      }).join('');
+    }
   }
 }
 

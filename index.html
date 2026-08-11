@@ -400,6 +400,12 @@
         <div class="kpi-bar"></div>
       </div>
       <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Comissão Consultor</span><div class="kpi-icon-wrap"><i class="ph ph-hand-coins"></i></div></div>
+        <div class="kpi-val" id="kComConsultor" style="color:#38bdf8">—</div>
+        <div class="kpi-sub" id="kComConsultorS">soma de Valorda Comissao</div>
+        <div class="kpi-bar"></div>
+      </div>
+      <div class="kpi">
         <div class="kpi-header"><span class="kpi-label">Ticket comissão</span><div class="kpi-icon-wrap"><i class="ph ph-target"></i></div></div>
         <div class="kpi-val" id="kTick">—</div>
         <div class="kpi-sub" id="kTickS">—</div>
@@ -407,41 +413,50 @@
       </div>
     </div>
 
-  <!-- PAINEL DO CORRETOR -->
+  <!-- PAINEL DO CORRETOR (DASHBOARD COMPLETO ESTILO FILIAL) -->
   <div id="p-corretor-dash" class="panel">
     <div class="welcome-banner">
       <div class="welcome-text">
         <h2 id="corr-welcome-title">Olá, Corretor!</h2>
-        <p>Acompanhe suas metas e comissões da LF Promotora em tempo real.</p>
+        <p>Acompanhe suas metas, produção e comissões da LF Promotora em tempo real.</p>
       </div>
       <div class="welcome-avatar">
-        <i class="ph ph-user-circle" style="font-size: 64px; color: var(--y);"></i>
+        <i class="ph ph-user-circle" style="font-size: 54px; color: var(--y);"></i>
       </div>
     </div>
 
-    <!-- KPIs do Corretor -->
-    <div class="kpi-grid" style="margin-top: 1.5rem; display: grid;">
+    <!-- KPIs do Corretor (4 Cards em Grid) -->
+    <div class="kpi-grid" style="margin-top: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
       <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Sua Produção (Mês)</span><div class="kpi-icon-wrap"><i class="ph ph-trend-up"></i></div></div>
-        <div class="kpi-val" id="kCorrProd">—</div>
-        <div class="kpi-sub" id="kCorrProdSub">Líquido Loja gerado no mês</div>
+        <div class="kpi-header"><span class="kpi-label">Valor Liberado (Bruto)</span><div class="kpi-icon-wrap"><i class="ph ph-currency-circle-dollar"></i></div></div>
+        <div class="kpi-val" id="kCorrBruto" style="color:var(--t1)">—</div>
+        <div class="kpi-sub">total bruto de propostas liberadas</div>
         <div class="kpi-bar"></div>
       </div>
+
       <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Valor Recebido</span><div class="kpi-icon-wrap"><i class="ph ph-currency-circle-dollar"></i></div></div>
-        <div class="kpi-val" id="kCorrComSec" style="color:#22d3ee">—</div>
-        <div class="kpi-sub" id="kCorrComSub">soma da sua comissão (Valorda Comissao)</div>
+        <div class="kpi-header"><span class="kpi-label">Líquido Loja (Base da Meta)</span><div class="kpi-icon-wrap"><i class="ph ph-trend-up"></i></div></div>
+        <div class="kpi-val" id="kCorrProd" style="color:var(--green)">—</div>
+        <div class="kpi-sub" id="kCorrProdSub">produção líquida gerada no mês</div>
         <div class="kpi-bar"></div>
       </div>
+
+      <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Sua Comissão (Valor Recebido)</span><div class="kpi-icon-wrap"><i class="ph ph-hand-coins"></i></div></div>
+        <div class="kpi-val" id="kCorrComSec" style="color:#38bdf8">—</div>
+        <div class="kpi-sub" id="kCorrComSub">soma do campo Valorda Comissao</div>
+        <div class="kpi-bar"></div>
+      </div>
+
       <div class="kpi">
         <div class="kpi-header"><span class="kpi-label">Contratos Fechados</span><div class="kpi-icon-wrap"><i class="ph ph-files"></i></div></div>
-        <div class="kpi-val" id="kCorrQty">—</div>
-        <div class="kpi-sub">quantidade de propostas liberadas</div>
+        <div class="kpi-val" id="kCorrQty" style="color:var(--y)">—</div>
+        <div class="kpi-sub">quantidade de propostas fechadas</div>
         <div class="kpi-bar"></div>
       </div>
     </div>
 
-    <!-- Metas e Níveis -->
+    <!-- Metas e Níveis (5 Níveis) -->
     <div class="goals-section">
       <div class="goals-card">
         <div class="goals-header">
@@ -454,31 +469,23 @@
           <div class="goal-progress-bar-wrap">
             <div class="goal-progress-bar-fill" id="goal-progress-fill" style="width: 0%;"></div>
             
-            <!-- Marcador Nível 1 -->
+            <!-- Marcadores Níveis 1 a 5 -->
             <div class="goal-marker" style="left: 20%;" id="marker-lvl1">
               <div class="goal-marker-dot"></div>
               <div class="goal-marker-label">Meta 1<br><span id="goal-val-lvl1">—</span></div>
             </div>
-            
-            <!-- Marcador Nível 2 -->
             <div class="goal-marker" style="left: 40%;" id="marker-lvl2">
               <div class="goal-marker-dot"></div>
               <div class="goal-marker-label">Meta 2<br><span id="goal-val-lvl2">—</span></div>
             </div>
-            
-            <!-- Marcador Nível 3 -->
             <div class="goal-marker" style="left: 60%;" id="marker-lvl3">
               <div class="goal-marker-dot"></div>
               <div class="goal-marker-label">Meta 3<br><span id="goal-val-lvl3">—</span></div>
             </div>
-
-            <!-- Marcador Nível 4 -->
             <div class="goal-marker" style="left: 80%;" id="marker-lvl4">
               <div class="goal-marker-dot"></div>
               <div class="goal-marker-label">Meta 4<br><span id="goal-val-lvl4">—</span></div>
             </div>
-
-            <!-- Marcador Nível 5 -->
             <div class="goal-marker" style="left: 100%;" id="marker-lvl5">
               <div class="goal-marker-dot"></div>
               <div class="goal-marker-label">Meta 5<br><span id="goal-val-lvl5">—</span></div>
@@ -489,6 +496,56 @@
         <div class="goals-footer-msg" id="goals-footer-msg">
           Carregando informações de metas...
         </div>
+      </div>
+    </div>
+
+    <!-- Gráficos de Produção do Corretor -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin-top: 1.5rem;">
+      <div class="chart-card" style="background:var(--s2); border:1px solid var(--b1); border-radius:var(--r3); padding:1.5rem;">
+        <div class="chart-card-title" style="font-size:13px; font-weight:600; color:var(--t1); margin-bottom:1rem; display:flex; align-items:center; gap:6px;">
+          <i class="ph ph-bank" style="color:var(--y)"></i> Produção por Banco
+        </div>
+        <div style="position:relative; height:200px;">
+          <canvas id="cCorrBco"></canvas>
+        </div>
+        <div id="lgCorrBco" class="chart-legend" style="margin-top:1rem;"></div>
+      </div>
+
+      <div class="chart-card" style="background:var(--s2); border:1px solid var(--b1); border-radius:var(--r3); padding:1.5rem;">
+        <div class="chart-card-title" style="font-size:13px; font-weight:600; color:var(--t1); margin-bottom:1rem; display:flex; align-items:center; gap:6px;">
+          <i class="ph ph-squares-four" style="color:var(--y)"></i> Produção por Tipo de Operação
+        </div>
+        <div style="position:relative; height:200px;">
+          <canvas id="cCorrTipo"></canvas>
+        </div>
+        <div id="lgCorrTipo" class="chart-legend" style="margin-top:1rem;"></div>
+      </div>
+    </div>
+
+    <!-- Tabela de Últimos Contratos do Corretor -->
+    <div class="table-wrap" style="margin-top: 1.5rem; padding: 1.5rem; background:var(--s2); border:1px solid var(--b1); border-radius:var(--r3);">
+      <div class="table-head" style="margin-bottom: 1rem;">
+        <span class="table-head-title" style="font-size:14px; font-weight:600; color:var(--t1);">
+          <i class="ph ph-clock-counter-clockwise" style="color:var(--y); margin-right:6px;"></i> Suas Propostas Recentes
+        </span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>CPF</th>
+              <th>Contrato</th>
+              <th>Banco</th>
+              <th>Tipo</th>
+              <th style="text-align:right">Valor Liberado</th>
+              <th style="text-align:right">Líquido Loja</th>
+              <th style="text-align:right">Sua Comissão</th>
+              <th>Liberação</th>
+            </tr>
+          </thead>
+          <tbody id="tbCorrRecent"></tbody>
+        </table>
       </div>
     </div>
   </div>
