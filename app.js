@@ -1909,36 +1909,51 @@ function renderCorretorDashboard() {
     $('corr-welcome-title').textContent = 'Olá, ' + (USER_NAME || 'Corretor') + '!';
   }
   
-  const now = new Date();
-  const currentYM = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  
-  // Se houver filtro ativo (Mês, Data, Banco, etc.), usa FILTERED.
-  // Caso contrário, por padrão o MEU PAINEL mostra os dados do MÊS ATUAL.
-  const isFiltered = MESES_SEL.length || $('fDe').value || $('fAte').value || $('fTipo').value || $('fBco').value || $('fParc').value || $('fCanal').value || $('fConv').value || $('srch').value;
-  
-  let targetContracts = FILTERED;
-  if (!isFiltered) {
-    targetContracts = ALL.filter(r => {
+  const mes = MESES_SEL.length ? MESES_SEL[0] : '';
+  const meses = mes ? [mes] : [];
+  const fDe = $('fDe').value, fAte = $('fAte').value;
+
+  // Lógica idêntica à visão Admin:
+  // Produção (Valor Liberado / Qtd) é filtrada por Data da Liberação
+  const isProdInPeriod = r => {
+    if (meses.length) {
       const mesLib = getMes(r['Data da Liberação']) || '';
+      if (!meses.includes(mesLib)) return false;
+    }
+    if (fDe || fAte) {
+      const lib = (r['Data da Liberação'] || '').slice(0, 10);
+      if (!lib || (fDe && lib < fDe) || (fAte && lib > fAte)) return false;
+    }
+    return true;
+  };
+
+  // Comissão/Líquido Loja/Valor Recebido é filtrado por Data Comissão Loja
+  const isComInPeriod = r => {
+    if (meses.length) {
       const mesCom = getMes(r['Data Comissao Loja']) || '';
-      return mesLib === currentYM || mesCom === currentYM;
-    });
-  }
+      if (!meses.includes(mesCom)) return false;
+    }
+    if (fDe || fAte) {
+      const com = (r['Data Comissao Loja'] || '').slice(0, 10);
+      if (!com || (fDe && com < fDe) || (fAte && com > fAte)) return false;
+    }
+    return true;
+  };
+
+  // 1. Total Liberado Bruto e Contratos Fechados (Data Liberação)
+  const prodRows = FILTERED.filter(isProdInPeriod);
+  const totalBruto = prodRows.reduce((a, r) => a + val(r), 0);
+  const totalQty = prodRows.length;
   
-  // 1. Total Liberado Bruto
-  const totalBruto = targetContracts.reduce((a, r) => a + val(r), 0);
-  
-  // 2. Produção Líquida (Base da Meta) = Líquido Loja gerado
-  const totalProduction = targetContracts.reduce((a, r) => {
+  // 2. Produção Líquida (Base da Meta) e Valor Recebido do Consultor (Data Comissão Loja)
+  const comRows = FILTERED.filter(isComInPeriod);
+  const totalProduction = comRows.reduce((a, r) => {
     const comR = comTotal(r);
     const desc = parseFloat(r['Desconto Loja'] || 0);
     return a + (comR - desc);
   }, 0);
   
-  // 3. Valor Recebido = Valorda Comissao (Ganhos do Consultor)
-  const totalReceived = targetContracts.reduce((a, r) => a + valComCorretor(r), 0);
-  
-  const totalQty = targetContracts.length;
+  const totalReceived = comRows.reduce((a, r) => a + valComCorretor(r), 0);
   
   if ($('kCorrBruto')) $('kCorrBruto').textContent = fmt(totalBruto);
   if ($('kCorrProd')) $('kCorrProd').textContent = fmt(totalProduction);
@@ -2000,18 +2015,18 @@ function renderCorretorDashboard() {
 
   // --- Renderiza Gráficos Pessoais do Corretor ---
   if ($('cCorrBco') && $('cCorrTipo')) {
-    const byBco = groupBy(targetContracts, 'BCO', val).slice(0, 6);
+    const byBco = groupBy(prodRows, 'BCO', val).slice(0, 6);
     mkChart('cCorrBco', 'doughnut', byBco.map(x => x[0]), byBco.map(x => x[1]), COLORS.slice(0, byBco.length), { extra: { cutout: '60%' } });
     makeLegend($('lgCorrBco'), byBco.map(x => x[0]), COLORS);
 
-    const byTipo = groupBy(targetContracts, 'Tipo', val).slice(0, 6);
+    const byTipo = groupBy(prodRows, 'Tipo', val).slice(0, 6);
     mkChart('cCorrTipo', 'doughnut', byTipo.map(x => x[0]), byTipo.map(x => x[1]), COLORS.slice(3, 3 + byTipo.length), { extra: { cutout: '60%' } });
     makeLegend($('lgCorrTipo'), byTipo.map(x => x[0]), COLORS.slice(3));
   }
 
   // --- Renderiza Tabela de Propostas Recentes (Exibe 15 propostas) ---
   if ($('tbCorrRecent')) {
-    const recent = [...targetContracts].slice(0, 15);
+    const recent = [...prodRows].slice(0, 15);
     if (!recent.length) {
       $('tbCorrRecent').innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--t3); padding:1rem;">Nenhuma proposta encontrada.</td></tr>';
     } else {
