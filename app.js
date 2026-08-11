@@ -589,7 +589,27 @@ function mkChart(id, type, labels, data, colors, opts = {}) {
   });
 }
 
-function makeLegend(el, labels, colors) { el.innerHTML = labels.map((l, i) => `<span><span class="legend-dot" style="background:${colors[i % colors.length]}"></span>${l.slice(0, 22)}</span>`).join('') }
+function makeLegend(el, labels, colors) {
+  if (!el) return;
+  el.style.display = 'flex';
+  el.style.flexWrap = 'wrap';
+  el.style.gap = '8px 12px';
+  el.style.marginTop = '1rem';
+
+  el.innerHTML = labels.map((l, i) => {
+    let formattedLabel = String(l || '')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/(PORTABILIDADE)(REFIN)/gi, '$1 / $2')
+      .replace(/(PORTABILIDADE)(NOVO)/gi, '$1 / $2')
+      .replace(/(REFIN)(NOVO)/gi, '$1 / $2')
+      .trim();
+
+    return `<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:var(--t1);background:var(--s1);padding:4px 10px;border-radius:99px;border:1px solid var(--b2)">
+      <span class="legend-dot" style="background:${colors[i % colors.length]};width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0"></span>
+      ${formattedLabel}
+    </span>`;
+  }).join('');
+}
 
 // Aplica filtro ao clicar num gráfico, com toggle (clica 2x para remover)
 function applyChartFilter(field, value) {
@@ -2051,10 +2071,23 @@ function renderCorretorDashboard() {
   if ($('goal-val-lvl4')) $('goal-val-lvl4').textContent = fmtK(g4);
   if ($('goal-val-lvl5')) $('goal-val-lvl5').textContent = fmtK(g5);
   
-  // Progresso (com base na meta máxima 5)
-  const maxGoal = g5 || 1;
-  const pct = Math.min(100, (totalProduction / maxGoal) * 100);
-  if ($('goal-progress-fill')) $('goal-progress-fill').style.width = pct + '%';
+  // Progresso visual da barra de metas (proporcional por trecho: 0-20%, 20-40%, 40-60%, 60-80%, 80-100%)
+  let pct = 0;
+  if (g1 > 0 && totalProduction < g1) {
+    pct = (totalProduction / g1) * 19;
+  } else if (g2 > g1 && totalProduction < g2) {
+    pct = 20 + ((totalProduction - g1) / (g2 - g1)) * 19;
+  } else if (g3 > g2 && totalProduction < g3) {
+    pct = 40 + ((totalProduction - g2) / (g3 - g2)) * 19;
+  } else if (g4 > g3 && totalProduction < g4) {
+    pct = 60 + ((totalProduction - g3) / (g4 - g3)) * 19;
+  } else if (g5 > g4 && totalProduction < g5) {
+    pct = 80 + ((totalProduction - g4) / (g5 - g4)) * 19;
+  } else if (g5 > 0 && totalProduction >= g5) {
+    pct = 100;
+  }
+  
+  if ($('goal-progress-fill')) $('goal-progress-fill').style.width = Math.max(0, Math.min(100, pct)) + '%';
   
   // Reached status
   if ($('marker-lvl1')) $('marker-lvl1').classList.toggle('reached', totalProduction >= g1 && g1 > 0);
