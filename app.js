@@ -138,8 +138,12 @@ const val = r => toNumber(r['Valor Liberado']);
 const com = r => toNumber(r['Comissao Loja']);
 // comissão total em R$: percentual aplicado sobre base + bônus absolutos
 const comTotal = r => toNumber(r['Base Comissao']) * com(r) / 100 + toNumber(r['Bonus1']) + toNumber(r['Bonus2']);
-// Comissão do consultor extraída do campo "Valorda Comissao"
-const valComCorretor = r => toNumber(r['Valorda Comissao'] || r['Valor da Comissão'] || r['Comissao Corretor'] || 0);
+// Porcentagem de comissão do consultor (%) extraída do campo "Valorda Comissao"
+const pctCorr = r => toNumber(r['Valorda Comissao'] || r['Valor da Comissão'] || r['Comissao Corretor'] || 0);
+// Base de cálculo da comissão (Base Comissao ou Valor Liberado como fallback)
+const baseCVal = r => { const b = toNumber(r['Base Comissao']); return b > 0 ? b : val(r); };
+// Comissão final do consultor em R$ = (Base × % Consultor) / 100
+const valComCorretor = r => (baseCVal(r) * pctCorr(r)) / 100;
 const fmt = n => 'R$ ' + parseFloat(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtK = n => 'R$ ' + parseFloat(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const getMes = d => { if (!d) return null; const p = d.split('-'); return p[0] + '-' + p[1] };
@@ -802,6 +806,7 @@ function renderTabela() {
     <td style="font-family:var(--mono);text-align:right">${com(r).toFixed(2)}%</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#4ade80">${comR > 0 ? fmt(comR) : '—'}</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#22d3ee;font-weight:600">${(() => { const d = parseFloat(r['Desconto Loja'] || 0); const l = comR - d; return comR > 0 ? fmt(l) : '—' })()}</td>
+    <td style="font-family:var(--mono);text-align:right">${pctCorr(r) > 0 ? pctCorr(r).toFixed(2) + '%' : '—'}</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#38bdf8;font-weight:600">${valComCorretor(r) > 0 ? fmt(valComCorretor(r)) : '—'}</td>
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data Comissao Loja'])}</td>
@@ -2008,7 +2013,7 @@ function renderCorretorDashboard() {
           <td><span class="badge ${TIPO_BADGE[(r.Tipo || '').trim()] || 'b-ac'}">${(r.Tipo || '—').trim()}</span></td>
           <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(val(r))}</td>
           <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#22d3ee">${fmt(liq)}</td>
-          <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#38bdf8;font-weight:600">${fmt(valComCorretor(r))}</td>
+          <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#38bdf8;font-weight:600">${pctCorr(r) > 0 ? pctCorr(r).toFixed(2) + '%' : '0%'} (${fmt(valComCorretor(r))})</td>
           <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
         </tr>`;
       }).join('');
