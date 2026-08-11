@@ -311,10 +311,20 @@ function initData(payload) {
 
 function show(id) {
   const el = $(id); if (!el) return;
-  if (id === 'app') el.style.display = 'block';
-  else el.style.display = 'block';
+  if (id === 'login-screen') {
+    el.classList.remove('hidden');
+  } else {
+    el.style.display = 'block';
+  }
 }
-function hide(id) { const el = $(id); if (el) el.style.display = 'none'; }
+function hide(id) {
+  const el = $(id); if (!el) return;
+  if (id === 'login-screen') {
+    el.classList.add('hidden');
+  } else {
+    el.style.display = 'none';
+  }
+}
 
 // ── FILTROS ───────────────────────────────────────────────────
 function buildFilters() {
