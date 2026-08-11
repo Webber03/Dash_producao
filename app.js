@@ -160,6 +160,10 @@ async function loadData() {
       return;
     }
 
+    // Esconde a tela de login imediatamente (temos token válido)
+    hide('login-screen');
+    $('btn-logout').style.display = 'inline-flex';
+
     const manualUrl = localStorage.getItem('progestor_json_url') || '';
     let endpoint = 'data.php?_t=' + Date.now() + '&token=' + encodeURIComponent(token);
     if (manualUrl) {
@@ -187,15 +191,12 @@ async function loadData() {
     const payload = await res.json();
     if (payload && payload.error) throw new Error(payload.error);
     
-    hide('login-screen');
-    $('btn-logout').style.display = 'inline-flex';
-    
     initData(payload);
   } catch (e) {
     console.error('loadData erro inesperado:', e);
     hide('loader');
     show('error-box');
-    if ($('status-txt')) $('status-txt').textContent = 'erro';
+    if ($('status-txt')) $('status-txt').textContent = 'erro ao carregar dados';
   }
 }
 
@@ -2000,6 +2001,10 @@ async function handleLogin(e) {
     
     // Salva o token de sessão do PostgreSQL localmente no navegador
     localStorage.setItem('auth_token', data.token);
+    
+    // Esconde a tela de login IMEDIATAMENTE após autenticação bem-sucedida
+    hide('login-screen');
+    show('loader');
     
     userEl.value = '';
     passEl.value = '';
