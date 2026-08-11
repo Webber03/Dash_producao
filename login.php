@@ -44,7 +44,22 @@ foreach ($users as $uKey => $uData) {
     }
 }
 
-if ($foundUser && password_verify($password, $foundUser['password_hash'])) {
+$authOk = false;
+if ($foundUser) {
+    $hash = $foundUser['password_hash'];
+    $isBcrypt = (substr($hash, 0, 4) === '$2y$');
+    if ($isBcrypt) {
+        $authOk = password_verify($password, $hash);
+    } else {
+        $authOk = ($password === $hash);
+        if ($authOk) {
+            $users[$foundUsernameKey]['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+            file_put_contents($dbFile, json_encode($users, JSON_PRETTY_PRINT));
+        }
+    }
+}
+
+if ($authOk) {
     $_SESSION['logged_in'] = true;
     $_SESSION['username']  = $foundUsernameKey;
     $_SESSION['role']      = $foundUser['role'];
