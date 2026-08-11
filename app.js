@@ -283,6 +283,10 @@ function setupMenuVisibility() {
   if (mobFilial) mobFilial.style.display = (isAdmin || isSuper) ? 'block' : 'none';
   if (mobTabela) mobTabela.style.display = 'block';
   
+  // O KPI Grid Principal do topo fica visível no Admin/Supervisor (com todos os 6 KPIs) e oculto no Painel do Consultor
+  const mainKpiGrid = $('main-kpi-grid');
+  if (mainKpiGrid) mainKpiGrid.style.display = isCorr ? 'none' : 'grid';
+  
   // Configuração URL (Apenas Admin)
   const btnUrlConfig = document.querySelector('.btn-link[onclick="openUrlModal()"]');
   if (btnUrlConfig) {
