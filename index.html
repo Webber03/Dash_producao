@@ -388,15 +388,9 @@
         <div class="kpi-bar"></div>
       </div>
       <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Comissão loja</span><div class="kpi-icon-wrap"><i class="ph ph-bank"></i></div></div>
-        <div class="kpi-val" id="kCom">—</div>
-        <div class="kpi-sub" id="kComS">—</div>
-        <div class="kpi-bar"></div>
-      </div>
-      <div class="kpi">
         <div class="kpi-header"><span class="kpi-label">Líquido loja</span><div class="kpi-icon-wrap"><i class="ph ph-check-circle"></i></div></div>
         <div class="kpi-val" id="kLiq">—</div>
-        <div class="kpi-sub" id="kLiqS">—</div>
+        <div class="kpi-sub" id="kLiqS">produção líquida da loja</div>
         <div class="kpi-bar"></div>
       </div>
       <div class="kpi">
@@ -405,15 +399,9 @@
         <div class="kpi-sub" id="kComConsultorS">soma de Valorda Comissao</div>
         <div class="kpi-bar"></div>
       </div>
-      <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Ticket comissão</span><div class="kpi-icon-wrap"><i class="ph ph-target"></i></div></div>
-        <div class="kpi-val" id="kTick">—</div>
-        <div class="kpi-sub" id="kTickS">—</div>
-        <div class="kpi-bar"></div>
-      </div>
     </div>
 
-  <!-- PAINEL DO CORRETOR (DASHBOARD COMPLETO ESTILO FILIAL) -->
+  <!-- PAINEL DO CORRETOR (DASHBOARD COMPLETO COM FILTROS PRÓPRIOS ESTILO FILIAL) -->
   <div id="p-corretor-dash" class="panel">
     <div class="welcome-banner">
       <div class="welcome-text">
@@ -422,6 +410,39 @@
       </div>
       <div class="welcome-avatar">
         <i class="ph ph-user-circle" style="font-size: 54px; color: var(--y);"></i>
+      </div>
+    </div>
+
+    <!-- FILTROS EXCLUSIVOS DO MEU PAINEL -->
+    <div class="filter-bar" style="margin-top: 1rem; margin-bottom: 1rem; background: var(--s2); padding: 1rem; border-radius: var(--r2); border: 1px solid var(--b1);">
+      <div class="fgroup">
+        <label style="font-size:10px; color:var(--y); font-weight:600;"><i class="ph ph-sliders"></i> Filtro do Meu Painel</label>
+        <select id="fCorrMes" onchange="renderCorretorDashboard()" style="height:36px; background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:var(--r); padding:0 8px; font-size:12px;">
+          <option value="">Mês Atual (Padrão)</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label style="font-size:10px; color:var(--t2);">De</label>
+        <input type="date" id="fCorrDe" onchange="renderCorretorDashboard()" style="height:36px; background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:var(--r); padding:0 8px; font-size:12px; color-scheme:dark">
+      </div>
+      <div class="fgroup">
+        <label style="font-size:10px; color:var(--t2);">Até</label>
+        <input type="date" id="fCorrAte" onchange="renderCorretorDashboard()" style="height:36px; background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:var(--r); padding:0 8px; font-size:12px; color-scheme:dark">
+      </div>
+      <div class="fgroup">
+        <label style="font-size:10px; color:var(--t2);">Banco</label>
+        <select id="fCorrBco" onchange="renderCorretorDashboard()" style="height:36px; background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:var(--r); padding:0 8px; font-size:12px;">
+          <option value="">Todos os Bancos</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label style="font-size:10px; color:var(--t2);">Tipo</label>
+        <select id="fCorrTipo" onchange="renderCorretorDashboard()" style="height:36px; background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:var(--r); padding:0 8px; font-size:12px;">
+          <option value="">Todos os Tipos</option>
+        </select>
+      </div>
+      <div class="actions" style="margin-left:auto; display:flex; align-items:flex-end;">
+        <button class="btn-ghost" onclick="clearCorrFilters()" style="height:36px; font-size:12px;"><i class="ph ph-broom"></i> Limpar Filtros</button>
       </div>
     </div>
 

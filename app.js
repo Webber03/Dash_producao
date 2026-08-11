@@ -1901,52 +1901,123 @@ function getRowsForFilial(dataArr, cod) {
   return rows;
 }
 
-// ── METAS E PAINEL COMPLETO DO CORRETOR (ESTILO FILIAL) ──────────────────
+// ── FILTROS PRÓPRIOS E EXCLUSIVOS DO MEU PAINEL ─────────────────────────
+function buildCorrFilters() {
+  const elMes = $('fCorrMes');
+  const elBco = $('fCorrBco');
+  const elTipo = $('fCorrTipo');
+  if (!elMes || !elBco || !elTipo) return;
+
+  const curM = elMes.value;
+  const curB = elBco.value;
+  const curT = elTipo.value;
+
+  const mesesLib = ALL.map(r => getMes(r['Data da Liberação'])).filter(Boolean);
+  const mesesCom = ALL.map(r => getMes(r['Data Comissao Loja'])).filter(Boolean);
+  const meses = [...new Set([...mesesLib, ...mesesCom])].sort();
+  
+  elMes.innerHTML = '<option value="">Mês Atual (Padrão)</option>';
+  meses.forEach(m => {
+    const [y, mo] = m.split('-');
+    const o = document.createElement('option');
+    o.value = m;
+    o.textContent = MES[parseInt(mo) - 1] + '/' + y.slice(2);
+    if (m === curM) o.selected = true;
+    elMes.appendChild(o);
+  });
+
+  const bcos = [...new Set(ALL.map(r => r.BCO))].filter(Boolean).sort();
+  elBco.innerHTML = '<option value="">Todos os Bancos</option>';
+  bcos.forEach(b => {
+    const o = document.createElement('option');
+    o.value = o.textContent = b;
+    if (b === curB) o.selected = true;
+    elBco.appendChild(o);
+  });
+
+  const tiposPermitidos = Object.keys(TIPO_BADGE);
+  const tipos = [...new Set(ALL.map(r => r.Tipo))].filter(t => tiposPermitidos.includes(t)).sort();
+  elTipo.innerHTML = '<option value="">Todos os Tipos</option>';
+  tipos.forEach(t => {
+    const o = document.createElement('option');
+    o.value = o.textContent = t;
+    if (t === curT) o.selected = true;
+    elTipo.appendChild(o);
+  });
+}
+
+function clearCorrFilters() {
+  if ($('fCorrMes')) $('fCorrMes').value = '';
+  if ($('fCorrDe')) $('fCorrDe').value = '';
+  if ($('fCorrAte')) $('fCorrAte').value = '';
+  if ($('fCorrBco')) $('fCorrBco').value = '';
+  if ($('fCorrTipo')) $('fCorrTipo').value = '';
+  renderCorretorDashboard();
+}
+
+// ── METAS E PAINEL COMPLETO DO CORRETOR (ESTILO FILIAL COM FILTROS PRÓPRIOS) ──
 function renderCorretorDashboard() {
   if (USER_ROLE !== 'corretor') return;
   
   if ($('corr-welcome-title')) {
     $('corr-welcome-title').textContent = 'Olá, ' + (USER_NAME || 'Corretor') + '!';
   }
-  
-  const mes = MESES_SEL.length ? MESES_SEL[0] : '';
-  const meses = mes ? [mes] : [];
-  const fDe = $('fDe').value, fAte = $('fAte').value;
 
-  // Lógica idêntica à visão Admin:
-  // Produção (Valor Liberado / Qtd) é filtrada por Data da Liberação
+  buildCorrFilters();
+
+  const corrMes = $('fCorrMes') ? $('fCorrMes').value : '';
+  const corrDe = $('fCorrDe') ? $('fCorrDe').value : '';
+  const corrAte = $('fCorrAte') ? $('fCorrAte').value : '';
+  const corrBco = $('fCorrBco') ? $('fCorrBco').value : '';
+  const corrTipo = $('fCorrTipo') ? $('fCorrTipo').value : '';
+
+  const now = new Date();
+  const currentYM = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+  // Filtra por base de dados do corretor (ALL) usando os FILTROS PRÓPRIOS do painel
   const isProdInPeriod = r => {
-    if (meses.length) {
+    if (corrBco && r.BCO !== corrBco) return false;
+    if (corrTipo && r.Tipo !== corrTipo) return false;
+
+    if (corrMes) {
       const mesLib = getMes(r['Data da Liberação']) || '';
-      if (!meses.includes(mesLib)) return false;
-    }
-    if (fDe || fAte) {
+      if (mesLib !== corrMes) return false;
+    } else if (corrDe || corrAte) {
       const lib = (r['Data da Liberação'] || '').slice(0, 10);
-      if (!lib || (fDe && lib < fDe) || (fAte && lib > fAte)) return false;
+      if (!lib || (corrDe && lib < corrDe) || (corrAte && lib > corrAte)) return false;
+    } else {
+      // Padrão sem filtro específico: Mês Atual
+      const mesLib = getMes(r['Data da Liberação']) || '';
+      if (mesLib !== currentYM) return false;
     }
     return true;
   };
 
-  // Comissão/Líquido Loja/Valor Recebido é filtrado por Data Comissão Loja
   const isComInPeriod = r => {
-    if (meses.length) {
+    if (corrBco && r.BCO !== corrBco) return false;
+    if (corrTipo && r.Tipo !== corrTipo) return false;
+
+    if (corrMes) {
       const mesCom = getMes(r['Data Comissao Loja']) || '';
-      if (!meses.includes(mesCom)) return false;
-    }
-    if (fDe || fAte) {
+      if (mesCom !== corrMes) return false;
+    } else if (corrDe || corrAte) {
       const com = (r['Data Comissao Loja'] || '').slice(0, 10);
-      if (!com || (fDe && com < fDe) || (fAte && com > fAte)) return false;
+      if (!com || (corrDe && com < corrDe) || (corrAte && com > corrAte)) return false;
+    } else {
+      // Padrão sem filtro específico: Mês Atual
+      const mesCom = getMes(r['Data Comissao Loja']) || '';
+      if (mesCom !== currentYM) return false;
     }
     return true;
   };
 
   // 1. Total Liberado Bruto e Contratos Fechados (Data Liberação)
-  const prodRows = FILTERED.filter(isProdInPeriod);
+  const prodRows = ALL.filter(isProdInPeriod);
   const totalBruto = prodRows.reduce((a, r) => a + val(r), 0);
   const totalQty = prodRows.length;
   
   // 2. Produção Líquida (Base da Meta) e Valor Recebido do Consultor (Data Comissão Loja)
-  const comRows = FILTERED.filter(isComInPeriod);
+  const comRows = ALL.filter(isComInPeriod);
   const totalProduction = comRows.reduce((a, r) => {
     const comR = comTotal(r);
     const desc = parseFloat(r['Desconto Loja'] || 0);
