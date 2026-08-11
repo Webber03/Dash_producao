@@ -1,47 +1,16 @@
 <?php
 /**
- * manage_users.php — Endpoint administrativo para gerenciar usuários e metas.
+ * manage_users.php — Endpoint administrativo para gerenciar usuários e metas no PostgreSQL.
  */
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 
-// Configura pasta de sessão local para garantir persistência no Windows/IIS
-$sessionPath = __DIR__ . '/sessions';
-if (!file_exists($sessionPath)) {
-    @mkdir($sessionPath, 0700, true);
-}
-if (is_writable($sessionPath)) {
-    session_save_path($sessionPath);
-}
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// 1. Validar se está logado e é administrador
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSION['role'] !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Acesso negado. Apenas administradores podem gerenciar usuários.']);
-    exit;
-}
-
-$dbFile = __DIR__ . '/users.json';
-if (!file_exists($dbFile)) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Banco de dados de usuários não encontrado.']);
-    exit;
-}
-
-$users = json_decode(file_get_contents($dbFile), true);
-if (json_last_error() !== JSON_ERROR_NONE) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Erro ao carregar banco de dados de usuários.']);
-    exit;
-}
+require_once __DIR__ . '/db.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 $action = isset($input['action']) ? trim($input['action']) : '';
+$token  = isset($input['token']) ? trim($input['token']) : '';
 
 if (empty($action)) {
     http_response_code(400);
@@ -49,20 +18,40 @@ if (empty($action)) {
     exit;
 }
 
+// 1. Validar se está logado e é administrador via Token
+$adminUser = validateTokenAndGetUser($token);
+if (!$adminUser || $adminUser['role'] !== 'admin') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Acesso negado. Apenas administradores autenticados podem gerenciar usuários.']);
+    exit;
+}
+
 switch ($action) {
     case 'list':
-        // Retorna a lista de usuários (removendo os hashes por segurança)
-        $cleanUsers = [];
-        foreach ($users as $username => $data) {
-            $cleanUsers[] = [
-                'username' => $username,
-                'role'     => $data['role'],
-                'name'     => $data['name'] ?? '',
-                'filial'   => $data['filial'] ?? '',
-                'goals'    => $data['goals'] ?? [0, 0, 0, 0, 0]
-            ];
+        try {
+            $stmt = $pdo->query("SELECT username, role, name, filial, goals FROM users ORDER BY username ASC");
+            $rows = $stmt->fetchAll();
+            
+            $cleanUsers = [];
+            foreach ($rows as $row) {
+                $goals = json_decode($row['goals'] ?? '[0,0,0,0,0]', true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $goals = [0, 0, 0, 0, 0];
+                }
+                
+                $cleanUsers[] = [
+                    'username' => $row['username'],
+                    'role'     => $row['role'],
+                    'name'     => $row['name'] ?? '',
+                    'filial'   => $row['filial'] ?? '',
+                    'goals'    => $goals
+                ];
+            }
+            echo json_encode(['success' => true, 'users' => $cleanUsers]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Erro ao listar usuários: ' . $e->getMessage()]);
         }
-        echo json_encode(['success' => true, 'users' => $cleanUsers]);
         break;
 
     case 'create':
@@ -86,25 +75,28 @@ switch ($action) {
             exit;
         }
 
-        if (isset($users[$username])) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Este usuário já está cadastrado.']);
-            exit;
-        }
+        try {
+            // Verifica se usuário existe
+            $stmtCheck = $pdo->prepare("SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?)");
+            $stmtCheck->execute([$username]);
+            if ($stmtCheck->fetchColumn() > 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Este usuário já está cadastrado.']);
+                exit;
+            }
 
-        $users[$username] = [
-            'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-            'role'          => $role,
-            'name'          => $name,
-            'filial'        => $filial,
-            'goals'         => $goals
-        ];
+            // Insere novo usuário (salva a senha em texto simples para compatibilidade de primeiro login ou encripta se preferir)
+            // Para maior robustez, encriptamos direto
+            $hashedPass = password_hash($password, PASSWORD_DEFAULT);
+            $goalsJson  = json_encode($goals);
 
-        if (file_put_contents($dbFile, json_encode($users, JSON_PRETTY_PRINT)) !== false) {
+            $stmtInsert = $pdo->prepare("INSERT INTO users (username, password_hash, role, name, filial, goals) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmtInsert->execute([$username, $hashedPass, $role, $name, $filial, $goalsJson]);
+
             echo json_encode(['success' => true, 'message' => 'Usuário cadastrado com sucesso.']);
-        } else {
+        } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Falha ao salvar usuário no arquivo.']);
+            echo json_encode(['success' => false, 'error' => 'Erro ao salvar usuário: ' . $e->getMessage()]);
         }
         break;
 
@@ -116,64 +108,78 @@ switch ($action) {
         $filial   = isset($input['filial']) ? trim($input['filial']) : '';
         $goals    = isset($input['goals']) && is_array($input['goals']) ? $input['goals'] : null;
 
-        if (empty($username) || !isset($users[$username])) {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'error' => 'Usuário não encontrado.']);
+        if (empty($username)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Nome de usuário não informado.']);
             exit;
         }
 
-        if (!empty($role)) {
-            $users[$username]['role'] = $role;
-        }
-        if (!empty($name)) {
-            $users[$username]['name'] = $name;
-        }
-        
-        $users[$username]['filial'] = $filial; // Pode ser vazio
+        try {
+            // Verifica se usuário existe
+            $stmtCheck = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+            $stmtCheck->execute([$username]);
+            $userToEdit = $stmtCheck->fetch();
 
-        if ($goals !== null) {
-            while (count($goals) < 5) {
-                $goals[] = 0;
+            if (!$userToEdit) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => 'Usuário não encontrado.']);
+                exit;
             }
-            $goals = array_slice($goals, 0, 5);
-            $goals = array_map('floatval', $goals);
-            $users[$username]['goals'] = $goals;
-        }
 
-        if (!empty($password)) {
-            $users[$username]['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
-        }
+            $sql = "UPDATE users SET name = ?, role = ?, filial = ?";
+            $params = [$name ?: $userToEdit['name'], $role ?: $userToEdit['role'], $filial];
 
-        if (file_put_contents($dbFile, json_encode($users, JSON_PRETTY_PRINT)) !== false) {
+            if ($goals !== null) {
+                while (count($goals) < 5) {
+                    $goals[] = 0;
+                }
+                $goals = array_slice($goals, 0, 5);
+                $goals = array_map('floatval', $goals);
+                $sql .= ", goals = ?";
+                $params[] = json_encode($goals);
+            }
+
+            if (!empty($password)) {
+                $sql .= ", password_hash = ?";
+                $params[] = password_hash($password, PASSWORD_DEFAULT);
+            }
+
+            $sql .= " WHERE username = ?";
+            $params[] = $userToEdit['username'];
+
+            $stmtUpdate = $pdo->prepare($sql);
+            $stmtUpdate->execute($params);
+
             echo json_encode(['success' => true, 'message' => 'Usuário editado com sucesso.']);
-        } else {
+        } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Falha ao salvar alterações.']);
+            echo json_encode(['success' => false, 'error' => 'Erro ao editar usuário: ' . $e->getMessage()]);
         }
         break;
 
     case 'delete':
         $username = isset($input['username']) ? strtolower(trim($input['username'])) : '';
 
-        if (empty($username) || !isset($users[$username])) {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'error' => 'Usuário não encontrado.']);
-            exit;
-        }
-
-        if ($username === strtolower($_SESSION['username'])) {
+        if (empty($username)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Você não pode excluir sua própria conta.']);
+            echo json_encode(['success' => false, 'error' => 'Usuário não informado.']);
             exit;
         }
 
-        unset($users[$username]);
+        if ($username === strtolower($adminUser['username'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Você não pode excluir sua própria conta de administrador.']);
+            exit;
+        }
 
-        if (file_put_contents($dbFile, json_encode($users, JSON_PRETTY_PRINT)) !== false) {
+        try {
+            $stmtDelete = $pdo->prepare("DELETE FROM users WHERE LOWER(username) = LOWER(?)");
+            $stmtDelete->execute([$username]);
+
             echo json_encode(['success' => true, 'message' => 'Usuário excluído com sucesso.']);
-        } else {
+        } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Falha ao excluir usuário.']);
+            echo json_encode(['success' => false, 'error' => 'Erro ao excluir usuário: ' . $e->getMessage()]);
         }
         break;
 

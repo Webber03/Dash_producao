@@ -1,35 +1,25 @@
 <?php
 /**
- * logout.php — Endpoint para deslogar e limpar a sessão.
+ * logout.php — Endpoint para deslogar e revogar o token no PostgreSQL.
  */
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 
-// Configura pasta de sessão local para garantir persistência no Windows/IIS
-$sessionPath = __DIR__ . '/sessions';
-if (!file_exists($sessionPath)) {
-    @mkdir($sessionPath, 0700, true);
-}
-if (is_writable($sessionPath)) {
-    session_save_path($sessionPath);
-}
+require_once __DIR__ . '/db.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+$token = isset($_GET['token']) ? trim($_GET['token']) : '';
+if (empty($token)) {
+    $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+    if (isset($headers['authorization']) && preg_match('/bearer\s(\S+)/i', $headers['authorization'], $matches)) {
+        $token = $matches[1];
+    }
 }
 
-$_SESSION = [];
-
-if (ini_get("session.use_cookies")) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
+if (!empty($token)) {
+    $stmt = $pdo->prepare("UPDATE users SET token = NULL, token_expires = NULL WHERE token = ?");
+    $stmt->execute([$token]);
 }
-
-session_destroy();
 
 echo json_encode(['success' => true]);
 exit;

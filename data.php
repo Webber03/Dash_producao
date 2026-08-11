@@ -1,43 +1,43 @@
 <?php
 /**
- * data.php — Endpoint seguro para fornecimento dos dados filtrados no servidor.
+ * data.php — Endpoint seguro para fornecimento dos dados filtrados no servidor (PostgreSQL & Tokens).
  */
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 
-// Configura pasta de sessão local para garantir persistência no Windows/IIS
-$sessionPath = __DIR__ . '/sessions';
-if (!file_exists($sessionPath)) {
-    @mkdir($sessionPath, 0700, true);
-}
-if (is_writable($sessionPath)) {
-    session_save_path($sessionPath);
+require_once __DIR__ . '/db.php';
+
+// 1. Extração do Token (Suporta header Authorization Bearer ou query param ?token=...)
+$token = isset($_GET['token']) ? trim($_GET['token']) : '';
+
+if (empty($token)) {
+    $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+    if (isset($headers['authorization']) && preg_match('/bearer\s(\S+)/i', $headers['authorization'], $matches)) {
+        $token = $matches[1];
+    }
 }
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// 1. Verifica se está logado
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+// 2. Validação do Token no Banco de Dados
+$user = validateTokenAndGetUser($token);
+if (!$user) {
     http_response_code(401);
-    echo json_encode(['error' => 'Não autorizado. Faça login primeiro.']);
+    echo json_encode(['error' => 'Não autorizado ou sessão expirada.']);
     exit;
 }
 
-$userRole   = $_SESSION['role'];
-$userName   = $_SESSION['name'];
-$userGoals  = $_SESSION['goals'] ?? [0, 0, 0, 0, 0];
-$userFilial = $_SESSION['filial'] ?? '';
+$userRole   = $user['role'];
+$userName   = $user['name'];
+$userGoals  = json_decode($user['goals'] ?? '[0,0,0,0,0]', true) ?: [0, 0, 0, 0, 0];
+$userFilial = $user['filial'] ?? '';
 
-// 2. Auxiliar de normalização de strings (remova acentos, espaços extras e caixa alta)
+// 3. Auxiliar de normalização de strings (remova acentos, espaços extras e caixa alta)
 function normalizeString($str) {
     $unwanted = [
         'Š'=>'S', 'š'=>'s', 'Ž'=>'Z', 'ž'=>'z', 'À'=>'A', 'Á'=>'A', 'Â'=>'A', 'Ã'=>'A', 'Ä'=>'A', 'Å'=>'A', 'Æ'=>'A', 'Ç'=>'C',
         'È'=>'E', 'É'=>'E', 'Ê'=>'E', 'Ë'=>'E', 'Ì'=>'I', 'Í'=>'I', 'Î'=>'I', 'Ï'=>'I', 'Ñ'=>'N', 'Ò'=>'O', 'Ó'=>'O', 'Ô'=>'O',
         'Õ'=>'O', 'Ö'=>'O', 'Ø'=>'O', 'Ù'=>'U', 'Ú'=>'U', 'Û'=>'U', 'Ü'=>'U', 'Ý'=>'Y', 'Þ'=>'B', 'ß'=>'Ss', 'à'=>'a', 'á'=>'a',
-        'â'=>'a', 'ã'=>'a', 'ä'=>'a', 'å'=>'a', 'æ'=>'a', 'ç'=>'c', 'è'=>'e', 'é'=>'e', 'ê'=>'e', 'ë'=>'e', 'ì'=>'i', 'í'=>'i',
+        'â'=>'a', 'ã'=>'a', 'ä'=>'a', 'å'=>'a', 'æ'=>'a', 'ç'=>'c', 'è'=>'e', 'é'=>'e', 'ê'=>'e', 'ì'=>'i', 'í'=>'i',
         'î'=>'i', 'ï'=>'i', 'ð'=>'o', 'ñ'=>'n', 'ò'=>'o', 'ó'=>'o', 'ô'=>'o', 'õ'=>'o', 'ö'=>'o', 'ø'=>'o', 'ù'=>'u', 'ú'=>'u',
         'û'=>'u', 'ü'=>'u', 'ý'=>'y', 'þ'=>'b', 'ÿ'=>'y'
     ];
@@ -45,33 +45,27 @@ function normalizeString($str) {
     return strtoupper(trim(preg_replace('/\s+/', ' ', $str)));
 }
 
-// 3. Carregar banco de dados de usuários para metas dinâmicas do supervisor
-$dbFile = __DIR__ . '/users.json';
-$users = [];
-if (file_exists($dbFile)) {
-    $users = json_decode(file_get_contents($dbFile), true) ?: [];
-}
-
-// Se for Supervisor, calcula a meta da filial somando as metas de todos os seus corretores
+// 4. Se for Supervisor, calcula a meta da filial somando as metas de todos os seus corretores cadastrados no BD
 if ($userRole === 'supervisor' && !empty($userFilial)) {
+    $stmt = $pdo->prepare("SELECT goals FROM users WHERE role = 'corretor' AND filial = ?");
+    $stmt->execute([$userFilial]);
+    $brokers = $stmt->fetchAll();
+
     $filialGoals = [0.0, 0.0, 0.0, 0.0, 0.0];
-    foreach ($users as $uKey => $uData) {
-        if (isset($uData['role']) && $uData['role'] === 'corretor' && isset($uData['filial']) && strval($uData['filial']) === strval($userFilial)) {
-            $uGoals = $uData['goals'] ?? [0, 0, 0, 0, 0];
-            for ($i = 0; $i < 5; $i++) {
-                $filialGoals[$i] += floatval($uGoals[$i] ?? 0);
-            }
+    foreach ($brokers as $broker) {
+        $uGoals = json_decode($broker['goals'] ?? '[0,0,0,0,0]', true) ?: [0,0,0,0,0];
+        for ($i = 0; $i < 5; $i++) {
+            $filialGoals[$i] += floatval($uGoals[$i] ?? 0);
         }
     }
     $userGoals = $filialGoals;
 }
 
-// 4. Obter dados JSON (Scraping automático ou URL Manual informada pelo Admin/Cliente)
+// 5. Obter dados JSON (Scraping automático ou URL Manual informada pelo Admin)
 $CACHE_FILE = __DIR__ . '/trigger_cache.json';
 $CACHE_TTL  = 55; // segundos
 $dataJson   = null;
 
-// Verifica se o cliente enviou uma URL manual (compatibilidade com config do admin)
 $manualUrl = isset($_GET['url']) ? trim($_GET['url']) : '';
 
 if (!empty($manualUrl)) {
@@ -84,7 +78,6 @@ if (!empty($manualUrl)) {
     }
 }
 
-// Se não houver URL manual ou falhou, busca do trigger automático
 if (empty($dataJson)) {
     $shouldRefresh = !file_exists($CACHE_FILE) || (time() - filemtime($CACHE_FILE)) >= $CACHE_TTL;
     
@@ -142,7 +135,7 @@ if (json_last_error() !== JSON_ERROR_NONE || !is_array($rawRecords)) {
     exit;
 }
 
-// 5. Filtragem no Servidor baseada no Papel do Usuário
+// 6. Filtragem no Servidor baseada no Papel do Usuário
 $filteredRecords = [];
 
 if ($userRole === 'admin') {
@@ -167,7 +160,7 @@ if ($userRole === 'admin') {
     }
 }
 
-// 6. Retorna o resultado seguro + Metas do usuário
+// 7. Retorna o resultado seguro + Metas do usuário
 echo json_encode([
     'success' => true,
     'role'    => $userRole,

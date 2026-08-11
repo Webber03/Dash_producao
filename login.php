@@ -1,23 +1,12 @@
 <?php
 /**
- * login.php — Endpoint para autenticar usuários contra o users.json e iniciar sessão.
+ * login.php — Endpoint para autenticar usuários contra o PostgreSQL e gerar Token de Sessão.
  */
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 
-// Configura pasta de sessão local para garantir persistência no Windows/IIS
-$sessionPath = __DIR__ . '/sessions';
-if (!file_exists($sessionPath)) {
-    @mkdir($sessionPath, 0700, true);
-}
-if (is_writable($sessionPath)) {
-    session_save_path($sessionPath);
-}
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/db.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 $username = isset($input['username']) ? trim($input['username']) : '';
@@ -29,57 +18,55 @@ if (empty($username) || empty($password)) {
     exit;
 }
 
-$dbFile = __DIR__ . '/users.json';
-if (!file_exists($dbFile)) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Banco de dados de usuários não encontrado.']);
+// Busca usuário no PostgreSQL
+$stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+$stmt->execute([$username]);
+$foundUser = $stmt->fetch();
+
+if (!$foundUser) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Usuário ou senha incorretos.']);
     exit;
 }
 
-$users = json_decode(file_get_contents($dbFile), true);
-if (json_last_error() !== JSON_ERROR_NONE) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Erro ao carregar banco de dados de usuários.']);
-    exit;
-}
-
-$foundUser = null;
-$foundUsernameKey = null;
-foreach ($users as $uKey => $uData) {
-    if (strtolower($uKey) === strtolower($username)) {
-        $foundUser = $uData;
-        $foundUsernameKey = $uKey;
-        break;
-    }
-}
-
+$hash = $foundUser['password_hash'];
+$isBcrypt = (substr($hash, 0, 4) === '$2y$');
 $authOk = false;
-if ($foundUser) {
-    $hash = $foundUser['password_hash'];
-    $isBcrypt = (substr($hash, 0, 4) === '$2y$');
-    if ($isBcrypt) {
-        $authOk = password_verify($password, $hash);
-    } else {
-        $authOk = ($password === $hash);
+
+if ($isBcrypt) {
+    $authOk = password_verify($password, $hash);
+} else {
+    $authOk = ($password === $hash);
+    if ($authOk) {
+        // Converte para bcrypt no primeiro login bem-sucedido
+        $newHash = password_hash($password, PASSWORD_DEFAULT);
+        $stmtUpdateHash = $pdo->prepare("UPDATE users SET password_hash = ? WHERE username = ?");
+        $stmtUpdateHash->execute([$newHash, $foundUser['username']]);
     }
 }
 
 if ($authOk) {
-    $_SESSION['logged_in'] = true;
-    $_SESSION['username']  = $foundUsernameKey;
-    $_SESSION['role']      = $foundUser['role'];
-    $_SESSION['name']      = $foundUser['name'];
-    $_SESSION['goals']     = $foundUser['goals'] ?? [0, 0, 0, 0, 0];
-    $_SESSION['filial']    = $foundUser['filial'] ?? '';
+    // Gera token de sessão seguro (64 caracteres hex)
+    $token = bin2hex(random_bytes(32));
+    
+    // Atualiza o token e validade no PostgreSQL
+    $stmtUpdateToken = $pdo->prepare("UPDATE users SET token = ?, token_expires = CURRENT_TIMESTAMP + INTERVAL '2 hours' WHERE username = ?");
+    $stmtUpdateToken->execute([$token, $foundUser['username']]);
+    
+    $goals = json_decode($foundUser['goals'] ?? '[0,0,0,0,0]', true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        $goals = [0, 0, 0, 0, 0];
+    }
     
     echo json_encode([
         'success' => true,
+        'token'   => $token,
         'user' => [
-            'username' => $foundUsernameKey,
+            'username' => $foundUser['username'],
             'role'     => $foundUser['role'],
             'name'     => $foundUser['name'],
-            'goals'    => $_SESSION['goals'],
-            'filial'   => $_SESSION['filial']
+            'goals'    => $goals,
+            'filial'   => $foundUser['filial'] ?? ''
         ]
     ]);
     exit;

@@ -143,14 +143,25 @@ const fmtK = n => 'R$ ' + parseFloat(n || 0).toLocaleString('pt-BR', { minimumFr
 const getMes = d => { if (!d) return null; const p = d.split('-'); return p[0] + '-' + p[1] };
 const fmtData = d => d ? d.split('-').reverse().join('/') : '—';
 
-// ── CARGA AUTOMÁTICA (SESSÃO SEGURA) ──────────────────────────
+// ── CARGA AUTOMÁTICA (SESSÃO SEGURA POSTGRESQL) ──────────────────────────
 async function loadData() {
   try {
     show('loader'); hide('app'); hide('error-box');
     if ($('status-txt')) $('status-txt').textContent = 'carregando';
 
+    const token = localStorage.getItem('auth_token') || '';
+    if (!token) {
+      hide('loader');
+      hide('app');
+      show('login-screen');
+      $('btn-logout').style.display = 'none';
+      if ($('status-txt')) $('status-txt').textContent = 'desconectado';
+      stopAutoRefresh();
+      return;
+    }
+
     const manualUrl = localStorage.getItem('progestor_json_url') || '';
-    let endpoint = 'data.php?_t=' + Date.now();
+    let endpoint = 'data.php?_t=' + Date.now() + '&token=' + encodeURIComponent(token);
     if (manualUrl) {
       endpoint += '&url=' + encodeURIComponent(manualUrl);
     }
@@ -161,11 +172,12 @@ async function loadData() {
     const res = await fetch(endpoint, ctrl ? { cache: 'no-cache', signal: ctrl.signal } : { cache: 'no-cache' });
     
     if (res.status === 401) {
+      localStorage.removeItem('auth_token');
       hide('loader');
       hide('app');
       show('login-screen');
       $('btn-logout').style.display = 'none';
-      if ($('status-txt')) $('status-txt').textContent = 'desconectado';
+      if ($('status-txt')) $('status-txt').textContent = 'sessão expirada';
       stopAutoRefresh();
       return;
     }
@@ -947,13 +959,17 @@ function stopAutoRefresh() {
 
 async function autoRefresh() {
   try {
+    const token = localStorage.getItem('auth_token') || '';
+    if (!token) return;
+    
     const manualUrl = localStorage.getItem('progestor_json_url') || '';
-    let endpoint = 'data.php?_t=' + Date.now();
+    let endpoint = 'data.php?_t=' + Date.now() + '&token=' + encodeURIComponent(token);
     if (manualUrl) {
       endpoint += '&url=' + encodeURIComponent(manualUrl);
     }
     const res = await fetch(endpoint, { cache: 'no-cache' });
     if (res.status === 401) {
+      localStorage.removeItem('auth_token');
       hide('app');
       show('login-screen');
       $('btn-logout').style.display = 'none';
@@ -1794,13 +1810,17 @@ function startGlobalAlertTimer() {
   globalAlertTimer = setInterval(async () => {
     if (!TV_FILS.length) return;
     try {
+      const token = localStorage.getItem('auth_token') || '';
+      if (!token) return;
+      
       const manualUrl = localStorage.getItem('progestor_json_url') || '';
-      let endpoint = 'data.php?_t=' + Date.now();
+      let endpoint = 'data.php?_t=' + Date.now() + '&token=' + encodeURIComponent(token);
       if (manualUrl) {
         endpoint += '&url=' + encodeURIComponent(manualUrl);
       }
       const res = await fetch(endpoint, { cache: 'no-cache' });
       if (res.status === 401) {
+        localStorage.removeItem('auth_token');
         stopGlobalAlertTimer();
         return;
       }
@@ -1978,6 +1998,9 @@ async function handleLogin(e) {
       throw new Error(data.error || 'Credenciais inválidas.');
     }
     
+    // Salva o token de sessão do PostgreSQL localmente no navegador
+    localStorage.setItem('auth_token', data.token);
+    
     userEl.value = '';
     passEl.value = '';
     
@@ -1998,8 +2021,10 @@ async function handleLogin(e) {
 async function logoutUser() {
   try {
     stopAutoRefresh();
-    const res = await fetch('logout.php');
+    const token = localStorage.getItem('auth_token') || '';
+    const res = await fetch('logout.php?token=' + encodeURIComponent(token));
     if (res.ok) {
+      localStorage.removeItem('auth_token');
       show('login-screen');
       hide('app');
       $('btn-logout').style.display = 'none';
@@ -2021,7 +2046,7 @@ async function loadAdminUsers() {
     const res = await fetch('manage_users.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'list' })
+      body: JSON.stringify({ action: 'list', token: localStorage.getItem('auth_token') })
     });
     const payload = await res.json();
     if (payload.success) {
@@ -2173,6 +2198,7 @@ async function saveUserSubmit(e) {
   
   const payload = {
     action: mode,
+    token: localStorage.getItem('auth_token'),
     username,
     name,
     role,
@@ -2214,7 +2240,7 @@ async function deleteUser(username) {
     const res = await fetch('manage_users.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete', username })
+      body: JSON.stringify({ action: 'delete', username, token: localStorage.getItem('auth_token') })
     });
     const data = await res.json();
     if (data.success) {
