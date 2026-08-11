@@ -52,10 +52,6 @@ if ($foundUser) {
         $authOk = password_verify($password, $hash);
     } else {
         $authOk = ($password === $hash);
-        if ($authOk) {
-            $users[$foundUsernameKey]['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
-            file_put_contents($dbFile, json_encode($users, JSON_PRETTY_PRINT));
-        }
     }
 }
 
