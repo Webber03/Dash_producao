@@ -123,8 +123,14 @@ if (empty($dataJson)) {
 }
 
 if (empty($dataJson)) {
-    http_response_code(502);
-    echo json_encode(['error' => 'Não foi possível carregar os dados de contratos.']);
+    // Sem dados disponíveis — retorna payload vazio para não bloquear o dashboard
+    echo json_encode([
+        'success' => true,
+        'role'    => $userRole,
+        'name'    => $userName,
+        'goals'   => $userGoals,
+        'data'    => []
+    ]);
     exit;
 }
 
