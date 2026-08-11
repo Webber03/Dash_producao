@@ -98,6 +98,7 @@ const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
 // ── ESTADO ────────────────────────────────────────────────────
 let ALL = [], FILTERED = [], PAGE = 0, MESES_SEL = [], FILS_SEL = [];
 let PREV_MES = '', PREV_DE = '', PREV_ATE = '';
+let USER_ROLE = 'admin', USER_NAME = '', USER_GOALS = [0, 0, 0, 0, 0];
 const PER = 20;
 let CHARTS = {};
 let METRIC = 'val';
@@ -142,49 +143,43 @@ const fmtK = n => 'R$ ' + parseFloat(n || 0).toLocaleString('pt-BR', { minimumFr
 const getMes = d => { if (!d) return null; const p = d.split('-'); return p[0] + '-' + p[1] };
 const fmtData = d => d ? d.split('-').reverse().join('/') : '—';
 
-// ── CARGA AUTOMÁTICA ──────────────────────────────────────────
+// ── CARGA AUTOMÁTICA (SESSÃO SEGURA) ──────────────────────────
 async function loadData() {
   try {
     show('loader'); hide('app'); hide('error-box');
     if ($('status-txt')) $('status-txt').textContent = 'carregando';
 
-    const manualUrl = localStorage.getItem('progestor_json_url');
-
-    // 1. URL manual salva → proxy.php
+    const manualUrl = localStorage.getItem('progestor_json_url') || '';
+    let endpoint = 'data.php?_t=' + Date.now();
     if (manualUrl) {
-      if ($('loader-msg')) $('loader-msg').textContent = 'carregando via URL manual...';
-      try {
-        const data = await fetchJSON('proxy.php?url=' + encodeURIComponent(manualUrl));
-        initData(data); return;
-      } catch (e) {
-        console.warn('proxy.php falhou:', e.message);
-      }
-
-      // 2. Tenta direto (sem proxy) — funciona se CORS liberado
-      if ($('loader-msg')) $('loader-msg').textContent = 'tentando acesso direto...';
-      try {
-        const data = await fetchJSON(manualUrl, 15000);
-        initData(data); return;
-      } catch (e) {
-        console.warn('direto falhou:', e.message);
-      }
+      endpoint += '&url=' + encodeURIComponent(manualUrl);
     }
 
-    // 3. trigger.php (com timeout curto — se demorar é porque falhou)
-    if ($('loader-msg')) $('loader-msg').textContent = 'buscando dados automáticos...';
-    try {
-      const data = await fetchJSON('trigger.php?_t=' + Date.now(), 85000);
-      initData(data); return;
-    } catch (e) {
-      console.warn('trigger.php falhou:', e.message);
+    if ($('loader-msg')) $('loader-msg').textContent = 'carregando dados seguros...';
+    
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const res = await fetch(endpoint, ctrl ? { cache: 'no-cache', signal: ctrl.signal } : { cache: 'no-cache' });
+    
+    if (res.status === 401) {
+      hide('loader');
+      hide('app');
+      show('login-screen');
+      $('btn-logout').style.display = 'none';
+      if ($('status-txt')) $('status-txt').textContent = 'desconectado';
+      stopAutoRefresh();
+      return;
     }
 
-    // 4. Nenhum funcionou — mostra erro com instrução clara
-    hide('loader');
-    show('error-box');
-    if ($('status-txt')) $('status-txt').textContent = 'erro';
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    
+    const payload = await res.json();
+    if (payload && payload.error) throw new Error(payload.error);
+    
+    hide('login-screen');
+    $('btn-logout').style.display = 'inline-flex';
+    
+    initData(payload);
   } catch (e) {
-    // Fallback para garantir que o app nunca fique preso no loader.
     console.error('loadData erro inesperado:', e);
     hide('loader');
     show('error-box');
@@ -208,29 +203,102 @@ async function fetchJSON(url, timeout = 10000) {
   if (data && typeof data === 'object' && !Array.isArray(data) && data.error) {
     throw new Error(String(data.error));
   }
+  if (!Array.isArray(data) && data.data) return data.data; // Adaptação de formato
   if (!Array.isArray(data) || !data.length) throw new Error('vazio');
   return data;
 }
 
 function reloadData() { stopAutoRefresh(); loadData(); }
 
+// ── ATUALIZAÇÃO DO ESTADO DA SESSÃO ───────────────────────────
+function updateSessionData(payload) {
+  USER_ROLE = payload.role;
+  USER_NAME = payload.name;
+  USER_GOALS = payload.goals || [0, 0, 0, 0, 0];
+  
+  const rawData = payload.data || [];
+  ALL = rawData.map(r => ({
+    ...r,
+    'Valor Liberado': toNumber(r['Valor Liberado']),
+    'Base Comissao': toNumber(r['Base Comissao']),
+    'Comissao Loja': toNumber(r['Comissao Loja']),
+    'Desconto Loja': toNumber(r['Desconto Loja']),
+    'Bonus1': toNumber(r['R$ Bonus Loja 1']),
+    'Bonus2': toNumber(r['R$ Bonus Loja 2'])
+  }));
+}
+
+// ── CONFIGURAÇÃO DE VISIBILIDADE DO MENU POR CARGO ────────────
+function setupMenuVisibility() {
+  const isCorr = USER_ROLE === 'corretor';
+  const isSuper = USER_ROLE === 'supervisor';
+  const isAdmin = USER_ROLE === 'admin';
+  
+  // Sidebar Desktop
+  const navVisao = $('nav-visao');
+  const navCorretores = $('nav-corretores');
+  const navFilial = $('nav-filial');
+  const navTabela = $('nav-tabela');
+  const navCorrDash = $('nav-corretor-dash');
+  const navAdminUsers = $('nav-admin-users');
+  
+  if (navCorrDash) navCorrDash.style.display = isCorr ? 'block' : 'none';
+  if (navAdminUsers) navAdminUsers.style.display = isAdmin ? 'block' : 'none';
+  if (navVisao) navVisao.style.display = isCorr ? 'none' : 'block';
+  if (navCorretores) navCorretores.style.display = isCorr ? 'none' : 'block';
+  if (navFilial) navFilial.style.display = (isAdmin || isSuper) ? 'block' : 'none';
+  if (navTabela) navTabela.style.display = 'block';
+  
+  // Mobile Nav
+  const mobVisao = $('mob-visao');
+  const mobCorretores = $('mob-corretores');
+  const mobFilial = $('mob-filial');
+  const mobTabela = $('mob-tabela');
+  const mobCorrDash = $('mob-corretor-dash');
+  const mobAdminUsers = $('mob-admin-users');
+  
+  if (mobCorrDash) mobCorrDash.style.display = isCorr ? 'block' : 'none';
+  if (mobAdminUsers) mobAdminUsers.style.display = isAdmin ? 'block' : 'none';
+  if (mobVisao) mobVisao.style.display = isCorr ? 'none' : 'block';
+  if (mobCorretores) mobCorretores.style.display = isCorr ? 'none' : 'block';
+  if (mobFilial) mobFilial.style.display = (isAdmin || isSuper) ? 'block' : 'none';
+  if (mobTabela) mobTabela.style.display = 'block';
+  
+  // Configuração URL (Apenas Admin)
+  const btnUrlConfig = document.querySelector('.btn-link[onclick="openUrlModal()"]');
+  if (btnUrlConfig) {
+    btnUrlConfig.style.display = isAdmin ? 'inline-block' : 'none';
+  }
+}
+
 // ── INIT ──────────────────────────────────────────────────────
-function initData(data) {
-  ALL = data.map(r => ({ ...r, 'Valor Liberado': toNumber(r['Valor Liberado']), 'Base Comissao': toNumber(r['Base Comissao']), 'Comissao Loja': toNumber(r['Comissao Loja']), 'Desconto Loja': toNumber(r['Desconto Loja']), 'Bonus1': toNumber(r['R$ Bonus Loja 1']), 'Bonus2': toNumber(r['R$ Bonus Loja 2']) }));
+function initData(payload) {
+  updateSessionData(payload);
   hide('loader'); hide('error-box'); show('app');
-  $('status-txt').textContent = ALL.length + ' registros'; if ($('sidebar-total')) $('sidebar-total').textContent = ALL.length.toLocaleString('pt-BR');
+  $('status-txt').textContent = ALL.length + ' registros';
+  if ($('sidebar-total')) $('sidebar-total').textContent = ALL.length.toLocaleString('pt-BR');
   $('ts').textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-BR');
+  
+  setupMenuVisibility();
+  
   buildFilters();
   buildTvFilSelect();
   rebuildMobFilters();
-  // CSS cuida do show/hide via media queries — não forçar via JS para evitar conflito
+  
+  // Define a aba inicial correta baseado no cargo
+  if (USER_ROLE === 'corretor') {
+    switchTab('corretor-dash', $('nav-corretor-dash'));
+  } else {
+    switchTab('visao', $('nav-visao'));
+  }
+  
   applyFilter();
   startAutoRefresh();
 }
 
 function show(id) {
   const el = $(id); if (!el) return;
-  if (id === 'app') el.style.display = 'block'; // .page interno já é grid
+  if (id === 'app') el.style.display = 'block';
   else el.style.display = 'block';
 }
 function hide(id) { const el = $(id); if (el) el.style.display = 'none'; }
@@ -357,7 +425,17 @@ function clearMes() {
 const srchEl = $('srch'); if (srchEl) srchEl.oninput = applyFilter;
 
 // ── RENDER ────────────────────────────────────────────────────
-function render() { renderKpis(); renderCharts(); renderCorretores(); renderTabela() }
+function render() {
+  if (USER_ROLE === 'corretor') {
+    renderCorretorDashboard();
+    renderTabela();
+  } else {
+    renderKpis();
+    renderCharts();
+    renderCorretores();
+    renderTabela();
+  }
+}
 
 function renderKpis() {
   const mes = MESES_SEL.length ? MESES_SEL[0] : '';
@@ -816,17 +894,20 @@ function switchTab(id, btn) {
   if (mobBtn) mobBtn.classList.add('on');
 
   const isFilial = id === 'filial';
+  const isCorrDash = id === 'corretor-dash';
+  const isAdminUsers = id === 'admin-users';
   const sbCtrl = $('sb-filial-controls');
   if (sbCtrl) sbCtrl.style.display = isFilial ? 'block' : 'none';
-  // Esconder filtros rápidos e KPIs/filter-bar quando em filial
+  // Esconder filtros rápidos e KPIs/filter-bar quando em filial, painel do corretor ou admin de usuários
   const sbQuick = $('sb-quick-filters');
-  if (sbQuick) sbQuick.style.display = isFilial ? 'none' : 'block';
+  if (sbQuick) sbQuick.style.display = (isFilial || isCorrDash || isAdminUsers) ? 'none' : 'block';
   document.querySelectorAll('.filter-bar,.kpi-grid').forEach(el => {
-    el.style.display = isFilial ? 'none' : '';
+    el.style.display = (isFilial || isCorrDash || isAdminUsers) ? 'none' : '';
   });
-  // gaveta: seção correta gerenciada pelo openMobDrawer()
 
   if (id === 'visao') setTimeout(renderCharts, 50);
+  if (id === 'corretor-dash') renderCorretorDashboard();
+  if (id === 'admin-users') loadAdminUsers();
   if (isFilial) {
     if (TV_FILS.length) renderTv();
     else {
@@ -866,12 +947,24 @@ function stopAutoRefresh() {
 
 async function autoRefresh() {
   try {
-    const manualUrl = localStorage.getItem('progestor_json_url');
-    const endpoint = manualUrl
-      ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
-      : 'trigger.php?_t=' + Date.now();
-    const data = await fetchJSON(endpoint, manualUrl ? 10000 : 85000);
-    ALL = data.map(r => ({ ...r, 'Valor Liberado': toNumber(r['Valor Liberado']), 'Base Comissao': toNumber(r['Base Comissao']), 'Comissao Loja': toNumber(r['Comissao Loja']), 'Desconto Loja': toNumber(r['Desconto Loja']), 'Bonus1': toNumber(r['R$ Bonus Loja 1']), 'Bonus2': toNumber(r['R$ Bonus Loja 2']) }));
+    const manualUrl = localStorage.getItem('progestor_json_url') || '';
+    let endpoint = 'data.php?_t=' + Date.now();
+    if (manualUrl) {
+      endpoint += '&url=' + encodeURIComponent(manualUrl);
+    }
+    const res = await fetch(endpoint, { cache: 'no-cache' });
+    if (res.status === 401) {
+      hide('app');
+      show('login-screen');
+      $('btn-logout').style.display = 'none';
+      stopAutoRefresh();
+      return;
+    }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const payload = await res.json();
+    
+    updateSessionData(payload);
+    
     $('ts').textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-BR');
     $('status-txt').textContent = ALL.length + ' registros';
     if ($('sidebar-total')) $('sidebar-total').textContent = ALL.length.toLocaleString('pt-BR');
@@ -1701,12 +1794,21 @@ function startGlobalAlertTimer() {
   globalAlertTimer = setInterval(async () => {
     if (!TV_FILS.length) return;
     try {
-      const manualUrl = localStorage.getItem('progestor_json_url');
-      const endpoint = manualUrl
-        ? 'proxy.php?url=' + encodeURIComponent(manualUrl)
-        : 'trigger.php?_t=' + Date.now();
-      const data = await fetchJSON(endpoint, manualUrl ? 10000 : 85000);
-      const newAll = data.map(r => ({
+      const manualUrl = localStorage.getItem('progestor_json_url') || '';
+      let endpoint = 'data.php?_t=' + Date.now();
+      if (manualUrl) {
+        endpoint += '&url=' + encodeURIComponent(manualUrl);
+      }
+      const res = await fetch(endpoint, { cache: 'no-cache' });
+      if (res.status === 401) {
+        stopGlobalAlertTimer();
+        return;
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const payload = await res.json();
+      const rawData = payload.data || [];
+      
+      const newAll = rawData.map(r => ({
         ...r,
         'Valor Liberado': toNumber(r['Valor Liberado']),
         'Base Comissao': toNumber(r['Base Comissao']),
@@ -1753,6 +1855,376 @@ function getRowsForFilial(dataArr, cod) {
     rows = rows.filter(r => (r['Data da Liberação'] || '') >= limite);
   }
   return rows;
+}
+
+// ── METAS E PAINEL DO CORRETOR (5 NÍVEIS) ──────────────────────
+function renderCorretorDashboard() {
+  if (USER_ROLE !== 'corretor') return;
+  
+  if ($('corr-welcome-title')) {
+    $('corr-welcome-title').textContent = 'Olá, ' + (USER_NAME || 'Corretor') + '!';
+  }
+  
+  const now = new Date();
+  const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  
+  // Filtra contratos do mês (Data Liberação ou Data Comissão Loja no mês corrente)
+  const thisMonthContracts = FILTERED.filter(r => {
+    const mesLib = getMes(r['Data da Liberação']) || '';
+    const mesCom = getMes(r['Data Comissao Loja']) || '';
+    return mesLib === ym || mesCom === ym;
+  });
+  
+  // 1. Produção (Meta) = Líquido Loja gerado
+  const totalProduction = thisMonthContracts.reduce((a, r) => {
+    const comR = comTotal(r);
+    const desc = parseFloat(r['Desconto Loja'] || 0);
+    return a + (comR - desc);
+  }, 0);
+  
+  // 2. Valor Recebido = Valorda Comissao (Ganhos do Corretor)
+  const totalReceived = thisMonthContracts.reduce((a, r) => a + toNumber(r['Valorda Comissao']), 0);
+  
+  const totalQty = thisMonthContracts.length;
+  
+  if ($('kCorrProd')) $('kCorrProd').textContent = fmt(totalProduction);
+  if ($('kCorrComSec')) $('kCorrComSec').textContent = fmt(totalReceived);
+  if ($('kCorrQty')) $('kCorrQty').textContent = totalQty.toLocaleString('pt-BR');
+  
+  // Metas do corretor
+  const g1 = USER_GOALS[0] || 0;
+  const g2 = USER_GOALS[1] || 0;
+  const g3 = USER_GOALS[2] || 0;
+  const g4 = USER_GOALS[3] || 0;
+  const g5 = USER_GOALS[4] || 0;
+  
+  if ($('goal-val-lvl1')) $('goal-val-lvl1').textContent = fmtK(g1);
+  if ($('goal-val-lvl2')) $('goal-val-lvl2').textContent = fmtK(g2);
+  if ($('goal-val-lvl3')) $('goal-val-lvl3').textContent = fmtK(g3);
+  if ($('goal-val-lvl4')) $('goal-val-lvl4').textContent = fmtK(g4);
+  if ($('goal-val-lvl5')) $('goal-val-lvl5').textContent = fmtK(g5);
+  
+  // Progresso (com base na meta máxima 5)
+  const maxGoal = g5 || 1;
+  const pct = Math.min(100, (totalProduction / maxGoal) * 100);
+  if ($('goal-progress-fill')) $('goal-progress-fill').style.width = pct + '%';
+  
+  // Reached status
+  if ($('marker-lvl1')) $('marker-lvl1').classList.toggle('reached', totalProduction >= g1 && g1 > 0);
+  if ($('marker-lvl2')) $('marker-lvl2').classList.toggle('reached', totalProduction >= g2 && g2 > 0);
+  if ($('marker-lvl3')) $('marker-lvl3').classList.toggle('reached', totalProduction >= g3 && g3 > 0);
+  if ($('marker-lvl4')) $('marker-lvl4').classList.toggle('reached', totalProduction >= g4 && g4 > 0);
+  if ($('marker-lvl5')) $('marker-lvl5').classList.toggle('reached', totalProduction >= g5 && g5 > 0);
+  
+  const badge = $('goals-status-badge');
+  const msg = $('goals-footer-msg');
+  
+  if (totalProduction < g1) {
+    if (badge) badge.textContent = 'Meta 1 em andamento';
+    const falta = g1 - totalProduction;
+    if (msg) msg.innerHTML = `Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para atingir a <strong>Meta 1</strong>!`;
+  } else if (totalProduction < g2) {
+    if (badge) badge.textContent = 'Meta 1 batida! 🎉';
+    const falta = g2 - totalProduction;
+    if (msg) msg.innerHTML = `Excelente! Meta 1 batida. Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para a <strong>Meta 2</strong>!`;
+  } else if (totalProduction < g3) {
+    if (badge) badge.textContent = 'Meta 2 batida! 🌟';
+    const falta = g3 - totalProduction;
+    if (msg) msg.innerHTML = `Sensacional! Meta 2 batida. Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para a <strong>Meta 3</strong>!`;
+  } else if (totalProduction < g4) {
+    if (badge) badge.textContent = 'Meta 3 batida! 🔥';
+    const falta = g4 - totalProduction;
+    if (msg) msg.innerHTML = `Incrível! Meta 3 batida. Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para a <strong>Meta 4</strong>!`;
+  } else if (totalProduction < g5) {
+    if (badge) badge.textContent = 'Meta 4 batida! 🏆';
+    const falta = g5 - totalProduction;
+    if (msg) msg.innerHTML = `Espetacular! Meta 4 batida. Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para atingir a <strong>Meta Ouro (Meta 5)</strong>!`;
+  } else {
+    if (badge) badge.textContent = 'Meta Máxima Batida! 👑';
+    if (msg) msg.innerHTML = `<strong style="color:var(--green)">Extraordinário!</strong> Você atingiu a Meta 5 e superou todos os limites este mês!`;
+  }
+}
+
+// ── AUTENTICAÇÃO, LOGIN E LOGOUT ─────────────────────────────
+async function handleLogin(e) {
+  if (e) e.preventDefault();
+  const userEl = $('login-username');
+  const passEl = $('login-password');
+  const errorBox = $('login-error');
+  const btnSubmit = $('btn-login-submit');
+  
+  if (!userEl || !passEl) return;
+  const username = userEl.value.trim();
+  const password = passEl.value.trim();
+  
+  if (!username || !password) return;
+  
+  try {
+    if (errorBox) errorBox.style.display = 'none';
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Autenticando...';
+    }
+    
+    const res = await fetch('login.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    
+    const data = await res.json();
+    
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Credenciais inválidas.');
+    }
+    
+    userEl.value = '';
+    passEl.value = '';
+    
+    loadData();
+  } catch (err) {
+    if (errorBox) {
+      errorBox.textContent = err.message;
+      errorBox.style.display = 'block';
+    }
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Entrar no Painel';
+    }
+  }
+}
+
+async function logoutUser() {
+  try {
+    stopAutoRefresh();
+    const res = await fetch('logout.php');
+    if (res.ok) {
+      show('login-screen');
+      hide('app');
+      $('btn-logout').style.display = 'none';
+      if ($('status-txt')) $('status-txt').textContent = 'desconectado';
+      ALL = [];
+      FILTERED = [];
+    }
+  } catch (e) {
+    console.error('Erro ao deslogar:', e);
+  }
+}
+
+// ── ADMIN: GERENCIAMENTO DE EQUIPE (CRUD) ──────────────────────
+let ADMIN_USERS_CACHE = [];
+
+async function loadAdminUsers() {
+  if (USER_ROLE !== 'admin') return;
+  try {
+    const res = await fetch('manage_users.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'list' })
+    });
+    const payload = await res.json();
+    if (payload.success) {
+      ADMIN_USERS_CACHE = payload.users || [];
+      renderAdminUsersTable();
+    }
+  } catch (e) {
+    console.error('Erro ao carregar lista de usuários:', e);
+  }
+}
+
+function renderAdminUsersTable() {
+  const tbody = $('tbAdminUsers');
+  if (!tbody) return;
+  
+  if (ADMIN_USERS_CACHE.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--t3)">Nenhum usuário cadastrado.</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = ADMIN_USERS_CACHE.map(u => {
+    const goalsStr = u.role === 'corretor' 
+      ? u.goals.map(g => parseFloat(g).toLocaleString('pt-BR')).join(' · ')
+      : '—';
+      
+    const roleBadge = u.role === 'admin' ? '<span class="badge b-novo">Admin</span>'
+      : u.role === 'supervisor' ? '<span class="badge b-port">Supervisor</span>'
+      : '<span class="badge b-refin">Corretor</span>';
+      
+    return `<tr>
+      <td style="font-weight:600; font-family:var(--mono);">${u.username}</td>
+      <td>${u.name}</td>
+      <td>${roleBadge}</td>
+      <td style="font-family:var(--mono); font-size:11px;">${u.filial ? filialNome(u.filial) : '—'}</td>
+      <td style="font-family:var(--mono); font-size:11px; color:var(--green);">${goalsStr}</td>
+      <td style="text-align:center;">
+        <button class="btn-user-action" onclick="openUserModal('edit', '${u.username}')" title="Editar"><i class="ph ph-note-pencil"></i></button>
+        <button class="btn-user-action delete" onclick="deleteUser('${u.username}')" title="Excluir"><i class="ph ph-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openUserModal(mode, username = '') {
+  const modal = $('modal-user');
+  const title = $('user-modal-title');
+  const usrInput = $('usr-username');
+  const passLabel = $('usr-pass-label');
+  const passInput = $('usr-password');
+  const nameInput = $('usr-name');
+  const roleSelect = $('usr-role');
+  const filialSelect = $('usr-filial');
+  const errBox = $('usr-error-msg');
+  
+  if (errBox) errBox.style.display = 'none';
+  $('usr-mode').value = mode;
+  
+  // Popular filial select
+  filialSelect.innerHTML = '<option value="">Nenhuma filial (Geral)</option>';
+  FILIAIS_ORDER.forEach(([cod, nome]) => {
+    const opt = document.createElement('option');
+    opt.value = cod;
+    opt.textContent = nome;
+    filialSelect.appendChild(opt);
+  });
+
+  if (mode === 'create') {
+    title.textContent = 'Novo Usuário';
+    usrInput.value = '';
+    usrInput.disabled = false;
+    passLabel.textContent = 'Senha (Obrigatória)';
+    passInput.required = true;
+    passInput.value = '';
+    nameInput.value = '';
+    roleSelect.value = 'corretor';
+    filialSelect.value = '';
+    $('usr-g1').value = '';
+    $('usr-g2').value = '';
+    $('usr-g3').value = '';
+    $('usr-g4').value = '';
+    $('usr-g5').value = '';
+  } else {
+    // Modo de edição
+    const user = ADMIN_USERS_CACHE.find(u => u.username === username);
+    if (!user) return;
+    
+    title.textContent = 'Editar Usuário';
+    usrInput.value = user.username;
+    usrInput.disabled = true;
+    passLabel.textContent = 'Mudar Senha (Opcional)';
+    passInput.required = false;
+    passInput.value = '';
+    nameInput.value = user.name;
+    roleSelect.value = user.role;
+    filialSelect.value = user.filial || '';
+    
+    const goals = user.goals || [0, 0, 0, 0, 0];
+    $('usr-g1').value = goals[0] || '';
+    $('usr-g2').value = goals[1] || '';
+    $('usr-g3').value = goals[2] || '';
+    $('usr-g4').value = goals[3] || '';
+    $('usr-g5').value = goals[4] || '';
+  }
+  
+  onUserRoleChange();
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeUserModal() {
+  const modal = $('modal-user');
+  if (modal) modal.style.display = 'none';
+}
+
+function onUserRoleChange() {
+  const role = $('usr-role').value;
+  const filialGroup = $('usr-filial-group');
+  const goalsGroup = $('usr-goals-group');
+  
+  if (role === 'admin') {
+    filialGroup.style.display = 'none';
+    goalsGroup.style.display = 'none';
+  } else if (role === 'supervisor') {
+    filialGroup.style.display = 'block';
+    goalsGroup.style.display = 'none';
+  } else {
+    // corretor
+    filialGroup.style.display = 'block';
+    goalsGroup.style.display = 'block';
+  }
+}
+
+async function saveUserSubmit(e) {
+  if (e) e.preventDefault();
+  const mode = $('usr-mode').value;
+  const username = $('usr-username').value.trim();
+  const password = $('usr-password').value;
+  const name = $('usr-name').value.trim();
+  const role = $('usr-role').value;
+  const filial = $('usr-filial').value;
+  const errBox = $('usr-error-msg');
+  
+  const goals = [
+    parseFloat($('usr-g1').value) || 0,
+    parseFloat($('usr-g2').value) || 0,
+    parseFloat($('usr-g3').value) || 0,
+    parseFloat($('usr-g4').value) || 0,
+    parseFloat($('usr-g5').value) || 0
+  ];
+  
+  const payload = {
+    action: mode,
+    username,
+    name,
+    role,
+    filial,
+    goals
+  };
+  
+  if (password) {
+    payload.password = password;
+  }
+  
+  try {
+    if (errBox) errBox.style.display = 'none';
+    
+    const res = await fetch('manage_users.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Falha ao salvar usuário.');
+    }
+    
+    closeUserModal();
+    loadAdminUsers();
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }
+  }
+}
+
+async function deleteUser(username) {
+  if (!confirm(`Deseja realmente excluir a conta do usuário "${username}"?`)) return;
+  try {
+    const res = await fetch('manage_users.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', username })
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadAdminUsers();
+    } else {
+      alert(data.error || 'Falha ao excluir usuário.');
+    }
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 // ── START ─────────────────────────────────────────────────────

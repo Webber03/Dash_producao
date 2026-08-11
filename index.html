@@ -13,6 +13,30 @@
 </head>
 <body>
 
+<!-- TELA DE LOGIN (SOBREPOSIÇÃO) -->
+<div id="login-screen" class="login-backdrop" style="display: flex;">
+  <div class="login-card">
+    <div class="login-logo-container">
+      <img src="assetsimg/IMG_0457.png" alt="Logo LF Promotora" class="login-logo-img">
+    </div>
+    <h2 class="login-title">LF Promotora</h2>
+    <p class="login-desc">Painel de Gestão de Contratos</p>
+    
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label for="login-username"><i class="ph ph-user"></i> Usuário</label>
+        <input type="text" id="login-username" placeholder="Digite seu usuário..." required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="login-password"><i class="ph ph-lock"></i> Senha</label>
+        <input type="password" id="login-password" placeholder="Digite sua senha..." required autocomplete="current-password">
+      </div>
+      <div id="login-error" class="login-error-box" style="display: none;"></div>
+      <button type="submit" class="btn-login-submit" id="btn-login-submit">Entrar no Painel</button>
+    </form>
+  </div>
+</div>
+
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-brand">
@@ -27,6 +51,7 @@
     <span id="ts" style="font-size:11px;color:var(--t3);font-family:var(--mono)">—</span>
     <button class="btn-link" onclick="openUrlModal()"><i class="ph ph-gear"></i> URL</button>
     <button class="btn" onclick="reloadData()">Atualizar</button>
+    <button class="btn-logout" onclick="logoutUser()" id="btn-logout" style="display: none;"><i class="ph ph-sign-out"></i> Sair</button>
   </div>
 </div>
 
@@ -63,6 +88,12 @@
 <!-- BOTTOM NAV MOBILE -->
 <nav class="mob-nav" id="mob-nav">
   <div class="mob-nav-inner">
+    <button class="mob-nav-btn" onclick="switchTab('corretor-dash',this);closeMobDrawer()" id="mob-corretor-dash" style="display:none">
+      <span class="mob-icon"><i class="ph ph-gauge"></i></span>Painel
+    </button>
+    <button class="mob-nav-btn" onclick="switchTab('admin-users',this);closeMobDrawer()" id="mob-admin-users" style="display:none">
+      <span class="mob-icon"><i class="ph ph-users-three"></i></span>Equipe
+    </button>
     <button class="mob-nav-btn on" onclick="switchTab('visao',this);closeMobDrawer()" id="mob-visao">
       <span class="mob-icon"><i class="ph ph-squares-four"></i></span>Visão
     </button>
@@ -162,6 +193,12 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-section">
+      <button class="nav-item" onclick="switchTab('corretor-dash',this)" id="nav-corretor-dash" style="display:none">
+        <span class="nav-icon"><i class="ph ph-gauge"></i></span> Meu Painel
+      </button>
+      <button class="nav-item" onclick="switchTab('admin-users',this)" id="nav-admin-users" style="display:none">
+        <span class="nav-icon"><i class="ph ph-users-three"></i></span> Gerenciar Equipe
+      </button>
       <button class="nav-item on" onclick="switchTab('visao',this)" id="nav-visao">
         <span class="nav-icon"><i class="ph ph-squares-four"></i></span> Visão Geral
       </button>
@@ -369,6 +406,185 @@
         <div class="kpi-bar"></div>
       </div>
     </div>
+
+  <!-- PAINEL DO CORRETOR -->
+  <div id="p-corretor-dash" class="panel">
+    <div class="welcome-banner">
+      <div class="welcome-text">
+        <h2 id="corr-welcome-title">Olá, Corretor!</h2>
+        <p>Acompanhe suas metas e comissões da LF Promotora em tempo real.</p>
+      </div>
+      <div class="welcome-avatar">
+        <i class="ph ph-user-circle" style="font-size: 64px; color: var(--y);"></i>
+      </div>
+    </div>
+
+    <!-- KPIs do Corretor -->
+    <div class="kpi-grid" style="margin-top: 1.5rem; display: grid;">
+      <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Sua Produção (Mês)</span><div class="kpi-icon-wrap"><i class="ph ph-trend-up"></i></div></div>
+        <div class="kpi-val" id="kCorrProd">—</div>
+        <div class="kpi-sub" id="kCorrProdSub">Líquido Loja gerado no mês</div>
+        <div class="kpi-bar"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Valor Recebido</span><div class="kpi-icon-wrap"><i class="ph ph-currency-circle-dollar"></i></div></div>
+        <div class="kpi-val" id="kCorrComSec" style="color:#22d3ee">—</div>
+        <div class="kpi-sub" id="kCorrComSub">soma da sua comissão (Valorda Comissao)</div>
+        <div class="kpi-bar"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-header"><span class="kpi-label">Contratos Fechados</span><div class="kpi-icon-wrap"><i class="ph ph-files"></i></div></div>
+        <div class="kpi-val" id="kCorrQty">—</div>
+        <div class="kpi-sub">quantidade de propostas liberadas</div>
+        <div class="kpi-bar"></div>
+      </div>
+    </div>
+
+    <!-- Metas e Níveis -->
+    <div class="goals-section">
+      <div class="goals-card">
+        <div class="goals-header">
+          <h3 style="margin:0; font-size:16px; font-weight:600; color:var(--t1)"><i class="ph ph-target" style="vertical-align:middle; margin-right:6px; color:var(--y);"></i> Acompanhamento de Metas Individuais (Líquido Loja)</h3>
+          <span class="goals-status-badge" id="goals-status-badge">—</span>
+        </div>
+        
+        <!-- Barra de Progresso Visual de Metas -->
+        <div class="goal-progress-container">
+          <div class="goal-progress-bar-wrap">
+            <div class="goal-progress-bar-fill" id="goal-progress-fill" style="width: 0%;"></div>
+            
+            <!-- Marcador Nível 1 -->
+            <div class="goal-marker" style="left: 20%;" id="marker-lvl1">
+              <div class="goal-marker-dot"></div>
+              <div class="goal-marker-label">Meta 1<br><span id="goal-val-lvl1">—</span></div>
+            </div>
+            
+            <!-- Marcador Nível 2 -->
+            <div class="goal-marker" style="left: 40%;" id="marker-lvl2">
+              <div class="goal-marker-dot"></div>
+              <div class="goal-marker-label">Meta 2<br><span id="goal-val-lvl2">—</span></div>
+            </div>
+            
+            <!-- Marcador Nível 3 -->
+            <div class="goal-marker" style="left: 60%;" id="marker-lvl3">
+              <div class="goal-marker-dot"></div>
+              <div class="goal-marker-label">Meta 3<br><span id="goal-val-lvl3">—</span></div>
+            </div>
+
+            <!-- Marcador Nível 4 -->
+            <div class="goal-marker" style="left: 80%;" id="marker-lvl4">
+              <div class="goal-marker-dot"></div>
+              <div class="goal-marker-label">Meta 4<br><span id="goal-val-lvl4">—</span></div>
+            </div>
+
+            <!-- Marcador Nível 5 -->
+            <div class="goal-marker" style="left: 100%;" id="marker-lvl5">
+              <div class="goal-marker-dot"></div>
+              <div class="goal-marker-label">Meta 5<br><span id="goal-val-lvl5">—</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="goals-footer-msg" id="goals-footer-msg">
+          Carregando informações de metas...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN GERENCIAR EQUIPE -->
+  <div id="p-admin-users" class="panel">
+    <div class="table-wrap" style="padding: 1.5rem;">
+      <div class="table-head">
+        <div class="table-head-left">
+          <span class="table-head-title">Gerenciamento de Equipe e Metas</span>
+        </div>
+        <button class="btn" onclick="openUserModal('create')"><i class="ph ph-user-plus"></i> Novo Usuário</button>
+      </div>
+      
+      <div class="table-scroll" style="margin-top: 1rem;">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>Nome Completo (Progestor)</th>
+              <th>Função</th>
+              <th>Filial Vinculada</th>
+              <th>Metas de 1 a 5 (Líquido Loja)</th>
+              <th style="text-align: center;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbAdminUsers">
+            <!-- Inserido via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL USUÁRIO (CADASTRAR / EDITAR) -->
+  <div id="modal-user" class="modal-backdrop" style="display:none">
+    <div class="modal" style="max-width: 500px; padding: 2rem;">
+      <div class="modal-title" id="user-modal-title">Novo Usuário</div>
+      <div class="modal-desc" style="margin-bottom: 1.25rem;">Cadastre ou edite as credenciais e metas da equipe.</div>
+      
+      <form id="user-form" onsubmit="saveUserSubmit(event)" style="display:flex; flex-direction:column; gap:14px;">
+        <input type="hidden" id="usr-mode" value="create">
+        
+        <div style="display:flex; gap:12px;">
+          <div class="fgroup" style="flex:1;">
+            <label style="font-size:10px; color:var(--t2); display:block; margin-bottom:4px;">Usuário (Login)</label>
+            <input type="text" id="usr-username" class="modal-input" required placeholder="ex: joao.silva" style="width:100%; height:40px;">
+          </div>
+          <div class="fgroup" style="flex:1;">
+            <label style="font-size:10px; color:var(--t2); display:block; margin-bottom:4px;" id="usr-pass-label">Senha</label>
+            <input type="password" id="usr-password" class="modal-input" placeholder="Digite a senha..." style="width:100%; height:40px;">
+          </div>
+        </div>
+
+        <div style="display:flex; gap:12px;">
+          <div class="fgroup" style="flex:1;">
+            <label style="font-size:10px; color:var(--t2); display:block; margin-bottom:4px;">Nome Completo (Progestor)</label>
+            <input type="text" id="usr-name" class="modal-input" required placeholder="ex: JOAO SILVA" style="width:100%; height:40px;">
+          </div>
+          <div class="fgroup" style="flex:1;">
+            <label style="font-size:10px; color:var(--t2); display:block; margin-bottom:4px;">Função</label>
+            <select id="usr-role" class="modal-input" required onchange="onUserRoleChange()" style="width:100%; height:40px; background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:var(--r); padding:0 8px;">
+              <option value="corretor">Corretor</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fgroup" id="usr-filial-group">
+          <label style="font-size:10px; color:var(--t2); display:block; margin-bottom:4px;">Filial Vinculada</label>
+          <select id="usr-filial" class="modal-input" style="width:100%; height:40px; background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:var(--r); padding:0 8px;">
+            <!-- Populado via JS -->
+          </select>
+        </div>
+
+        <div id="usr-goals-group">
+          <label style="font-size:10px; color:var(--t2); display:block; margin-bottom:6px;">Metas de Comissão (Líquido Loja)</label>
+          <div style="display:flex; gap:6px;">
+            <div style="flex:1;"><input type="number" id="usr-g1" class="modal-input" placeholder="Meta 1" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
+            <div style="flex:1;"><input type="number" id="usr-g2" class="modal-input" placeholder="Meta 2" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
+            <div style="flex:1;"><input type="number" id="usr-g3" class="modal-input" placeholder="Meta 3" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
+            <div style="flex:1;"><input type="number" id="usr-g4" class="modal-input" placeholder="Meta 4" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
+            <div style="flex:1;"><input type="number" id="usr-g5" class="modal-input" placeholder="Meta 5" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
+          </div>
+        </div>
+        
+        <div id="usr-error-msg" class="login-error-box" style="display:none; margin:0;"></div>
+
+        <div class="modal-actions" style="margin-top:1rem; display:flex; gap:8px;">
+          <button type="submit" class="btn" style="flex:1; height:40px;">Salvar Usuário</button>
+          <button type="button" class="btn-ghost" onclick="closeUserModal()" style="height:40px;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- VISÃO GERAL -->
   <div id="p-visao" class="panel on">
