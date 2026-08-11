@@ -6,6 +6,15 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 
+// Configura pasta de sessão local para garantir persistência no Windows/IIS
+$sessionPath = __DIR__ . '/sessions';
+if (!file_exists($sessionPath)) {
+    @mkdir($sessionPath, 0700, true);
+}
+if (is_writable($sessionPath)) {
+    session_save_path($sessionPath);
+}
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
