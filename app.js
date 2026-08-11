@@ -509,23 +509,23 @@ function renderKpis() {
   const sumL = sumC - sumD;
   const tickCom = comRows.length ? sumC / comRows.length : 0;
 
-  $('kTot').textContent = tot.toLocaleString('pt-BR');
-  $('kTotS').textContent = 'de ' + ALL.length + ' totais';
-  $('kVal').textContent = fmtK(sumV);
-  $('kValS').textContent = 'valor total liberado';
+  if ($('kTot')) $('kTot').textContent = tot.toLocaleString('pt-BR');
+  if ($('kTotS')) $('kTotS').textContent = 'de ' + ALL.length + ' totais';
+  if ($('kVal')) $('kVal').textContent = fmtK(sumV);
+  if ($('kValS')) $('kValS').textContent = 'valor total liberado';
 
-  $('kCom').textContent = fmtK(sumC);
-  $('kComS').textContent = 'por Data Comissão Loja';
-  $('kLiq').textContent = fmtK(sumL);
-  $('kLiqS').textContent = 'produção líquida da loja';
+  if ($('kCom')) $('kCom').textContent = fmtK(sumC);
+  if ($('kComS')) $('kComS').textContent = 'por Data Comissão Loja';
+  if ($('kLiq')) $('kLiq').textContent = fmtK(sumL);
+  if ($('kLiqS')) $('kLiqS').textContent = 'produção líquida da loja';
 
   // Comissão do consultor (Valorda Comissao)
   const sumComConsultor = prodRows.reduce((a, r) => a + valComCorretor(r), 0);
   if ($('kComConsultor')) $('kComConsultor').textContent = fmtK(sumComConsultor);
   if ($('kComConsultorS')) $('kComConsultorS').textContent = 'soma do campo Valorda Comissao';
 
-  $('kTick').textContent = fmtK(tickCom);
-  $('kTickS').textContent = 'ticket médio de comissão';
+  if ($('kTick')) $('kTick').textContent = fmtK(tickCom);
+  if ($('kTickS')) $('kTickS').textContent = 'ticket médio de comissão';
 }
 
 function groupBy(arr, key, valFn) { const m = {}; arr.forEach(r => { const k = r[key] || '—'; m[k] = (m[k] || 0) + valFn(r) }); return Object.entries(m).sort((a, b) => b[1] - a[1]) }
@@ -1912,21 +1912,24 @@ function buildCorrFilters() {
   const curB = elBco.value;
   const curT = elTipo.value;
 
-  const mesesLib = ALL.map(r => getMes(r['Data da Liberação'])).filter(Boolean);
-  const mesesCom = ALL.map(r => getMes(r['Data Comissao Loja'])).filter(Boolean);
+  const mesesLib = ALL.map(r => r ? getMes(r['Data da Liberação']) : null).filter(Boolean);
+  const mesesCom = ALL.map(r => r ? getMes(r['Data Comissao Loja']) : null).filter(Boolean);
   const meses = [...new Set([...mesesLib, ...mesesCom])].sort();
   
   elMes.innerHTML = '<option value="">Mês Atual (Padrão)</option>';
   meses.forEach(m => {
+    if (!m || !m.includes('-')) return;
     const [y, mo] = m.split('-');
+    const idx = parseInt(mo) - 1;
+    const label = (MES[idx] || mo) + '/' + (y ? y.slice(2) : '');
     const o = document.createElement('option');
     o.value = m;
-    o.textContent = MES[parseInt(mo) - 1] + '/' + y.slice(2);
+    o.textContent = label;
     if (m === curM) o.selected = true;
     elMes.appendChild(o);
   });
 
-  const bcos = [...new Set(ALL.map(r => r.BCO))].filter(Boolean).sort();
+  const bcos = [...new Set(ALL.map(r => r ? r.BCO : null))].filter(Boolean).sort();
   elBco.innerHTML = '<option value="">Todos os Bancos</option>';
   bcos.forEach(b => {
     const o = document.createElement('option');
@@ -1936,7 +1939,7 @@ function buildCorrFilters() {
   });
 
   const tiposPermitidos = Object.keys(TIPO_BADGE);
-  const tipos = [...new Set(ALL.map(r => r.Tipo))].filter(t => tiposPermitidos.includes(t)).sort();
+  const tipos = [...new Set(ALL.map(r => r ? r.Tipo : null))].filter(t => t && tiposPermitidos.includes(t)).sort();
   elTipo.innerHTML = '<option value="">Todos os Tipos</option>';
   tipos.forEach(t => {
     const o = document.createElement('option');
