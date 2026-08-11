@@ -517,7 +517,7 @@ function renderKpis() {
   $('kCom').textContent = fmtK(sumC);
   $('kComS').textContent = 'por Data Comissão Loja';
   $('kLiq').textContent = fmtK(sumL);
-  $('kLiqS').textContent = sumD > 0 ? '− ' + fmtK(sumD) + ' descontos' : 'sem descontos';
+  $('kLiqS').textContent = 'produção líquida da loja';
 
   // Comissão do consultor (Valorda Comissao)
   const sumComConsultor = prodRows.reduce((a, r) => a + valComCorretor(r), 0);
@@ -1909,7 +1909,21 @@ function renderCorretorDashboard() {
     $('corr-welcome-title').textContent = 'Olá, ' + (USER_NAME || 'Corretor') + '!';
   }
   
-  const targetContracts = FILTERED.length ? FILTERED : ALL;
+  const now = new Date();
+  const currentYM = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  
+  // Se houver filtro ativo (Mês, Data, Banco, etc.), usa FILTERED.
+  // Caso contrário, por padrão o MEU PAINEL mostra os dados do MÊS ATUAL.
+  const isFiltered = MESES_SEL.length || $('fDe').value || $('fAte').value || $('fTipo').value || $('fBco').value || $('fParc').value || $('fCanal').value || $('fConv').value || $('srch').value;
+  
+  let targetContracts = FILTERED;
+  if (!isFiltered) {
+    targetContracts = ALL.filter(r => {
+      const mesLib = getMes(r['Data da Liberação']) || '';
+      const mesCom = getMes(r['Data Comissao Loja']) || '';
+      return mesLib === currentYM || mesCom === currentYM;
+    });
+  }
   
   // 1. Total Liberado Bruto
   const totalBruto = targetContracts.reduce((a, r) => a + val(r), 0);
@@ -1995,9 +2009,9 @@ function renderCorretorDashboard() {
     makeLegend($('lgCorrTipo'), byTipo.map(x => x[0]), COLORS.slice(3));
   }
 
-  // --- Renderiza Tabela de Propostas Recentes ---
+  // --- Renderiza Tabela de Propostas Recentes (Exibe 15 propostas) ---
   if ($('tbCorrRecent')) {
-    const recent = [...targetContracts].slice(0, 8);
+    const recent = [...targetContracts].slice(0, 15);
     if (!recent.length) {
       $('tbCorrRecent').innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--t3); padding:1rem;">Nenhuma proposta encontrada.</td></tr>';
     } else {
