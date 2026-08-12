@@ -420,34 +420,42 @@
       </div>
     </div>
 
-    <!-- KPIs do Corretor (4 Cards em Grid) -->
-    <div class="kpi-grid" style="margin-top: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
-      <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Valor Liberado (Bruto)</span><div class="kpi-icon-wrap"><i class="ph ph-currency-circle-dollar"></i></div></div>
-        <div class="kpi-val" id="kCorrBruto" style="color:var(--t1)">—</div>
-        <div class="kpi-sub">total bruto de propostas liberadas</div>
-        <div class="kpi-bar"></div>
+    <!-- KPIs DO CORRETOR (MEU PAINEL) -->
+    <div class="kpi-grid" style="margin-top: 1rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+      <div class="kpi" style="background:var(--s2); border:1px solid var(--b1); border-radius:var(--r3); padding:1.25rem;">
+        <div class="kpi-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="kpi-label" style="font-size:12px; font-weight:600; color:var(--t2);">Valor Liberado (Bruto)</span>
+          <div class="kpi-icon-wrap" style="color:var(--y); font-size:18px;"><i class="ph ph-currency-circle-dollar"></i></div>
+        </div>
+        <div class="kpi-val" id="kCorrBruto" style="font-size:22px; font-weight:700; color:var(--t1); font-family:var(--mono);">—</div>
+        <div class="kpi-sub" style="font-size:11px; color:var(--t3); margin-top:4px;">total bruto de propostas liberadas</div>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Líquido Loja (Base da Meta)</span><div class="kpi-icon-wrap"><i class="ph ph-trend-up"></i></div></div>
-        <div class="kpi-val" id="kCorrProd" style="color:var(--green)">—</div>
-        <div class="kpi-sub" id="kCorrProdSub">produção líquida gerada no mês</div>
-        <div class="kpi-bar"></div>
+      <div class="kpi" style="background:var(--s2); border:1px solid var(--b1); border-radius:var(--r3); padding:1.25rem;">
+        <div class="kpi-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="kpi-label" style="font-size:12px; font-weight:600; color:var(--t2);">Líquido Loja (Base da Meta)</span>
+          <div class="kpi-icon-wrap" style="color:var(--green); font-size:18px;"><i class="ph ph-trend-up"></i></div>
+        </div>
+        <div class="kpi-val" id="kCorrProd" style="font-size:22px; font-weight:700; color:var(--green); font-family:var(--mono);">—</div>
+        <div class="kpi-sub" id="kCorrProdSub" style="font-size:11px; color:var(--t3); margin-top:4px;">produção líquida gerada</div>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Sua Comissão (Valor Recebido)</span><div class="kpi-icon-wrap"><i class="ph ph-hand-coins"></i></div></div>
-        <div class="kpi-val" id="kCorrComSec" style="color:#38bdf8">—</div>
-        <div class="kpi-sub" id="kCorrComSub">soma do campo Valorda Comissao</div>
-        <div class="kpi-bar"></div>
+      <div class="kpi" style="background:var(--s2); border:1px solid var(--b1); border-radius:var(--r3); padding:1.25rem;">
+        <div class="kpi-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="kpi-label" style="font-size:12px; font-weight:600; color:var(--t2);">Sua Comissão (Valor Recebido)</span>
+          <div class="kpi-icon-wrap" style="color:#38bdf8; font-size:18px;"><i class="ph ph-hand-coins"></i></div>
+        </div>
+        <div class="kpi-val" id="kCorrComSec" style="font-size:22px; font-weight:700; color:#38bdf8; font-family:var(--mono);">—</div>
+        <div class="kpi-sub" id="kCorrComSub" style="font-size:11px; color:var(--t3); margin-top:4px;">soma do campo Valorda Comissao</div>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-header"><span class="kpi-label">Contratos Fechados</span><div class="kpi-icon-wrap"><i class="ph ph-files"></i></div></div>
-        <div class="kpi-val" id="kCorrQty" style="color:var(--y)">—</div>
-        <div class="kpi-sub">quantidade de propostas fechadas</div>
-        <div class="kpi-bar"></div>
+      <div class="kpi" style="background:var(--s2); border:1px solid var(--b1); border-radius:var(--r3); padding:1.25rem;">
+        <div class="kpi-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="kpi-label" style="font-size:12px; font-weight:600; color:var(--t2);">Contratos Fechados</span>
+          <div class="kpi-icon-wrap" style="color:var(--y); font-size:18px;"><i class="ph ph-files"></i></div>
+        </div>
+        <div class="kpi-val" id="kCorrQty" style="font-size:22px; font-weight:700; color:var(--y); font-family:var(--mono);">—</div>
+        <div class="kpi-sub" style="font-size:11px; color:var(--t3); margin-top:4px;">quantidade de propostas fechadas</div>
       </div>
     </div>
 
