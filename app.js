@@ -812,6 +812,15 @@ function renderTabela() {
   const slice = VER_TUDO ? FILTERED : FILTERED.slice(PAGE * PER, (PAGE + 1) * PER);
   $('tblCount').textContent = FILTERED.length + ' registros';
   const baseC = r => parseFloat(r['Base Comissao'] || 0);
+  const isCorr = USER_ROLE === 'corretor';
+
+  // Controla visibilidade dos headers das colunas restritas
+  const hideCols = ['th-com-pct-loja', 'th-com-rs-loja', 'th-com-pct-corr'];
+  hideCols.forEach(id => {
+    const th = $(id);
+    if (th) th.style.display = isCorr ? 'none' : '';
+  });
+
   $('tbContr').innerHTML = slice.map(r => {
     const comR = comTotal(r);
     return `<tr>
@@ -823,10 +832,10 @@ function renderTabela() {
     <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--muted);white-space:nowrap">${r.Produto || '—'}</td>
     <td style="font-family:var(--mono);text-align:center">${r['QuantidadedePrestação'] || '—'}</td>
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(val(r))}</td>
-    <td style="font-family:var(--mono);text-align:right">${com(r).toFixed(2)}%</td>
-    <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#4ade80">${comR > 0 ? fmt(comR) : '—'}</td>
+    ${isCorr ? '' : `<td style="font-family:var(--mono);text-align:right">${com(r).toFixed(2)}%</td>`}
+    ${isCorr ? '' : `<td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#4ade80">${comR > 0 ? fmt(comR) : '—'}</td>`}
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#22d3ee;font-weight:600">${(() => { const d = parseFloat(r['Desconto Loja'] || 0); const l = comR - d; return comR > 0 ? fmt(l) : '—' })()}</td>
-    <td style="font-family:var(--mono);text-align:right">${pctCorr(r) > 0 ? pctCorr(r).toFixed(2) + '%' : '—'}</td>
+    ${isCorr ? '' : `<td style="font-family:var(--mono);text-align:right">${pctCorr(r) > 0 ? pctCorr(r).toFixed(2) + '%' : '—'}</td>`}
     <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#38bdf8;font-weight:600">${valComCorretor(r) > 0 ? fmt(valComCorretor(r)) : '—'}</td>
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
     <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data Comissao Loja'])}</td>
