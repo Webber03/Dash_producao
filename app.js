@@ -529,7 +529,7 @@ function renderKpis() {
   // Comissão do consultor (Valorda Comissao)
   const sumComConsultor = prodRows.reduce((a, r) => a + valComCorretor(r), 0);
   if ($('kComConsultor')) $('kComConsultor').textContent = fmtK(sumComConsultor);
-  if ($('kComConsultorS')) $('kComConsultorS').textContent = 'soma do campo Valorda Comissao';
+  if ($('kComConsultorS')) $('kComConsultorS').textContent = 'Comissões recebidas ou a receber';
 
   if ($('kTick')) $('kTick').textContent = fmtK(tickCom);
   if ($('kTickS')) $('kTickS').textContent = 'ticket médio de comissão';
