@@ -961,6 +961,14 @@ function switchTab(id, btn) {
   // Apenas elementos DENTRO de painéis — já controlados pelo CSS .panel/.panel.on
   // Não tocar em elementos fora de painéis (ex: #main-kpi-grid)
 
+  // Controla o filtro global (De/Ate/Tipo/Banco/Parceiro/Convenio/Busca)
+  // Aparece apenas nas abas de conteúdo normal (Contratos, Visão Geral, etc.)
+  // Fica oculto em Meu Painel (tem filtros próprios), Filial e Admin Users
+  const globalFilterBar = $('global-filter-bar');
+  if (globalFilterBar) {
+    globalFilterBar.style.display = (isCorrDash || isFilial || isAdminUsers) ? 'none' : '';
+  }
+
   // Controla o KPI grid do Admin separadamente: visível somente para admin/supervisor
   // nas abas de conteúdo (não filial, não meu painel, não admin-users)
   const mainKpiGrid = $('main-kpi-grid');
