@@ -148,6 +148,13 @@ const fmt = n => 'R$ ' + parseFloat(n || 0).toLocaleString('pt-BR', { minimumFra
 const fmtK = n => 'R$ ' + parseFloat(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const getMes = d => { if (!d) return null; const p = d.split('-'); return p[0] + '-' + p[1] };
 const fmtData = d => d ? d.split('-').reverse().join('/') : '—';
+const fmtPhone = p => {
+  if (!p) return '—';
+  const s = String(p).replace(/\D/g, '');
+  if (s.length === 11) return `(${s.slice(0, 2)}) ${s.slice(2, 7)}-${s.slice(7)}`;
+  if (s.length === 10) return `(${s.slice(0, 2)}) ${s.slice(2, 6)}-${s.slice(6)}`;
+  return p;
+};
 
 // ── CARGA AUTOMÁTICA (SESSÃO SEGURA POSTGRESQL) ──────────────────────────
 async function loadData() {
@@ -826,6 +833,7 @@ function renderTabela() {
     return `<tr>
     <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;font-weight:500;white-space:nowrap">${r.Nome || '—'}</td>
     <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.CPF || '—'}</td>
+    <td style="font-family:var(--mono);font-size:11px;color:var(--t1);white-space:nowrap">${fmtPhone(r.Celular || r['Celular'] || r.Telefone)}</td>
     <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.Contrato || '—'}</td>
     <td style="font-size:11px;white-space:nowrap">${r.BCO || '—'}</td>
     <td><span class="badge ${TIPO_BADGE[(r.Tipo || '').trim()] || 'b-ac'}">${(r.Tipo || '—').trim()}</span></td>
@@ -2169,6 +2177,7 @@ function renderCorretorDashboard() {
         return `<tr>
           <td style="font-weight:500">${r.Nome || '—'}</td>
           <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.CPF || '—'}</td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--t1);white-space:nowrap">${fmtPhone(r.Celular || r['Celular'] || r.Telefone)}</td>
           <td style="font-family:var(--mono);font-size:10px">${r.Contrato || '—'}</td>
           <td style="font-size:11px">${r.BCO || '—'}</td>
           <td><span class="badge ${TIPO_BADGE[(r.Tipo || '').trim()] || 'b-ac'}">${(r.Tipo || '—').trim()}</span></td>
