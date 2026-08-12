@@ -283,10 +283,6 @@ function setupMenuVisibility() {
   if (mobFilial) mobFilial.style.display = (isAdmin || isSuper) ? 'block' : 'none';
   if (mobTabela) mobTabela.style.display = 'block';
   
-  // O KPI Grid Principal do topo fica visível no Admin/Supervisor (com todos os 6 KPIs) e oculto no Painel do Consultor
-  const mainKpiGrid = $('main-kpi-grid');
-  if (mainKpiGrid) mainKpiGrid.style.display = isCorr ? 'none' : 'grid';
-  
   // Configuração URL (Apenas Admin)
   const btnUrlConfig = document.querySelector('.btn-link[onclick="openUrlModal()"]');
   if (btnUrlConfig) {
@@ -958,12 +954,20 @@ function switchTab(id, btn) {
   const isAdminUsers = id === 'admin-users';
   const sbCtrl = $('sb-filial-controls');
   if (sbCtrl) sbCtrl.style.display = isFilial ? 'block' : 'none';
-  // Esconder filtros rápidos e KPIs/filter-bar quando em filial, painel do corretor ou admin de usuários
+  // Esconder filtros rápidos quando em filial, painel do corretor ou admin de usuários
   const sbQuick = $('sb-quick-filters');
   if (sbQuick) sbQuick.style.display = (isFilial || isCorrDash || isAdminUsers) ? 'none' : 'block';
-  document.querySelectorAll('.filter-bar,.kpi-grid').forEach(el => {
-    el.style.display = (isFilial || isCorrDash || isAdminUsers) ? 'none' : '';
-  });
+
+  // Apenas elementos DENTRO de painéis — já controlados pelo CSS .panel/.panel.on
+  // Não tocar em elementos fora de painéis (ex: #main-kpi-grid)
+
+  // Controla o KPI grid do Admin separadamente: visível somente para admin/supervisor
+  // nas abas de conteúdo (não filial, não meu painel, não admin-users)
+  const mainKpiGrid = $('main-kpi-grid');
+  if (mainKpiGrid) {
+    const showGrid = USER_ROLE !== 'corretor' && !isFilial && !isCorrDash && !isAdminUsers;
+    mainKpiGrid.style.display = showGrid ? 'grid' : 'none';
+  }
 
   if (id === 'visao') setTimeout(renderCharts, 50);
   if (id === 'corretor-dash') renderCorretorDashboard();
