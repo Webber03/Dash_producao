@@ -296,6 +296,12 @@ function setupMenuVisibility() {
   if (btnUrlConfig) {
     btnUrlConfig.style.display = isAdmin ? 'inline-block' : 'none';
   }
+
+  // Filtro de Corretor na Barra Lateral (oculto para o próprio corretor)
+  const sbFCorrGroup = $('sb-fCorr-group');
+  if (sbFCorrGroup) sbFCorrGroup.style.display = isCorr ? 'none' : 'block';
+  const mobFCorrGroup = $('mob-fCorr-group');
+  if (mobFCorrGroup) mobFCorrGroup.style.display = isCorr ? 'none' : 'block';
 }
 
 // ── INIT ──────────────────────────────────────────────────────
@@ -341,9 +347,32 @@ function hide(id) {
 }
 
 // ── FILTROS ───────────────────────────────────────────────────
+function buildCorretorFilter() {
+  const elCorr = $('fCorr');
+  if (!elCorr) return;
+  const curCorr = elCorr.value;
+
+  // Se houver filiais selecionadas na sidebar, filtra apenas corretores que possuem produção nessas filiais
+  const fils = [...($('fFil').selectedOptions || [])].map(o => o.value).filter(Boolean);
+  const rows = fils.length ? ALL.filter(r => fils.includes(String(r.Filial || ''))) : ALL;
+
+  const corretores = [...new Set(rows.map(r => String(r.Corretor || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  elCorr.innerHTML = '<option value="">Todos os corretores</option>';
+  corretores.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c;
+    o.textContent = c;
+    if (c === curCorr) o.selected = true;
+    elCorr.appendChild(o);
+  });
+}
+
 function buildFilters() {
   const fillSelect = (id, arr, allLabel = 'Todos') => {
-    const el = $(id), cur = el.value;
+    const el = $(id);
+    if (!el) return;
+    const cur = el.value;
     el.innerHTML = `<option value="">${allLabel}</option>`;
     arr.forEach(v => { const o = document.createElement('option'); o.value = o.textContent = v; if (v === cur) o.selected = true; el.appendChild(o) });
   };
@@ -352,9 +381,11 @@ function buildFilters() {
   const mesesCom = ALL.map(r => getMes(r['Data Comissao Loja'])).filter(Boolean);
   const meses = [...new Set([...mesesLib, ...mesesCom])].sort();
   // MÊS — dropdown multi
-  const elMes = $('fMes'), curM = elMes.value;
-  elMes.innerHTML = '<option value="">Todos</option>';
-  meses.forEach(m => { const [y, mo] = m.split('-'); const o = document.createElement('option'); o.value = m; o.textContent = MES[parseInt(mo) - 1] + '/' + y.slice(2); if (m === curM) o.selected = true; elMes.appendChild(o) });
+  const elMes = $('fMes'), curM = elMes ? elMes.value : '';
+  if (elMes) {
+    elMes.innerHTML = '<option value="">Todos</option>';
+    meses.forEach(m => { const [y, mo] = m.split('-'); const o = document.createElement('option'); o.value = m; o.textContent = MES[parseInt(mo) - 1] + '/' + y.slice(2); if (m === curM) o.selected = true; elMes.appendChild(o) });
+  }
   // Filtra só os tipos permitidos
   const tiposPermitidos = Object.keys(TIPO_BADGE);
   const tiposPresentes = [...new Set(ALL.map(r => r.Tipo))].filter(t => tiposPermitidos.includes(t)).sort();
@@ -362,50 +393,64 @@ function buildFilters() {
   fillSelect('fBco', [...new Set(ALL.map(r => r.BCO))].sort());
   fillSelect('fParc', [...new Set(ALL.map(r => r.Parceiro))].sort());
   fillSelect('fConv', [...new Set(ALL.map(r => String(r.Produto || '').trim()).filter(Boolean))].sort());
+  
   // Filial — valor é o código, label é o nome
   // Ordena filiais alfabeticamente pelo nome mapeado
   const rawFilCodes = [...new Set(ALL.map(r => String(r.Filial || '')).filter(Boolean))];
   const filCodes = rawFilCodes.sort((a, b) => (FILIAIS[a] || a).localeCompare(FILIAIS[b] || b));
   const elFil = $('fFil');
-  const curFils = [...elFil.selectedOptions].map(o => o.value);
-  elFil.innerHTML = '';
-  filCodes.forEach(cod => { const o = document.createElement('option'); o.value = cod; o.textContent = filialNome(cod); if (curFils.includes(cod)) o.selected = true; elFil.appendChild(o) });
-  buildDropdown('fFil', filCodes.map(c => ({ val: c, label: filialNome(c) })), curFils, 'Todas', 'Todas as filiais');
-  // Canal de venda
+  if (elFil) {
+    const curFils = [...elFil.selectedOptions].map(o => o.value);
+    elFil.innerHTML = '';
+    filCodes.forEach(cod => { const o = document.createElement('option'); o.value = cod; o.textContent = filialNome(cod); if (curFils.includes(cod)) o.selected = true; elFil.appendChild(o) });
+    buildDropdown('fFil', filCodes.map(c => ({ val: c, label: filialNome(c) })), curFils, 'Todas', 'Todas as filiais');
+  }
+
+  // Canal de venda (Filtros Principais)
   const canalCodes = [...new Set(ALL.map(r => String(r.Canaldevenda || '')).filter(Boolean))];
-  // Ordena canais alfabeticamente pelo nome
   canalCodes.sort((a, b) => (CANAIS[a] || a).localeCompare(CANAIS[b] || b));
-  const elCanal = $('fCanal'), curCanal = elCanal.value;
-  elCanal.innerHTML = '<option value="">Todos</option>';
-  canalCodes.forEach(cod => { const o = document.createElement('option'); o.value = cod; o.textContent = canalNome(cod); if (cod === curCanal) o.selected = true; elCanal.appendChild(o) });
+  const elCanal = $('fCanal'), curCanal = elCanal ? elCanal.value : '';
+  if (elCanal) {
+    elCanal.innerHTML = '<option value="">Todos</option>';
+    canalCodes.forEach(cod => { const o = document.createElement('option'); o.value = cod; o.textContent = canalNome(cod); if (cod === curCanal) o.selected = true; elCanal.appendChild(o) });
+  }
+
+  // Corretor / Consultor (Filtros Rápidos)
+  buildCorretorFilter();
 }
 
 function applyFilter() {
-  let mes = $('fMes').value;
-  let fDe = $('fDe').value;
-  let fAte = $('fAte').value;
+  let mes = $('fMes') ? $('fMes').value : '';
+  let fDe = $('fDe') ? $('fDe').value : '';
+  let fAte = $('fAte') ? $('fAte').value : '';
 
   // quando seleciona mês, limpa período e vice-versa
   if (mes !== PREV_MES && mes) {
-    $('fDe').value = '';
-    $('fAte').value = '';
+    if ($('fDe')) $('fDe').value = '';
+    if ($('fAte')) $('fAte').value = '';
     fDe = '';
     fAte = '';
   } else if ((fDe !== PREV_DE && fDe) || (fAte !== PREV_ATE && fAte)) {
-    $('fMes').value = '';
+    if ($('fMes')) $('fMes').value = '';
     mes = '';
   }
   PREV_MES = mes;
   PREV_DE = fDe;
   PREV_ATE = fAte;
 
-  const tipo = $('fTipo').value, bco = $('fBco').value, parc = $('fParc').value, conv = $('fConv').value, canal = $('fCanal').value, srch = $('srch').value.toLowerCase().trim();
+  const tipo = $('fTipo') ? $('fTipo').value : '';
+  const bco = $('fBco') ? $('fBco').value : '';
+  const parc = $('fParc') ? $('fParc').value : '';
+  const conv = $('fConv') ? $('fConv').value : '';
+  const canal = $('fCanal') ? $('fCanal').value : '';
+  const corr = $('fCorr') ? $('fCorr').value : '';
+  const srch = $('srch') ? $('srch').value.toLowerCase().trim() : '';
+
   MESES_SEL = mes ? [mes] : [];
-  FILS_SEL = [...($('fFil').selectedOptions || [])].map(o => o.value).filter(Boolean);
+  FILS_SEL = $('fFil') ? [...($('fFil').selectedOptions || [])].map(o => o.value).filter(Boolean) : [];
   const meses = MESES_SEL;
   const fils = FILS_SEL;
 
-  // quando seleciona mês, limpa período e vice-versa
   const baseFilter = r => {
     if (tipo && r.Tipo !== tipo) return false;
     if (bco && r.BCO !== bco) return false;
@@ -413,6 +458,7 @@ function applyFilter() {
     if (conv && String(r.Produto || '').trim() !== conv) return false;
     if (fils.length && !fils.includes(String(r.Filial || ''))) return false;
     if (canal && String(r.Canaldevenda || '') !== canal) return false;
+    if (corr && String(r.Corretor || '').trim() !== corr) return false;
     if (srch && !(r.Nome || '').toLowerCase().includes(srch) && !(r.Contrato || '').toLowerCase().includes(srch) && !(r.CPF || '').includes(srch)) return false;
     return true;
   };
@@ -438,10 +484,13 @@ function applyFilter() {
 }
 
 function clearFilters() {
-  ['fTipo', 'fBco', 'fParc', 'fCanal', 'fConv'].forEach(id => $(id).value = '');
-  $('fMes').value = '';
+  ['fTipo', 'fBco', 'fParc', 'fCanal', 'fConv', 'fCorr'].forEach(id => {
+    const el = $(id);
+    if (el) el.value = '';
+  });
+  if ($('fMes')) $('fMes').value = '';
   // Limpar filial
-  [...$('fFil').options].forEach(o => o.selected = false);
+  if ($('fFil')) [...$('fFil').options].forEach(o => o.selected = false);
   const filPanel = $('fFil-panel');
   if (filPanel) {
     filPanel.querySelectorAll('input[type=checkbox]').forEach(c => { c.checked = false; });
@@ -449,16 +498,19 @@ function clearFilters() {
   }
   const filLbl = $('fFil-label');
   if (filLbl) filLbl.textContent = 'Todas';
-  $('fDe').value = ''; $('fAte').value = ''; $('srch').value = '';
+  if ($('fDe')) $('fDe').value = ''; 
+  if ($('fAte')) $('fAte').value = ''; 
+  if ($('srch')) $('srch').value = '';
+  buildCorretorFilter();
   applyFilter();
 }
 function clearMes() {
-  [...$('fMes').options].forEach(o => o.selected = false);
+  if ($('fMes')) [...$('fMes').options].forEach(o => o.selected = false);
   if ($('fMes-pills')) $('fMes-pills').querySelectorAll('.mes-pill').forEach(p => p.classList.remove('on'));
   if ($('fMes-clear')) $('fMes-clear').style.display = 'none';
   MESES_SEL = [];
 }
-['fMes', 'fTipo', 'fBco', 'fParc', 'fCanal', 'fConv'].forEach(id => { const el = $(id); if (el) el.onchange = applyFilter });
+['fMes', 'fCorr', 'fTipo', 'fBco', 'fParc', 'fCanal', 'fConv'].forEach(id => { const el = $(id); if (el) el.onchange = applyFilter });
 const srchEl = $('srch'); if (srchEl) srchEl.oninput = applyFilter;
 
 // ── RENDER ────────────────────────────────────────────────────
@@ -907,6 +959,9 @@ function buildDropdown(id, items, selected, emptyLabel, allLabel) {
     cb.addEventListener('change', () => {
       div.classList.toggle('sel', cb.checked);
       syncDrop(id);
+      if (id === 'fFil') {
+        buildCorretorFilter();
+      }
       applyFilter();
     });
     div.appendChild(cb);
@@ -1845,7 +1900,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function syncMobFilters() {
   // Sincroniza selects da gaveta com os principais
-  ['fMes', 'fTipo', 'fBco', 'fParc', 'fConv'].forEach(id => {
+  ['fMes', 'fCorr', 'fTipo', 'fBco', 'fCanal', 'fParc', 'fConv'].forEach(id => {
     const mob = $('mob-' + id), main = $(id);
     if (!mob || !main) return;
     // Popular opções se vazias
@@ -1862,11 +1917,9 @@ function syncMobFilters() {
   if (mobSrch) mobSrch.value = $('srch').value;
 }
 
-
-
 // Rebuild gaveta ao carregar dados
 function rebuildMobFilters() {
-  ['fMes', 'fTipo', 'fBco', 'fParc', 'fConv'].forEach(id => {
+  ['fMes', 'fCorr', 'fTipo', 'fBco', 'fCanal', 'fParc', 'fConv'].forEach(id => {
     const mob = $('mob-' + id), main = $(id);
     if (!mob || !main) return;
     mob.innerHTML = '';

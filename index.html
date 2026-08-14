@@ -125,6 +125,10 @@
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Mês</label>
         <select onchange="$('fMes').value=this.value;applyFilter()" id="mob-fMes"><option value="">Todos</option></select>
       </div>
+      <div class="fgroup" id="mob-fCorr-group">
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Corretor</label>
+        <select onchange="$('fCorr').value=this.value;applyFilter()" id="mob-fCorr"><option value="">Todos</option></select>
+      </div>
       <div class="fgroup">
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Tipo</label>
         <select onchange="$('fTipo').value=this.value;applyFilter()" id="mob-fTipo"><option value="">Todos</option></select>
@@ -132,6 +136,10 @@
       <div class="fgroup">
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Banco</label>
         <select onchange="$('fBco').value=this.value;applyFilter()" id="mob-fBco"><option value="">Todos</option></select>
+      </div>
+      <div class="fgroup">
+        <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Canal</label>
+        <select onchange="$('fCanal').value=this.value;applyFilter()" id="mob-fCanal"><option value="">Todos</option></select>
       </div>
       <div class="fgroup">
         <label style="font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Parceiro</label>
@@ -237,10 +245,10 @@
             </div>
           </div>
 
-          <!-- CANAL dropdown simples -->
-          <div class="fgroup">
-            <label class="sb-filter-label">Canal de venda</label>
-            <select id="fCanal" class="sb-select"><option value="">Todos</option></select>
+          <!-- CORRETOR dropdown simples -->
+          <div class="fgroup" id="sb-fCorr-group">
+            <label class="sb-filter-label">Consultor / Corretor</label>
+            <select id="fCorr" class="sb-select" onchange="applyFilter()"><option value="">Todos</option></select>
           </div>
 
         </div>
@@ -354,6 +362,10 @@
       <div class="fgroup">
         <label>Banco</label>
         <select id="fBco"><option value="">Todos</option></select>
+      </div>
+      <div class="fgroup">
+        <label>Canal</label>
+        <select id="fCanal"><option value="">Todos</option></select>
       </div>
       <div class="fgroup">
         <label>Parceiro</label>
@@ -479,7 +491,7 @@
           <div class="kpi-icon-wrap" style="color:#38bdf8; font-size:18px;"><i class="ph ph-hand-coins"></i></div>
         </div>
         <div class="kpi-val" id="kCorrComSec" style="font-size:22px; font-weight:700; color:#38bdf8; font-family:var(--mono);">—</div>
-        <div class="kpi-sub" id="kCorrComSub" style="font-size:11px; color:var(--t3); margin-top:4px;">soma do campo Valorda Comissao</div>
+        <div class="kpi-sub" id="kCorrComSub" style="font-size:11px; color:var(--t3); margin-top:4px;">Valor total da comissão </div>
       </div>
 
       <div class="kpi" style="background:var(--s2); border:1px solid var(--b1); border-radius:var(--r3); padding:1.25rem;">
