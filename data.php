@@ -105,8 +105,59 @@ if ($userRole === 'supervisor' && !empty($userFilial)) {
 
 // 5. Obter dados JSON (Scraping automático ou URL Manual informada pelo Admin)
 $CACHE_FILE = __DIR__ . '/trigger_cache.json';
+$CACHE_URL  = __DIR__ . '/trigger_last_url.txt';
 $CACHE_TTL  = 55; // segundos
 $dataJson   = null;
+
+function fetchProgestorFreshData() {
+    global $CACHE_FILE, $CACHE_URL;
+    $PRODUCAO_URL = 'https://sistemanovo.progestor21.com.br/sistema/producao';
+    $BASE_URL     = 'https://sistemanovo.progestor21.com.br';
+    
+    $ctx = stream_context_create([
+        'http' => [
+            'timeout'       => 15,
+            'user_agent'    => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'ignore_errors' => true,
+            'header'        => "Accept: text/html\r\nCache-Control: no-cache\r\nPragma: no-cache\r\n",
+        ],
+        'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+    ]);
+    
+    $html = @file_get_contents($PRODUCAO_URL, false, $ctx);
+    if (!$html) return null;
+    
+    $jsonPath = null;
+    if (preg_match("/window\.location\s*=\s*'([^']+sc_json_[^']+\.json)'/", $html, $m)) {
+        $jsonPath = $m[1];
+    } elseif (preg_match('/window\.location\s*=\s*"([^"]+sc_json_[^"]+\.json)"/', $html, $m)) {
+        $jsonPath = $m[1];
+    }
+    
+    if (!$jsonPath) return null;
+    
+    $jsonUrl = (strpos($jsonPath, 'http') === 0) ? $jsonPath : $BASE_URL . '/' . ltrim($jsonPath, '/');
+    $ctxJson = stream_context_create([
+        'http' => [
+            'timeout'       => 25,
+            'user_agent'    => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'ignore_errors' => true,
+            'header'        => "Cache-Control: no-cache\r\nPragma: no-cache\r\n",
+        ],
+        'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+    ]);
+    
+    $freshData = @file_get_contents($jsonUrl . '?_t=' . time(), false, $ctxJson);
+    if ($freshData && strlen(trim($freshData)) > 100 && substr(rtrim($freshData), -1) === ']') {
+        json_decode($freshData);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            @file_put_contents($CACHE_FILE, $freshData);
+            @file_put_contents($CACHE_URL, $jsonUrl);
+            return $freshData;
+        }
+    }
+    return null;
+}
 
 $manualUrl = isset($_GET['url']) ? trim($_GET['url']) : '';
 
@@ -121,46 +172,22 @@ if (!empty($manualUrl)) {
 }
 
 if (empty($dataJson)) {
-    $shouldRefresh = !file_exists($CACHE_FILE) || (time() - filemtime($CACHE_FILE)) >= $CACHE_TTL;
-    
-    if ($shouldRefresh) {
-        $PRODUCAO_URL = 'https://sistemanovo.progestor21.com.br/sistema/producao';
-        $BASE_URL     = 'https://sistemanovo.progestor21.com.br';
+    $hasValidCache = file_exists($CACHE_FILE) 
+        && filesize($CACHE_FILE) > 100 
+        && (time() - filemtime($CACHE_FILE)) < $CACHE_TTL
+        && !isset($_GET['refresh']);
         
-        $ctx = stream_context_create([
-            'http' => ['timeout' => 15, 'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'header' => "Accept: text/html\r\nCache-Control: no-cache\r\n"],
-            'ssl'  => ['verify_peer' => false, 'verify_peer_name' => false],
-        ]);
-        
-        $html = @file_get_contents($PRODUCAO_URL, false, $ctx);
-        if ($html) {
-            $jsonPath = null;
-            if (preg_match("/window\.location\s*=\s*'([^']+sc_json_[^']+\.json)'/", $html, $m)) {
-                $jsonPath = $m[1];
-            } elseif (preg_match('/window\.location\s*=\s*"([^"]+sc_json_[^"]+\.json)"/', $html, $m)) {
-                $jsonPath = $m[1];
-            }
-            
-            if ($jsonPath) {
-                $jsonUrl = (strpos($jsonPath, 'http') === 0) ? $jsonPath : $BASE_URL . '/' . ltrim($jsonPath, '/');
-                $ctxJson = stream_context_create([
-                    'http' => ['timeout' => 20, 'user_agent' => 'Mozilla/5.0', 'header' => "Cache-Control: no-cache\r\n"],
-                    'ssl'  => ['verify_peer' => false, 'verify_peer_name' => false],
-                ]);
-                $freshData = @file_get_contents($jsonUrl . '?_t=' . time(), false, $ctxJson);
-                if ($freshData && substr(rtrim($freshData), -1) === ']') {
-                    json_decode($freshData);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        file_put_contents($CACHE_FILE, $freshData);
-                        file_put_contents(__DIR__ . '/trigger_last_url.txt', $jsonUrl);
-                    }
-                }
-            }
-        }
+    if ($hasValidCache) {
+        $dataJson = @file_get_contents($CACHE_FILE);
     }
     
-    if (file_exists($CACHE_FILE)) {
-        $dataJson = file_get_contents($CACHE_FILE);
+    // Se o cache não existia, estava expirado ou vazio/corrompido (< 100 bytes), busca dados frescos do Progestor imediatamente
+    if (empty($dataJson) || strlen(trim($dataJson)) < 100) {
+        $dataJson = fetchProgestorFreshData();
+        // Fallback: se a busca falhou no momento mas temos cache anterior (> 100 bytes), usa-o
+        if (empty($dataJson) && file_exists($CACHE_FILE) && filesize($CACHE_FILE) > 100) {
+            $dataJson = @file_get_contents($CACHE_FILE);
+        }
     }
 }
 
