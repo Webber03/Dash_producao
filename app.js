@@ -945,7 +945,7 @@ function buildMesPills(meses, selected) {
 }
 
 // ── DROPDOWNS GENÉRICOS (Mês + Filial) ───────────────────────
-function buildDropdown(id, items, selected, emptyLabel, allLabel) {
+function buildDropdown(id, items, selected, emptyLabel = 'Todas', allLabel = 'Todas as filiais') {
   const panel = $(id + '-panel');
   const sel = $(id);
   const lbl = $(id + '-label');
@@ -958,7 +958,7 @@ function buildDropdown(id, items, selected, emptyLabel, allLabel) {
     cb.type = 'checkbox'; cb.value = val; cb.checked = selected.includes(val);
     cb.addEventListener('change', () => {
       div.classList.toggle('sel', cb.checked);
-      syncDrop(id);
+      syncDrop(id, emptyLabel, allLabel);
       if (id === 'fFil') {
         buildCorretorFilter();
       }
@@ -971,7 +971,7 @@ function buildDropdown(id, items, selected, emptyLabel, allLabel) {
   updateDropLabel(id, emptyLabel, allLabel);
 }
 
-function syncDrop(id) {
+function syncDrop(id, emptyLabel = 'Todas', allLabel = 'Todas as filiais') {
   const panel = $(id + '-panel');
   const sel = $(id);
   if (!panel || !sel) return;
@@ -980,16 +980,17 @@ function syncDrop(id) {
     const cb = checks.find(c => c.value === o.value);
     o.selected = cb ? cb.checked : false;
   });
+  updateDropLabel(id, emptyLabel, allLabel);
 }
 
-function updateDropLabel(id, emptyLabel, allLabel) {
+function updateDropLabel(id, emptyLabel = 'Todas', allLabel = 'Todas as filiais') {
   const sel = $(id);
   const lbl = $(id + '-label');
   if (!sel || !lbl) return;
   const chosen = [...sel.selectedOptions].map(o => o.textContent);
-  if (chosen.length === 0) lbl.textContent = emptyLabel || 'Todos';
-  else if (chosen.length === 1) lbl.textContent = chosen[0].slice(0, 20);
-  else lbl.textContent = chosen.length + ' selecionados';
+  if (chosen.length === 0) lbl.textContent = emptyLabel || 'Todas';
+  else if (chosen.length === 1) lbl.textContent = chosen[0];
+  else lbl.textContent = chosen.length + ' selecionadas';
 }
 
 function toggleDrop(id, e) {
