@@ -2215,7 +2215,7 @@ function renderCorretorDashboard() {
           <td><span class="badge ${TIPO_BADGE[(r.Tipo || '').trim()] || 'b-ac'}">${(r.Tipo || '—').trim()}</span></td>
           <td style="font-family:var(--mono);text-align:right;white-space:nowrap">${fmt(val(r))}</td>
           <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#22d3ee">${fmt(liq)}</td>
-          <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#38bdf8;font-weight:600">${pctCorr(r) > 0 ? pctCorr(r).toFixed(2) + '%' : '0%'} (${fmt(valComCorretor(r))})</td>
+          <td style="font-family:var(--mono);text-align:right;white-space:nowrap;color:#38bdf8;font-weight:600">${fmt(valComCorretor(r))}</td>
           <td style="font-family:var(--mono);font-size:11px">${fmtData(r['Data da Liberação'])}</td>
         </tr>`;
       }).join('');
