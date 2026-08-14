@@ -98,7 +98,7 @@ const canalNome = codigo => CANAIS[String(codigo)] || String(codigo);
 // ── ESTADO ────────────────────────────────────────────────────
 let ALL = [], FILTERED = [], PAGE = 0, MESES_SEL = [], FILS_SEL = [];
 let PREV_MES = '', PREV_DE = '', PREV_ATE = '';
-let USER_ROLE = 'admin', USER_NAME = '', USER_GOALS = [0, 0, 0, 0, 0];
+let USER_ROLE = 'admin', USER_NAME = '', USER_CONSULTANT_TYPE = '', USER_GOALS = [];
 const PER = 20;
 let CHARTS = {};
 let METRIC = 'val';
@@ -240,7 +240,8 @@ function reloadData() { stopAutoRefresh(); loadData(); }
 function updateSessionData(payload) {
   USER_ROLE = payload.role;
   USER_NAME = payload.name;
-  USER_GOALS = payload.goals || [0, 0, 0, 0, 0];
+  USER_CONSULTANT_TYPE = payload.consultant_type || '';
+  USER_GOALS = payload.goals || [];
   
   const rawData = payload.data || [];
   ALL = rawData.map(r => ({
@@ -2087,70 +2088,101 @@ function renderCorretorDashboard() {
   if ($('kCorrComSec')) $('kCorrComSec').textContent = fmt(totalReceived);
   if ($('kCorrQty')) $('kCorrQty').textContent = totalQty.toLocaleString('pt-BR');
   
-  // Metas do corretor
-  const g1 = USER_GOALS[0] || 0;
-  const g2 = USER_GOALS[1] || 0;
-  const g3 = USER_GOALS[2] || 0;
-  const g4 = USER_GOALS[3] || 0;
-  const g5 = USER_GOALS[4] || 0;
-  
-  if ($('goal-val-lvl1')) $('goal-val-lvl1').textContent = fmtK(g1);
-  if ($('goal-val-lvl2')) $('goal-val-lvl2').textContent = fmtK(g2);
-  if ($('goal-val-lvl3')) $('goal-val-lvl3').textContent = fmtK(g3);
-  if ($('goal-val-lvl4')) $('goal-val-lvl4').textContent = fmtK(g4);
-  if ($('goal-val-lvl5')) $('goal-val-lvl5').textContent = fmtK(g5);
-  
-  // Progresso visual da barra de metas (proporcional por trecho: 0-20%, 20-40%, 40-60%, 60-80%, 80-100%)
-  let pct = 0;
-  if (g1 > 0 && totalProduction < g1) {
-    pct = (totalProduction / g1) * 19;
-  } else if (g2 > g1 && totalProduction < g2) {
-    pct = 20 + ((totalProduction - g1) / (g2 - g1)) * 19;
-  } else if (g3 > g2 && totalProduction < g3) {
-    pct = 40 + ((totalProduction - g2) / (g3 - g2)) * 19;
-  } else if (g4 > g3 && totalProduction < g4) {
-    pct = 60 + ((totalProduction - g3) / (g4 - g3)) * 19;
-  } else if (g5 > g4 && totalProduction < g5) {
-    pct = 80 + ((totalProduction - g4) / (g5 - g4)) * 19;
-  } else if (g5 > 0 && totalProduction >= g5) {
-    pct = 100;
+  // ── METAS DINÂMICAS DO CORRETOR ──
+  // Normaliza lista de metas recebidas
+  const cleanGoals = (Array.isArray(USER_GOALS) ? USER_GOALS : []).map((g, idx) => {
+    if (typeof g === 'object' && g !== null) {
+      return {
+        name: g.name || `Meta ${idx + 1}`,
+        value: parseFloat(g.value ?? g.val ?? 0) || 0
+      };
+    }
+    return {
+      name: `Meta ${idx + 1}`,
+      value: parseFloat(g) || 0
+    };
+  }).filter(g => g.value > 0).sort((a, b) => a.value - b.value);
+
+  // Badge do tipo de plano de consultor
+  const planBadge = $('corr-plan-badge');
+  if (planBadge) {
+    if (USER_CONSULTANT_TYPE) {
+      planBadge.textContent = USER_CONSULTANT_TYPE;
+      planBadge.style.display = 'inline-block';
+    } else {
+      planBadge.style.display = 'none';
+    }
   }
-  
-  if ($('goal-progress-fill')) $('goal-progress-fill').style.width = Math.max(0, Math.min(100, pct)) + '%';
-  
-  // Reached status
-  if ($('marker-lvl1')) $('marker-lvl1').classList.toggle('reached', totalProduction >= g1 && g1 > 0);
-  if ($('marker-lvl2')) $('marker-lvl2').classList.toggle('reached', totalProduction >= g2 && g2 > 0);
-  if ($('marker-lvl3')) $('marker-lvl3').classList.toggle('reached', totalProduction >= g3 && g3 > 0);
-  if ($('marker-lvl4')) $('marker-lvl4').classList.toggle('reached', totalProduction >= g4 && g4 > 0);
-  if ($('marker-lvl5')) $('marker-lvl5').classList.toggle('reached', totalProduction >= g5 && g5 > 0);
-  
+
+  // Renderiza marcadores dinamicamente na barra de progresso
+  const wrap = $('goal-progress-bar-wrap');
+  const fill = $('goal-progress-fill');
   const badge = $('goals-status-badge');
   const msg = $('goals-footer-msg');
-  
-  if (totalProduction < g1) {
-    if (badge) badge.textContent = 'Meta 1 em andamento';
-    const falta = g1 - totalProduction;
-    if (msg) msg.innerHTML = `Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para atingir a <strong>Meta 1</strong>!`;
-  } else if (totalProduction < g2) {
-    if (badge) badge.textContent = 'Meta 1 batida! 🎉';
-    const falta = g2 - totalProduction;
-    if (msg) msg.innerHTML = `Excelente! Meta 1 batida. Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para a <strong>Meta 2</strong>!`;
-  } else if (totalProduction < g3) {
-    if (badge) badge.textContent = 'Meta 2 batida! 🌟';
-    const falta = g3 - totalProduction;
-    if (msg) msg.innerHTML = `Sensacional! Meta 2 batida. Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para a <strong>Meta 3</strong>!`;
-  } else if (totalProduction < g4) {
-    if (badge) badge.textContent = 'Meta 3 batida! 🔥';
-    const falta = g4 - totalProduction;
-    if (msg) msg.innerHTML = `Incrível! Meta 3 batida. Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para a <strong>Meta 4</strong>!`;
-  } else if (totalProduction < g5) {
-    if (badge) badge.textContent = 'Meta 4 batida! 🏆';
-    const falta = g5 - totalProduction;
-    if (msg) msg.innerHTML = `Espetacular! Meta 4 batida. Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para atingir a <strong>Meta Ouro (Meta 5)</strong>!`;
+
+  if (wrap) {
+    // Preserva apenas o elemento #goal-progress-fill
+    wrap.innerHTML = '<div class="goal-progress-bar-fill" id="goal-progress-fill" style="width: 0%;"></div>';
+  }
+
+  const N = cleanGoals.length;
+  let pct = 0;
+
+  if (N === 0) {
+    if (badge) badge.textContent = 'Sem metas cadastradas';
+    if (msg) msg.innerHTML = 'Nenhuma meta configurada para o seu perfil.';
   } else {
-    if (badge) badge.textContent = 'Meta Máxima Batida! 👑';
-    if (msg) msg.innerHTML = `<strong style="color:var(--green)">Extraordinário!</strong> Você atingiu a Meta 5 e superou todos os limites este mês!`;
+    // Cria os marcadores no DOM
+    cleanGoals.forEach((g, idx) => {
+      const posPct = ((idx + 1) / N) * 100;
+      const isReached = totalProduction >= g.value && g.value > 0;
+      const markerEl = document.createElement('div');
+      markerEl.className = `goal-marker ${isReached ? 'reached' : ''}`;
+      markerEl.style.left = `${posPct}%`;
+      markerEl.innerHTML = `
+        <div class="goal-marker-dot"></div>
+        <div class="goal-marker-label">${g.name}<br><span>${fmtK(g.value)}</span></div>
+      `;
+      if (wrap) wrap.appendChild(markerEl);
+    });
+
+    // Calcula porcentagem preenchida da barra
+    if (totalProduction < cleanGoals[0].value) {
+      const segSize = 100 / N;
+      pct = (totalProduction / cleanGoals[0].value) * (segSize * 0.95);
+      if (badge) badge.textContent = `${cleanGoals[0].name} em andamento`;
+      const falta = cleanGoals[0].value - totalProduction;
+      if (msg) msg.innerHTML = `Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para atingir a <strong>${cleanGoals[0].name}</strong>!`;
+    } else {
+      let currentIdx = 0;
+      for (let i = 0; i < N; i++) {
+        if (totalProduction >= cleanGoals[i].value) {
+          currentIdx = i;
+        }
+      }
+
+      if (currentIdx === N - 1) {
+        pct = 100;
+        if (badge) badge.textContent = 'Meta Máxima Batida! 👑';
+        if (msg) msg.innerHTML = `<strong style="color:var(--green)">Extraordinário!</strong> Você atingiu a ${cleanGoals[N - 1].name} e superou todos os limites este mês!`;
+      } else {
+        const curr = cleanGoals[currentIdx];
+        const next = cleanGoals[currentIdx + 1];
+        const segStart = ((currentIdx + 1) / N) * 100;
+        const segSize = (1 / N) * 100;
+        const segProgress = (totalProduction - curr.value) / (next.value - curr.value);
+        pct = segStart + segProgress * (segSize * 0.95);
+
+        if (badge) badge.textContent = `${curr.name} batida! 🎉`;
+        const falta = next.value - totalProduction;
+        if (msg) msg.innerHTML = `Excelente! ${curr.name} batida. Falta apenas <strong style="color:var(--y)">${fmt(falta)}</strong> para a <strong>${next.name}</strong>!`;
+      }
+    }
+  }
+
+  const fillEl = $('goal-progress-fill');
+  if (fillEl) {
+    fillEl.style.width = Math.max(0, Math.min(100, pct)) + '%';
   }
 
   // --- Renderiza Gráficos Pessoais do Corretor ---
@@ -2267,24 +2299,59 @@ async function logoutUser() {
   }
 }
 
-// ── ADMIN: GERENCIAMENTO DE EQUIPE (CRUD) ──────────────────────
+// ── ADMIN: GERENCIAMENTO DE EQUIPE & PLANOS DE METAS (CRUD) ───
 let ADMIN_USERS_CACHE = [];
+let CONSULTANT_TYPES_CACHE = [];
+let CURRENT_ADMIN_SUBTAB = 'users';
+
+function switchAdminSubTab(tab) {
+  CURRENT_ADMIN_SUBTAB = tab;
+  const isUsers = tab === 'users';
+
+  const btnUsers = $('tab-btn-team-users');
+  const btnPlans = $('tab-btn-team-plans');
+  const subtabUsers = $('subtab-users');
+  const subtabPlans = $('subtab-plans');
+  const actionsUsers = $('admin-actions-users');
+  const actionsPlans = $('admin-actions-plans');
+
+  if (btnUsers) btnUsers.className = isUsers ? 'btn' : 'btn-ghost';
+  if (btnPlans) btnPlans.className = isUsers ? 'btn-ghost' : 'btn';
+  if (subtabUsers) subtabUsers.style.display = isUsers ? 'block' : 'none';
+  if (subtabPlans) subtabPlans.style.display = isUsers ? 'none' : 'block';
+  if (actionsUsers) actionsUsers.style.display = isUsers ? 'block' : 'none';
+  if (actionsPlans) actionsPlans.style.display = isUsers ? 'none' : 'block';
+}
 
 async function loadAdminUsers() {
   if (USER_ROLE !== 'admin') return;
+  const token = localStorage.getItem('auth_token');
   try {
-    const res = await fetch('manage_users.php', {
+    // 1. Carrega tipos de consultor
+    const resTypes = await fetch('manage_users.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'list', token: localStorage.getItem('auth_token') })
+      body: JSON.stringify({ action: 'list_consultant_types', token })
     });
-    const payload = await res.json();
-    if (payload.success) {
-      ADMIN_USERS_CACHE = payload.users || [];
+    const payloadTypes = await resTypes.json();
+    if (payloadTypes.success) {
+      CONSULTANT_TYPES_CACHE = payloadTypes.types || [];
+      renderConsultantTypesTable();
+    }
+
+    // 2. Carrega usuários
+    const resUsers = await fetch('manage_users.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'list', token })
+    });
+    const payloadUsers = await resUsers.json();
+    if (payloadUsers.success) {
+      ADMIN_USERS_CACHE = payloadUsers.users || [];
       renderAdminUsersTable();
     }
   } catch (e) {
-    console.error('Erro ao carregar lista de usuários:', e);
+    console.error('Erro ao carregar dados administrativos:', e);
   }
 }
 
@@ -2298,9 +2365,14 @@ function renderAdminUsersTable() {
   }
   
   tbody.innerHTML = ADMIN_USERS_CACHE.map(u => {
-    const goalsStr = u.role === 'corretor' 
-      ? u.goals.map(g => parseFloat(g).toLocaleString('pt-BR')).join(' · ')
-      : '—';
+    let planBadge = '—';
+    if (u.role === 'corretor') {
+      if (u.consultant_type_name) {
+        planBadge = `<span class="type-badge">${u.consultant_type_name}</span>`;
+      } else {
+        planBadge = '<span style="color:var(--muted); font-size:11px;">Sem plano</span>';
+      }
+    }
       
     const roleBadge = u.role === 'admin' ? '<span class="badge b-novo">Admin</span>'
       : u.role === 'supervisor' ? '<span class="badge b-port">Supervisor</span>'
@@ -2311,7 +2383,7 @@ function renderAdminUsersTable() {
       <td>${u.name}</td>
       <td>${roleBadge}</td>
       <td style="font-family:var(--mono); font-size:11px;">${u.filial ? filialNome(u.filial) : '—'}</td>
-      <td style="font-family:var(--mono); font-size:11px; color:var(--green);">${goalsStr}</td>
+      <td>${planBadge}</td>
       <td style="text-align:center;">
         <button class="btn-user-action" onclick="openUserModal('edit', '${u.username}')" title="Editar"><i class="ph ph-note-pencil"></i></button>
         <button class="btn-user-action delete" onclick="deleteUser('${u.username}')" title="Excluir"><i class="ph ph-trash"></i></button>
@@ -2320,6 +2392,35 @@ function renderAdminUsersTable() {
   }).join('');
 }
 
+function renderConsultantTypesTable() {
+  const tbody = $('tbConsultantTypes');
+  if (!tbody) return;
+
+  if (CONSULTANT_TYPES_CACHE.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--t3)">Nenhum tipo de consultor cadastrado.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = CONSULTANT_TYPES_CACHE.map(t => {
+    const goalsTags = (t.goals || []).map(g => {
+      const name = g.name || 'Meta';
+      const val = parseFloat(g.value || g.val || 0);
+      return `<span class="goal-tag">${name}: <strong>${fmt(val)}</strong></span>`;
+    }).join('');
+
+    return `<tr>
+      <td style="font-weight:600; font-size:13px; color:var(--t1);"><span class="type-badge">${t.name}</span></td>
+      <td><div class="goals-tag-list">${goalsTags || '—'}</div></td>
+      <td style="text-align:center; font-family:var(--mono); font-weight:600; color:var(--y);">${t.users_count || 0}</td>
+      <td style="text-align:center;">
+        <button class="btn-user-action" onclick="openConsultantTypeModal('edit', ${t.id})" title="Editar Plano"><i class="ph ph-note-pencil"></i></button>
+        <button class="btn-user-action delete" onclick="deleteConsultantType(${t.id}, '${t.name}')" title="Excluir Plano"><i class="ph ph-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MODAL USUÁRIO ──
 function openUserModal(mode, username = '') {
   const modal = $('modal-user');
   const title = $('user-modal-title');
@@ -2329,6 +2430,7 @@ function openUserModal(mode, username = '') {
   const nameInput = $('usr-name');
   const roleSelect = $('usr-role');
   const filialSelect = $('usr-filial');
+  const typeSelect = $('usr-consultant-type');
   const errBox = $('usr-error-msg');
   
   if (errBox) errBox.style.display = 'none';
@@ -2343,6 +2445,15 @@ function openUserModal(mode, username = '') {
     filialSelect.appendChild(opt);
   });
 
+  // Popular tipos de consultor
+  typeSelect.innerHTML = '<option value="">Selecione um tipo de consultor...</option>';
+  CONSULTANT_TYPES_CACHE.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = `${t.name} (${(t.goals || []).length} metas)`;
+    typeSelect.appendChild(opt);
+  });
+
   if (mode === 'create') {
     title.textContent = 'Novo Usuário';
     usrInput.value = '';
@@ -2353,11 +2464,11 @@ function openUserModal(mode, username = '') {
     nameInput.value = '';
     roleSelect.value = 'corretor';
     filialSelect.value = '';
-    $('usr-g1').value = '';
-    $('usr-g2').value = '';
-    $('usr-g3').value = '';
-    $('usr-g4').value = '';
-    $('usr-g5').value = '';
+    if (CONSULTANT_TYPES_CACHE.length > 0) {
+      typeSelect.value = CONSULTANT_TYPES_CACHE[0].id;
+    } else {
+      typeSelect.value = '';
+    }
   } else {
     // Modo de edição
     const user = ADMIN_USERS_CACHE.find(u => u.username === username);
@@ -2372,13 +2483,7 @@ function openUserModal(mode, username = '') {
     nameInput.value = user.name;
     roleSelect.value = user.role;
     filialSelect.value = user.filial || '';
-    
-    const goals = user.goals || [0, 0, 0, 0, 0];
-    $('usr-g1').value = goals[0] || '';
-    $('usr-g2').value = goals[1] || '';
-    $('usr-g3').value = goals[2] || '';
-    $('usr-g4').value = goals[3] || '';
-    $('usr-g5').value = goals[4] || '';
+    typeSelect.value = user.consultant_type_id || '';
   }
   
   onUserRoleChange();
@@ -2393,18 +2498,18 @@ function closeUserModal() {
 function onUserRoleChange() {
   const role = $('usr-role').value;
   const filialGroup = $('usr-filial-group');
-  const goalsGroup = $('usr-goals-group');
+  const typeGroup = $('usr-consultant-type-group');
   
   if (role === 'admin') {
     filialGroup.style.display = 'none';
-    goalsGroup.style.display = 'none';
+    typeGroup.style.display = 'none';
   } else if (role === 'supervisor') {
     filialGroup.style.display = 'block';
-    goalsGroup.style.display = 'none';
+    typeGroup.style.display = 'none';
   } else {
     // corretor
     filialGroup.style.display = 'block';
-    goalsGroup.style.display = 'block';
+    typeGroup.style.display = 'block';
   }
 }
 
@@ -2416,15 +2521,8 @@ async function saveUserSubmit(e) {
   const name = $('usr-name').value.trim();
   const role = $('usr-role').value;
   const filial = $('usr-filial').value;
+  const consultantTypeId = $('usr-consultant-type').value;
   const errBox = $('usr-error-msg');
-  
-  const goals = [
-    parseFloat($('usr-g1').value) || 0,
-    parseFloat($('usr-g2').value) || 0,
-    parseFloat($('usr-g3').value) || 0,
-    parseFloat($('usr-g4').value) || 0,
-    parseFloat($('usr-g5').value) || 0
-  ];
   
   const payload = {
     action: mode,
@@ -2433,7 +2531,7 @@ async function saveUserSubmit(e) {
     name,
     role,
     filial,
-    goals
+    consultant_type_id: role === 'corretor' && consultantTypeId ? parseInt(consultantTypeId) : null
   };
   
   if (password) {
@@ -2477,6 +2575,172 @@ async function deleteUser(username) {
       loadAdminUsers();
     } else {
       alert(data.error || 'Falha ao excluir usuário.');
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// ── MODAL TIPO DE CONSULTOR & METAS ──
+function openConsultantTypeModal(mode, typeId = null) {
+  const modal = $('modal-consultant-type');
+  const title = $('type-modal-title');
+  const idInput = $('type-id');
+  const nameInput = $('type-name');
+  const list = $('type-goals-list');
+  const errBox = $('type-error-msg');
+
+  if (errBox) errBox.style.display = 'none';
+  if (list) list.innerHTML = '';
+
+  if (mode === 'create') {
+    title.textContent = 'Novo Tipo de Consultor';
+    idInput.value = '';
+    nameInput.value = '';
+    // Adiciona 3 metas padrão para facilitar o preenchimento
+    addTypeGoalRow('Meta 1', 1000);
+    addTypeGoalRow('Meta 2', 2000);
+    addTypeGoalRow('Meta 3', 3000);
+  } else {
+    const type = CONSULTANT_TYPES_CACHE.find(t => t.id === typeId);
+    if (!type) return;
+
+    title.textContent = 'Editar Tipo de Consultor';
+    idInput.value = type.id;
+    nameInput.value = type.name;
+
+    const goals = type.goals || [];
+    if (goals.length === 0) {
+      addTypeGoalRow('Meta 1', 1000);
+    } else {
+      goals.forEach(g => {
+        addTypeGoalRow(g.name || '', g.value || g.val || 0);
+      });
+    }
+  }
+
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeConsultantTypeModal() {
+  const modal = $('modal-consultant-type');
+  if (modal) modal.style.display = 'none';
+}
+
+function addTypeGoalRow(name = '', val = '') {
+  const list = $('type-goals-list');
+  if (!list) return;
+
+  const rowCount = list.querySelectorAll('.type-goal-row').length;
+  const defaultName = name || `Meta ${rowCount + 1}`;
+
+  const row = document.createElement('div');
+  row.className = 'type-goal-row';
+  row.innerHTML = `
+    <div style="flex: 1.2;">
+      <input type="text" class="modal-input goal-row-name" placeholder="Nome da Meta" value="${defaultName}" required style="font-size:12px; height:34px; padding:0 8px;">
+    </div>
+    <div style="flex: 1.2;">
+      <input type="number" step="any" class="modal-input goal-row-val" placeholder="Valor (R$)" value="${val !== '' ? val : ''}" required style="font-size:12px; height:34px; padding:0 8px; font-family:var(--mono);">
+    </div>
+    <button type="button" class="btn-user-action delete" onclick="removeTypeGoalRow(this)" title="Remover Meta" style="height:34px; width:34px;">
+      <i class="ph ph-trash"></i>
+    </button>
+  `;
+  list.appendChild(row);
+}
+
+function removeTypeGoalRow(btn) {
+  const list = $('type-goals-list');
+  if (!list) return;
+  const rows = list.querySelectorAll('.type-goal-row');
+  if (rows.length <= 1) {
+    alert('O plano deve ter pelo menos uma meta cadastrada.');
+    return;
+  }
+  const row = btn.closest('.type-goal-row');
+  if (row) row.remove();
+}
+
+async function saveConsultantTypeSubmit(e) {
+  if (e) e.preventDefault();
+  const idInput = $('type-id');
+  const nameInput = $('type-name');
+  const errBox = $('type-error-msg');
+  const list = $('type-goals-list');
+
+  const id = idInput.value ? parseInt(idInput.value) : null;
+  const name = nameInput.value.trim().toUpperCase();
+
+  if (!name) {
+    if (errBox) {
+      errBox.textContent = 'Informe o nome do tipo de consultor.';
+      errBox.style.display = 'block';
+    }
+    return;
+  }
+
+  const rows = list ? list.querySelectorAll('.type-goal-row') : [];
+  const goals = [];
+  rows.forEach((r, idx) => {
+    const nameVal = r.querySelector('.goal-row-name').value.trim() || `Meta ${idx + 1}`;
+    const numVal = parseFloat(r.querySelector('.goal-row-val').value) || 0;
+    goals.push({ name: nameVal, value: numVal });
+  });
+
+  if (goals.length === 0) {
+    if (errBox) {
+      errBox.textContent = 'Adicione pelo menos uma meta.';
+      errBox.style.display = 'block';
+    }
+    return;
+  }
+
+  const payload = {
+    action: 'save_consultant_type',
+    token: localStorage.getItem('auth_token'),
+    id,
+    name,
+    goals
+  };
+
+  try {
+    if (errBox) errBox.style.display = 'none';
+
+    const res = await fetch('manage_users.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Falha ao salvar tipo de consultor.');
+    }
+
+    closeConsultantTypeModal();
+    loadAdminUsers();
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }
+  }
+}
+
+async function deleteConsultantType(id, name) {
+  if (!confirm(`Deseja realmente excluir o tipo de consultor "${name}"? Os consultores vinculados a este plano ficarão sem plano até serem reatribuídos.`)) return;
+  try {
+    const res = await fetch('manage_users.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete_consultant_type', id, token: localStorage.getItem('auth_token') })
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadAdminUsers();
+    } else {
+      alert(data.error || 'Falha ao excluir tipo de consultor.');
     }
   } catch (e) {
     console.error(e);

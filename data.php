@@ -26,10 +26,35 @@ if (!$user) {
     exit;
 }
 
-$userRole   = $user['role'];
-$userName   = $user['name'];
-$userGoals  = json_decode($user['goals'] ?? '[0,0,0,0,0]', true) ?: [0, 0, 0, 0, 0];
-$userFilial = $user['filial'] ?? '';
+$userRole           = $user['role'];
+$userName           = $user['name'];
+$userFilial         = $user['filial'] ?? '';
+$userConsultantType = null;
+$userGoals          = [];
+
+// Busca tipo de consultor e metas associadas
+if (!empty($user['consultant_type_id'])) {
+    $stmtCt = $pdo->prepare("SELECT name, goals FROM consultant_types WHERE id = ?");
+    $stmtCt->execute([$user['consultant_type_id']]);
+    $ct = $stmtCt->fetch();
+    if ($ct) {
+        $userConsultantType = $ct['name'];
+        $userGoals = json_decode($ct['goals'] ?? '[]', true) ?: [];
+    }
+}
+
+// Fallback para metas legadas se não houver tipo associado
+if (empty($userGoals)) {
+    $rawLegacy = json_decode($user['goals'] ?? '[]', true) ?: [];
+    if (is_array($rawLegacy)) {
+        foreach ($rawLegacy as $idx => $g) {
+            $userGoals[] = [
+                'name'  => 'Meta ' . ($idx + 1),
+                'value' => floatval($g)
+            ];
+        }
+    }
+}
 
 // 3. Auxiliar de normalização de strings (remova acentos, espaços extras e caixa alta)
 function normalizeString($str) {
@@ -47,18 +72,35 @@ function normalizeString($str) {
 
 // 4. Se for Supervisor, calcula a meta da filial somando as metas de todos os seus corretores cadastrados no BD
 if ($userRole === 'supervisor' && !empty($userFilial)) {
-    $stmt = $pdo->prepare("SELECT goals FROM users WHERE role = 'corretor' AND filial = ?");
+    $stmt = $pdo->prepare("
+        SELECT ct.goals as ct_goals, u.goals as u_goals
+        FROM users u
+        LEFT JOIN consultant_types ct ON u.consultant_type_id = ct.id
+        WHERE u.role = 'corretor' AND u.filial = ?
+    ");
     $stmt->execute([$userFilial]);
     $brokers = $stmt->fetchAll();
 
-    $filialGoals = [0.0, 0.0, 0.0, 0.0, 0.0];
+    $sumGoals = [];
     foreach ($brokers as $broker) {
-        $uGoals = json_decode($broker['goals'] ?? '[0,0,0,0,0]', true) ?: [0,0,0,0,0];
-        for ($i = 0; $i < 5; $i++) {
-            $filialGoals[$i] += floatval($uGoals[$i] ?? 0);
+        $goalsList = json_decode($broker['ct_goals'] ?? '[]', true);
+        if (empty($goalsList)) {
+            $rawG = json_decode($broker['u_goals'] ?? '[]', true) ?: [];
+            $goalsList = [];
+            foreach ($rawG as $idx => $val) {
+                $goalsList[] = ['name' => 'Meta ' . ($idx + 1), 'value' => floatval($val)];
+            }
+        }
+        foreach ($goalsList as $idx => $g) {
+            $gVal  = is_array($g) ? floatval($g['value'] ?? 0) : floatval($g);
+            $gName = is_array($g) ? ($g['name'] ?? 'Meta ' . ($idx + 1)) : 'Meta ' . ($idx + 1);
+            if (!isset($sumGoals[$idx])) {
+                $sumGoals[$idx] = ['name' => $gName, 'value' => 0.0];
+            }
+            $sumGoals[$idx]['value'] += $gVal;
         }
     }
-    $userGoals = $filialGoals;
+    $userGoals = array_values($sumGoals);
 }
 
 // 5. Obter dados JSON (Scraping automático ou URL Manual informada pelo Admin)
@@ -125,11 +167,12 @@ if (empty($dataJson)) {
 if (empty($dataJson)) {
     // Sem dados disponíveis — retorna payload vazio para não bloquear o dashboard
     echo json_encode([
-        'success' => true,
-        'role'    => $userRole,
-        'name'    => $userName,
-        'goals'   => $userGoals,
-        'data'    => []
+        'success'         => true,
+        'role'            => $userRole,
+        'name'            => $userName,
+        'consultant_type' => $userConsultantType,
+        'goals'           => $userGoals,
+        'data'            => []
     ]);
     exit;
 }
@@ -168,10 +211,11 @@ if ($userRole === 'admin') {
 
 // 7. Retorna o resultado seguro + Metas do usuário
 echo json_encode([
-    'success' => true,
-    'role'    => $userRole,
-    'name'    => $userName,
-    'goals'   => $userGoals,
-    'data'    => $filteredRecords
+    'success'         => true,
+    'role'            => $userRole,
+    'name'            => $userName,
+    'consultant_type' => $userConsultantType,
+    'goals'           => $userGoals,
+    'data'            => $filteredRecords
 ]);
 exit;

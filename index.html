@@ -492,40 +492,22 @@
       </div>
     </div>
 
-    <!-- Metas e Níveis (5 Níveis) -->
+    <!-- Metas e Níveis (Dinâmico) -->
     <div class="goals-section">
       <div class="goals-card">
         <div class="goals-header">
-          <h3 style="margin:0; font-size:16px; font-weight:600; color:var(--t1)"><i class="ph ph-target" style="vertical-align:middle; margin-right:6px; color:var(--y);"></i> Acompanhamento de Metas Individuais (Líquido Loja)</h3>
+          <h3 style="margin:0; font-size:16px; font-weight:600; color:var(--t1)">
+            <i class="ph ph-target" style="vertical-align:middle; margin-right:6px; color:var(--y);"></i> 
+            Acompanhamento de Metas <span id="corr-plan-badge" class="type-badge" style="margin-left:6px; display:none;"></span>
+          </h3>
           <span class="goals-status-badge" id="goals-status-badge">—</span>
         </div>
         
         <!-- Barra de Progresso Visual de Metas -->
         <div class="goal-progress-container">
-          <div class="goal-progress-bar-wrap">
+          <div class="goal-progress-bar-wrap" id="goal-progress-bar-wrap">
             <div class="goal-progress-bar-fill" id="goal-progress-fill" style="width: 0%;"></div>
-            
-            <!-- Marcadores Níveis 1 a 5 -->
-            <div class="goal-marker" style="left: 20%;" id="marker-lvl1">
-              <div class="goal-marker-dot"></div>
-              <div class="goal-marker-label">Meta 1<br><span id="goal-val-lvl1">—</span></div>
-            </div>
-            <div class="goal-marker" style="left: 40%;" id="marker-lvl2">
-              <div class="goal-marker-dot"></div>
-              <div class="goal-marker-label">Meta 2<br><span id="goal-val-lvl2">—</span></div>
-            </div>
-            <div class="goal-marker" style="left: 60%;" id="marker-lvl3">
-              <div class="goal-marker-dot"></div>
-              <div class="goal-marker-label">Meta 3<br><span id="goal-val-lvl3">—</span></div>
-            </div>
-            <div class="goal-marker" style="left: 80%;" id="marker-lvl4">
-              <div class="goal-marker-dot"></div>
-              <div class="goal-marker-label">Meta 4<br><span id="goal-val-lvl4">—</span></div>
-            </div>
-            <div class="goal-marker" style="left: 100%;" id="marker-lvl5">
-              <div class="goal-marker-dot"></div>
-              <div class="goal-marker-label">Meta 5<br><span id="goal-val-lvl5">—</span></div>
-            </div>
+            <!-- Marcadores dinâmicos inseridos via JS -->
           </div>
         </div>
         
@@ -590,30 +572,64 @@
   <!-- ADMIN GERENCIAR EQUIPE -->
   <div id="p-admin-users" class="panel">
     <div class="table-wrap" style="padding: 1.5rem;">
-      <div class="table-head">
-        <div class="table-head-left">
-          <span class="table-head-title">Gerenciamento de Equipe e Metas</span>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 1.25rem; border-bottom: 1px solid var(--b2); padding-bottom: 1rem;">
+        <div style="display: flex; gap: 8px;">
+          <button id="tab-btn-team-users" class="btn" style="height: 38px;" onclick="switchAdminSubTab('users')">
+            <i class="ph ph-users-three"></i> Membros da Equipe
+          </button>
+          <button id="tab-btn-team-plans" class="btn-ghost" style="height: 38px;" onclick="switchAdminSubTab('plans')">
+            <i class="ph ph-target"></i> Tipos de Consultor & Metas
+          </button>
         </div>
-        <button class="btn" onclick="openUserModal('create')"><i class="ph ph-user-plus"></i> Novo Usuário</button>
+
+        <div id="admin-actions-users">
+          <button class="btn" onclick="openUserModal('create')"><i class="ph ph-user-plus"></i> Novo Usuário</button>
+        </div>
+        <div id="admin-actions-plans" style="display: none;">
+          <button class="btn" onclick="openConsultantTypeModal('create')"><i class="ph ph-plus-circle"></i> Novo Tipo de Consultor</button>
+        </div>
       </div>
       
-      <div class="table-scroll" style="margin-top: 1rem;">
-        <table>
-          <thead>
-            <tr>
-              <th>Usuário</th>
-              <th>Nome Completo (Progestor)</th>
-              <th>Função</th>
-              <th>Filial Vinculada</th>
-              <th>Metas de 1 a 5 (Líquido Loja)</th>
-              <th style="text-align: center;">Ações</th>
-            </tr>
-          </thead>
-          <tbody id="tbAdminUsers">
-            <!-- Inserido via JS -->
-          </tbody>
-        </table>
+      <!-- SUB-ABA: USUÁRIOS -->
+      <div id="subtab-users">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Nome Completo (Progestor)</th>
+                <th>Função</th>
+                <th>Filial Vinculada</th>
+                <th>Tipo de Consultor / Plano</th>
+                <th style="text-align: center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbAdminUsers">
+              <!-- Inserido via JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <!-- SUB-ABA: TIPOS DE CONSULTOR & METAS -->
+      <div id="subtab-plans" style="display: none;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome do Tipo / Plano</th>
+                <th>Metas Cadastradas</th>
+                <th style="text-align: center;">Consultores Vinculados</th>
+                <th style="text-align: center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbConsultantTypes">
+              <!-- Inserido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -621,7 +637,7 @@
   <div id="modal-user" class="modal-backdrop" style="display:none">
     <div class="modal" style="max-width: 500px; padding: 2rem;">
       <div class="modal-title" id="user-modal-title">Novo Usuário</div>
-      <div class="modal-desc" style="margin-bottom: 1.25rem;">Cadastre ou edite as credenciais e metas da equipe.</div>
+      <div class="modal-desc" style="margin-bottom: 1.25rem;">Cadastre ou edite as credenciais e plano da equipe.</div>
       
       <form id="user-form" onsubmit="saveUserSubmit(event)" style="display:flex; flex-direction:column; gap:14px;">
         <input type="hidden" id="usr-mode" value="create">
@@ -659,15 +675,11 @@
           </select>
         </div>
 
-        <div id="usr-goals-group">
-          <label style="font-size:10px; color:var(--t2); display:block; margin-bottom:6px;">Metas de Comissão (Líquido Loja)</label>
-          <div style="display:flex; gap:6px;">
-            <div style="flex:1;"><input type="number" id="usr-g1" class="modal-input" placeholder="Meta 1" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
-            <div style="flex:1;"><input type="number" id="usr-g2" class="modal-input" placeholder="Meta 2" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
-            <div style="flex:1;"><input type="number" id="usr-g3" class="modal-input" placeholder="Meta 3" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
-            <div style="flex:1;"><input type="number" id="usr-g4" class="modal-input" placeholder="Meta 4" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
-            <div style="flex:1;"><input type="number" id="usr-g5" class="modal-input" placeholder="Meta 5" style="width:100%; height:36px; padding: 0 4px; text-align:center; font-size:12px;"></div>
-          </div>
+        <div class="fgroup" id="usr-consultant-type-group">
+          <label style="font-size:10px; color:var(--t2); display:block; margin-bottom:4px;">Tipo de Consultor / Plano de Metas</label>
+          <select id="usr-consultant-type" class="modal-input" style="width:100%; height:40px; background:var(--s1); border:1px solid var(--b2); color:var(--t1); border-radius:var(--r); padding:0 8px;">
+            <!-- Populado via JS -->
+          </select>
         </div>
         
         <div id="usr-error-msg" class="login-error-box" style="display:none; margin:0;"></div>
@@ -675,6 +687,43 @@
         <div class="modal-actions" style="margin-top:1rem; display:flex; gap:8px;">
           <button type="submit" class="btn" style="flex:1; height:40px;">Salvar Usuário</button>
           <button type="button" class="btn-ghost" onclick="closeUserModal()" style="height:40px;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL TIPO DE CONSULTOR & METAS (CADASTRAR / EDITAR) -->
+  <div id="modal-consultant-type" class="modal-backdrop" style="display:none">
+    <div class="modal" style="max-width: 560px; padding: 2rem;">
+      <div class="modal-title" id="type-modal-title">Novo Tipo de Consultor</div>
+      <div class="modal-desc" style="margin-bottom: 1.25rem;">Defina o plano e cadastre livremente as metas e valores.</div>
+      
+      <form id="consultant-type-form" onsubmit="saveConsultantTypeSubmit(event)" style="display:flex; flex-direction:column; gap:14px;">
+        <input type="hidden" id="type-id" value="">
+        
+        <div class="fgroup">
+          <label style="font-size:10px; color:var(--t2); display:block; margin-bottom:4px;">Nome do Tipo / Plano (ex: CONSULTOR PLENO)</label>
+          <input type="text" id="type-name" class="modal-input" required placeholder="ex: CONSULTOR PLENO" style="width:100%; height:40px; text-transform: uppercase;">
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-size:11px; font-weight:600; color:var(--t1);">Metas do Plano (Líquido Loja)</label>
+            <button type="button" class="btn-ghost" onclick="addTypeGoalRow()" style="font-size:11px; padding: 4px 8px; height: 28px;">
+              <i class="ph ph-plus"></i> Adicionar Meta
+            </button>
+          </div>
+          
+          <div id="type-goals-list" style="display:flex; flex-direction:column; gap:8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
+            <!-- Linhas de metas dinâmicas adicionadas via JS -->
+          </div>
+        </div>
+        
+        <div id="type-error-msg" class="login-error-box" style="display:none; margin:0;"></div>
+
+        <div class="modal-actions" style="margin-top:1rem; display:flex; gap:8px;">
+          <button type="submit" class="btn" style="flex:1; height:40px;">Salvar Plano</button>
+          <button type="button" class="btn-ghost" onclick="closeConsultantTypeModal()" style="height:40px;">Cancelar</button>
         </div>
       </form>
     </div>
